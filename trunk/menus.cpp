@@ -1219,7 +1219,7 @@ void perOut()
         case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
       }
     }
-    int32_t dv=v*(md.weight); // 10+1 Bit + 7 = 17+1
+    int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
     chans[md.destCh-1] += dv; //(dv + (dv>0 ? 100/2 : -100/2))/(100);
   }
 
