@@ -858,7 +858,7 @@ void menuProcDiagKeys(uint8_t event)
     lcd_putcAtt(x+FW*6,  y, tp+'0',tp ? INVERS : 0);
   }
 }
-#include ".stamp-th9x.h"
+#include "stamp-th9x.h"
 void menuProcDiagVers(uint8_t event)
 {
   static MState mState;
