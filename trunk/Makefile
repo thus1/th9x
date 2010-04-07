@@ -1,35 +1,30 @@
 
 
 SRC= simu.cpp th9x.cpp menus.cpp lcd.cpp drivers.cpp
+SRC:=$(foreach f,$(SRC),src/$(f))
 
 
 all:  tgt_bin simu
 
-dump:
-	make.rb dump
 
-INC=-I/home/thus/work/ruby/fox-1.6.31/include/
-LIB=/home/thus/work/ruby/fox-1.6.31/src/.libs/libFOX-1.6.so.0
+INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6
+LIB=-L/usr/local/lib -lFOX-1.6
 
 
 
-ifeq ($(shell hostname),HEIWS80062)
-INC=-I/home2/husteret/work/sfc/gnu/ruby-1.8.5/fox-1.6.20/include
-LIB=-lFOX-1.6 -L/home2/husteret/work/sfc/gnu/ruby-1.8.5/fox-1.6.20/src/.libs/
-endif
-
-# SRCO:=$(foreach f,$(SRC),../$(f))
-simu: $(SRC) Makefile *.h
+simu: $(SRC) Makefile src/*.h src/*.lbm eeprom.bin
 	gcc $(SRC) -g -o$@ $(INC) $(LIB)  -MD -DSIM
 	mv *.dsimu OBJS
 
 
+eeprom.bin:
+	dd if=/dev/null of=$@ bs=1 count=2048
+
 tgt_bin:
 	make.rb bin
 
-
-testMixtab: testMixtab.cpp
-	gcc $< -g -o$@ $(INC) $(LIB) -DSIM
+dump:
+	make.rb dump
 
 
 -include OBJS/*.dsimu
