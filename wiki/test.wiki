@@ -17,6 +17,4 @@ Add your content here.  Format your content with:
 
 [http://th9x.googlecode.com/svn/wiki/snapshotM0.png]
 
-[http://code.google.com/p/th9x/source/browse/trunk/doc/th9x.pdf doc]
-
-[http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf doc]
+[http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf th9x.pdf]
