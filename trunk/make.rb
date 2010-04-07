@@ -5,7 +5,7 @@ require "pp"
 
 #TGT=%w(drehzahl.cpp  MCU=attiny26 CFLAGS=)
 #TGT=%w(servo.c  MCU=attiny22     CFLAGS=-xc++)
-TGT=%w( th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp lcd.cpp drivers.cpp   MCU=atmega64)
+TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp lcd.cpp drivers.cpp   MCU=atmega64)
 
 
 
@@ -15,7 +15,7 @@ MCU_PAR={
 
 TC_PAR1=%w(
   AVR_PATH=/opt/cross
-   USBPROG=/home/thus/work/avrProj/usbprog/uisp/usbprog.rb
+   USBPROG=usbprog.rb
    OBJCOPY=avr-objcopy
         CC=avr-gcc
 )
@@ -35,7 +35,7 @@ class Builder
         bse   = $1
         fobj  = bse+".lbm"
         checkDep(fobj,src) {
-          sys "xbm2lbm.rb #{src}","xbm2lbm.rb #{src}"
+          sys "xbm2lbm.rb #{src}","util/xbm2lbm.rb #{src}"
         }
       end
     }
@@ -47,7 +47,8 @@ class Builder
       @pars[:SOURCES].each{|src|
         case src
         when /(.*)(\.c|\.cpp)$/
-          bse   = $1 # src.sub(/\.(c|cpp)$/,"")
+          bse   = $1
+          bse.gsub!(/\//,"_") # src.sub(/\.(c|cpp)$/,"")
           fdep  = bse+".d"
           fobj  = bse+".o"
           osrc   = "../"+src
@@ -139,6 +140,7 @@ class Builder
     @pars={}
     @pars[:SOURCES]  = ""
     @pars[:TC]       = "TC_PAR1"
+    @pars[:DIR]      = "."
     #zuerst alle user specs eintragen, einschl TC
     TGT.each{|expr|
       case expr
@@ -169,12 +171,15 @@ class Builder
     @pars[:INCLUDE]||= ""
     @pars[:INCLUDE] +=  "-I. -I#{@pars[:AVR_PATH]}/avr/include"
     @pars[:SOURCES]  =  @pars[:SOURCES].strip.split(/ +/)
+    @projectName = @pars[:SOURCES].first.sub(/\.(c|cpp)$/,"")
+    if @pars[:DIR] != "."
+      @pars[:SOURCES]  =  @pars[:SOURCES].map{|src| @pars[:DIR]+"/"+src}
+    end
 
     ENV["PATH"]= @pars[:AVR_PATH]+"/bin:"+ENV["PATH"]
     pp @pars       if $opt_v>=3
     pp ENV["PATH"] if $opt_v>=3
 
-    @projectName = @pars[:SOURCES].first.sub(/\.(c|cpp)$/,"")
   end
   def sys(cmt,cmd)
     puts "--- #{cmt}"
@@ -224,7 +229,7 @@ class Builder
     send ARGV[0]
   end
   def mkStamp
-    stf= ".stamp-#{@projectName}.h"
+    stf= @pars[:DIR]+"/stamp-#{@projectName}.h"
     vers=0
     begin
       File.read(stf)=~/VERS\s+(\d+)/

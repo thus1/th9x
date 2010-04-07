@@ -35,7 +35,7 @@ def main(xbm)
 
   File.open("#{base}.lbm","w"){|f|
     col=0
-    f.printf("prog_uchar %s[] = {\n",base)
+    f.printf("prog_uchar %s[] = {\n",base.sub(/.*\//,""))
     f.printf("%d,%d,%d,\n",w/cols,h/rows,w/cols*h/rows/8)
     rows.times{|row|
       (hb/rows).times{|yb| yb
