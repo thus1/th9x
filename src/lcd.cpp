@@ -57,14 +57,19 @@ void lcd_img(uint8_t i_x,uint8_t i_y,const uchar_P * imgdat,uint8_t idx,uint8_t 
 /// invers: 0 no 1=yes 2=blink
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
-  uint8_t *p = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  uint8_t *pmax = &displayBuf[ min(y+8,DISPLAY_H)/8 * DISPLAY_W ];
+  
   uchar_P    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
   for(char i=5; i!=0; i--){
     uint8_t b = pgm_read_byte(q++);
-    *p++ = inv ? ~b : b;
+    if(p<pmax) *p++ = inv ? ~b : b;
   }
-  *p = inv ? ~0 : 0;
+  if(p<pmax) *p = inv ? ~0 : 0;
+#ifdef SIM
+  assert(p<pmax);
+#endif
 }
 void lcd_putc(uint8_t x,uint8_t y,const char c)
 {
