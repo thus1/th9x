@@ -28,6 +28,7 @@ unsigned char pinb,portb,pind;
 unsigned char pine,ping;
 unsigned char dummyport;
 char g_title[80];
+int16_t g_ppmIns[8];
 
 
 void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
@@ -83,10 +84,10 @@ void eeprom_read_block (void *pointer_ram,
 }
 
 
-#define W 128
-#define H  64
+#define W  DISPLAY_W
+#define H  DISPLAY_H
 #define W2 W*2
-#define H2  H*2
+#define H2 H*2
 class Th9xSim: public FXMainWindow
 {
   FXDECLARE(Th9xSim)
@@ -259,47 +260,49 @@ void Th9xSim::refreshDiplay()
   bmp->render(); 
   bmf->setBitmap( bmp );  
 
-  static FXuint keys1[]={
-    KEY_Return,    INP_B_KEY_MEN,
-    KEY_Page_Up,   INP_B_KEY_MEN,
-    KEY_KP_1,      INP_B_KEY_MEN,
-    KEY_Page_Down, INP_B_KEY_EXT,
-    KEY_BackSpace, INP_B_KEY_EXT,
-    KEY_KP_0,      INP_B_KEY_EXT,
-    KEY_Down,      INP_B_KEY_DWN,
-    KEY_Up,        INP_B_KEY_UP,
-    KEY_Right,     INP_B_KEY_RGT,
-    KEY_Left,      INP_B_KEY_LFT
-  };
+  if(hasFocus()) {
+    static FXuint keys1[]={
+      KEY_Return,    INP_B_KEY_MEN,
+      KEY_Page_Up,   INP_B_KEY_MEN,
+      KEY_KP_1,      INP_B_KEY_MEN,
+      KEY_Page_Down, INP_B_KEY_EXT,
+      KEY_BackSpace, INP_B_KEY_EXT,
+      KEY_KP_0,      INP_B_KEY_EXT,
+      KEY_Down,      INP_B_KEY_DWN,
+      KEY_Up,        INP_B_KEY_UP,
+      KEY_Right,     INP_B_KEY_RGT,
+      KEY_Left,      INP_B_KEY_LFT
+    };
 
-  pinb &= ~ 0x7e;
-  for(int i=0; i<DIM(keys1);i+=2){
-    if(getApp()->getKeyState(keys1[i]))  pinb |= (1<<keys1[i+1]);
-  }
+    pinb &= ~ 0x7e;
+    for(int i=0; i<DIM(keys1);i+=2){
+      if(getApp()->getKeyState(keys1[i]))  pinb |= (1<<keys1[i+1]);
+    }
 
-  static FXuint keys2[]={KEY_F8, KEY_F7, KEY_F4, KEY_F3, KEY_F6, KEY_F5, KEY_F1, KEY_F2  };
-  pind  = 0;
-  for(int i=0; i<8;i++){
-    if(getApp()->getKeyState(keys2[i])) pind |= (1<<i);
-  }
-  // /usr/local/include/fox-1.6/fxkeys.h
-  static FXuint keys3[]={
-    KEY_1, (FXuint)&pine,  INP_E_ThrCt,    0,
-    KEY_2, (FXuint)&ping,  INP_G_RuddDR,   0,
-    KEY_3, (FXuint)&pine,  INP_E_ElevDR,   0,
-    KEY_4, (FXuint)&ping,  INP_G_ID1,      0,
-    KEY_5, (FXuint)&pine,  INP_E_ID2,      0,
-    KEY_6, (FXuint)&pine,  INP_E_AileDR,   0,
-    KEY_7, (FXuint)&pine,  INP_E_Gear,     0,
-    KEY_8, (FXuint)&pine,  INP_E_Trainer,  0
-  };
-  for(int i=0; i<8;i+=1){ int j=i*4;
-    bool ks=getApp()->getKeyState(keys3[j]);
-    if(ks != keys3[j+3]){
-      if(ks){
-        *(unsigned char*)keys3[j+1] ^=  (1<<keys3[j+2]);
+    static FXuint keys2[]={KEY_F8, KEY_F7, KEY_F4, KEY_F3, KEY_F6, KEY_F5, KEY_F1, KEY_F2  };
+    pind  = 0;
+    for(int i=0; i<8;i++){
+      if(getApp()->getKeyState(keys2[i])) pind |= (1<<i);
+    }
+    // /usr/local/include/fox-1.6/fxkeys.h
+    static FXuint keys3[]={
+      KEY_1, (FXuint)&pine,  INP_E_ThrCt,    0,
+      KEY_2, (FXuint)&ping,  INP_G_RuddDR,   0,
+      KEY_3, (FXuint)&pine,  INP_E_ElevDR,   0,
+      KEY_4, (FXuint)&ping,  INP_G_ID1,      0,
+      KEY_5, (FXuint)&pine,  INP_E_ID2,      0,
+      KEY_6, (FXuint)&pine,  INP_E_AileDR,   0,
+      KEY_7, (FXuint)&pine,  INP_E_Gear,     0,
+      KEY_8, (FXuint)&pine,  INP_E_Trainer,  0
+    };
+    for(int i=0; i<8;i+=1){ int j=i*4;
+      bool ks=getApp()->getKeyState(keys3[j]);
+      if(ks != keys3[j+3]){
+        if(ks){
+          *(unsigned char*)keys3[j+1] ^=  (1<<keys3[j+2]);
+        }
+        keys3[j+3] = ks;
       }
-      keys3[j+3] = ks;
     }
   }
 
