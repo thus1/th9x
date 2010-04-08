@@ -174,6 +174,9 @@ void eeCheck()
 static uint8_t s_evt;
 void putEvent(uint8_t evt)
 {
+  //#ifdef SIM
+  //  printf("putEvent %d %x\n",evt,evt);
+  //#endif
   s_evt = evt;
 }
 uint8_t getEvent()
@@ -197,6 +200,9 @@ public:
 Key keys[NUM_KEYS];
 void Key::input(bool val, EnumKeys enuk)
 {       
+  //#ifdef SIM
+  //  if(val) printf("Key::input = %d %d m_vals %d m_cnt%d\n",val,enuk,m_vals,m_cnt);
+  //#endif
   uint8_t old=m_vals;
   m_vals <<= 1;
   if(val) m_vals |= 1;
@@ -229,32 +235,6 @@ void Key::input(bool val, EnumKeys enuk)
       if(((m_cnt-128) % 4) == 0)  putEvent(EVT_KEY_REPT(enuk));
       if(m_cnt==208) m_cnt-=2;
     }
-      // switch(m_cnt){
-      // case 253:
-      // case 252:
-      // case 251:
-      // case 250:
-      //   m_cnt=250;
-      //   break;
-      // case 30: //300ms lang
-      //   putEvent(EVT_KEY_LONG(enuk));
-      //   break;
-      // case 105: //repeat
-      //   m_cnt-=2;
-      // case 20: //2 repeat
-      // case 35: //3 repeat
-      // case 48: //4 repeat
-      // case 60: //5 repeat
-      // case 70: //6 repeat
-      // case 80: //7 repeat
-      // case 90: //8 repeat
-      // case 100: //9 repeat
-      //   putEvent(EVT_KEY_REPT(enuk));
-      //   break;
-      // case  1: //1 repeat
-      //   putEvent(EVT_KEY_FIRST(enuk));
-      //   break;
-      // }
   }
   // #ifdef SIM
   //  printf("key %d=%x\n",enuk,m_vals);
