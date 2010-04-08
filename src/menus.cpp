@@ -343,7 +343,7 @@ void menuProcMix(uint8_t event)
       lcd_putcAtt(    8*FW+1, y, '%',0);
       putsChnRaw(     10*FW-2, y, md2->srcRaw,0);
       putsDrSwitches( 14*FW-4, y, md2->swtch,0);
-      lcd_putsnAtt(   18*FW+3, y, PSTR("   x>0x<0|x||1|")+md2->posNeg*3,3,0);
+      lcd_putsnAtt(   18*FW+2, y, PSTR("   x>0x<0|x||1|")+md2->posNeg*3,3,0);
       if(attr == BLINK){
         CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         s_currMixIdx     = s_mixTab[k].editIdx;
@@ -1133,6 +1133,7 @@ void menuProc0(uint8_t event)
     //lcd_outdezAtt( x+4*FW , y, ((int16_t)pulses2MHz[i]-1200*2),PREC1 );
     //*1000/512 =   *2 - 24/512
     lcd_outdezAtt( x+4*FW , y, chans512[i]*2-chans512[i]/21,PREC1 );
+    //lcd_outdezAtt( x+4*FW , y, g_ppmIns[i]*2,PREC1 );
   }
 
 }
