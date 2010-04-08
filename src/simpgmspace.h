@@ -12,6 +12,7 @@
 
  */
 
+#include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -32,6 +33,7 @@ typedef const char prog_char;
 #define PORTA dummyport
 #define PORTB portb
 #define PORTC dummyport
+#define PORTG dummyport
 #define DDRA   dummyport
 #define DDRB   dummyport
 #define DDRC   dummyport
