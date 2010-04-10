@@ -1,7 +1,10 @@
 #! /usr/bin/env ruby
 
 
-require "/home/thus/bin/cstruct.rb"
+require File.dirname(__FILE__)+"/cstruct.rb"
+EE_VERSION=1
+MAX_MODELS=16
+MAX_MIXERS=20
 
 CStruct.alignment=1
 CStruct.defStruct "EEGeneral",<<-"END_TYP"
@@ -35,14 +38,6 @@ CStruct.defStruct "LimitData",<<-"END_TYP"
   int8_t  max;
   bool    revert;
   END_TYP
-#CStruct.defStruct "MixData",<<-"END_TYP"
-#  uint8_t destCh:4; //
-#  uint8_t srcRaw:4; //0=off
-#  int8_t  weight;
-#  int8_t  swtch:5;
-#  uint8_t posNeg:2; //0=symmetrisch 1=no neg 2=no pos
-#  uint8_t res:1;    //
-#  END_TYP
 
 CStruct.defStruct "MixData",<<-"END_TYP"
   uint8_t destCh_srcRaw; //
@@ -53,21 +48,24 @@ CStruct.defStruct "MixData",<<-"END_TYP"
 CStruct.defStruct "ModelData",<<-"END_TYP"
   char      name[10];    // 10
   uint8_t   stickMode;   // 1
-  char      res[7];      // 7
+  uint8_t   tmrMode;     // 1
+  uint16_t  tmrVal;      // 2
+  uint8_t   protocol;    // 1
+  char      res[3];      // 3
   ExpoData  expoData[4]; // 3*4
   TrimData  trimData[4]; // 3*4
   LimitData limitData[8];// 3*8
-  MixData   mixData[20]; //3*20
+  MixData   mixData[#{MAX_MIXERS}]; //3*20
   END_TYP
 
 CStruct.defStruct "WholeEeprom",<<-"END_TYP"
   EEGeneral eEGeneral;
-  ModelData modelData[16];
+  ModelData modelData[#{MAX_MODELS}];
   END_TYP
 
-eep=CStruct::WholeEeprom.new
+eep=CStruct::WholeEeprom.new(0)
 
-File.open(ARGV[0]){|f|
+File.open(ARGV[0] || "eeprom.bin"){|f|
   eep.read(f)
 }
 
