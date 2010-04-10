@@ -20,15 +20,27 @@
 
 static int16_t anaCalib[4];
 static int16_t chans512[8];
+static TrainerData g_trainer;
 
 //sticks
 #include "sticks.lbm"
 typedef  PROGMEM void (*MenuFuncP_PROGMEM)(uint8_t event);
 
-MenuFuncP_PROGMEM APM menuTab5[] = {
-  menuProcModelSelect,menuProcModel, menuProcExpoAll, menuProcTrim, menuProcMix, menuProcLimits};
+MenuFuncP_PROGMEM APM menuTabModel[] = {
+  menuProcModelSelect,
+  menuProcModel, 
+  menuProcExpoAll, 
+  menuProcTrim, 
+  menuProcMix, 
+  menuProcLimits
+};
 MenuFuncP_PROGMEM APM menuTabDiag[] = {
-  menuProcSetup0,menuProcDiagVers,menuProcDiagKeys, menuProcDiagAna, menuProcDiagCalib
+  menuProcSetup0,
+  menuProcTrainer,
+  menuProcDiagVers,
+  menuProcDiagKeys, 
+  menuProcDiagAna, 
+  menuProcDiagCalib
 };
 
 
@@ -120,7 +132,7 @@ void menuProcLimits(uint8_t event)
   static MState mState;
   TITLE("LIMITS");  
   mState.checkExit(event);
-  mState.checkChain(6,menuTab5,DIM(menuTab5));
+  mState.checkChain(6,menuTabModel,DIM(menuTabModel));
   int8_t sub = mState.checkVert(8+1) - 1;
   static uint8_t s_pgOfs;
   uint8_t subSub=0;
@@ -284,7 +296,7 @@ void menuProcMix(uint8_t event)
   static MState mState;
   TITLE("MIXER");  
   mState.checkExit(event);
-  mState.checkChain(5,menuTab5,DIM(menuTab5));
+  mState.checkChain(5,menuTabModel,DIM(menuTabModel));
   int8_t sub = mState.checkVert(s_mixMaxSel);
 
   static uint8_t s_pgOfs;
@@ -379,7 +391,7 @@ void menuProcTrim(uint8_t event)
   static MState mState;
   TITLE("TRIM");  
   mState.checkExit(event);
-  mState.checkChain(4,menuTab5,DIM(menuTab5));
+  mState.checkChain(4,menuTabModel,DIM(menuTabModel));
   int8_t sub = mState.checkVert(4+1)-1;
 
   switch(event)
@@ -556,7 +568,7 @@ void menuProcExpoAll(uint8_t event)
   static MState mState;
   TITLE("EXPO/DR");  
   mState.checkExit(event);
-  mState.checkChain(3,menuTab5,DIM(menuTab5));
+  mState.checkChain(3,menuTabModel,DIM(menuTabModel));
   int8_t sub = mState.checkVert(4+1)-1;
   switch(event)
   {
@@ -619,7 +631,7 @@ void menuProcModel(uint8_t event)
   uint8_t x=TITLE("SETUP ");  
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
   mState.checkExit(event);
-  mState.checkChain(2,menuTab5,DIM(menuTab5));
+  mState.checkChain(2,menuTabModel,DIM(menuTabModel));
   int8_t  sub = mState.checkVert(4+1);
   uint8_t subSub;
   subSub = mState.checkHorz(1,1+sizeof(g_model.name));
@@ -697,7 +709,7 @@ void menuProcModelSelect(uint8_t event)
   TITLE("MODELSELECT");  
   mState.checkExit(event,true);
   mState.sVert++;
-  mState.checkChain(1,menuTab5,DIM(menuTab5));
+  mState.checkChain(1,menuTabModel,DIM(menuTabModel));
   mState.sVert--;
   int8_t sub = mState.checkVert(MAX_MODELS);
   static uint8_t s_pgOfs;
@@ -706,11 +718,13 @@ void menuProcModelSelect(uint8_t event)
     //case  EVT_KEY_FIRST(KEY_MENU):
     case  EVT_KEY_FIRST(KEY_EXIT):
     case  EVT_KEY_FIRST(KEY_RIGHT):
-      eeLoadModel(g_eeGeneral.currModel = mState.sVert);
-      eeDirty(EE_GENERAL);
-      LIMITS_DIRTY;
+      if(g_eeGeneral.currModel != mState.sVert)
+      {
+        eeLoadModel(g_eeGeneral.currModel = mState.sVert);
+        eeDirty(EE_GENERAL);
+        LIMITS_DIRTY;
+      }
       //case EXIT handled in checkExit
-      //if(event==EVT_KEY_FIRST(KEY_MENU))  chainMenu(menuProcModel);
       if(event==EVT_KEY_FIRST(KEY_RIGHT))  chainMenu(menuProcModel);
       break;
     case EVT_ENTRY:
@@ -737,7 +751,7 @@ void menuProcDiagCalib(uint8_t event)
   static MState mState;
   TITLE("CALIB");
   mState.checkExit(event);
-  mState.checkChain(5,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(6,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(5);
   int8_t sub = mState.sVert;
   static int16_t midVals[4];
@@ -793,7 +807,7 @@ void menuProcDiagAna(uint8_t event)
   static MState mState;
   TITLE("ANA");  
   mState.checkExit(event);
-  mState.checkChain(4,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(5,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(2);
   int8_t sub = mState.sVert;
 
@@ -821,7 +835,7 @@ void menuProcDiagKeys(uint8_t event)
   static MState mState;
   TITLE("DIAG");  
   mState.checkExit(event);
-  mState.checkChain(3,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(4,menuTabDiag,DIM(menuTabDiag));
 
   uint8_t x;
 
@@ -864,7 +878,7 @@ void menuProcDiagVers(uint8_t event)
   static MState mState;
   TITLE("VERION");  
   mState.checkExit(event);
-  mState.checkChain(2,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(3,menuTabDiag,DIM(menuTabDiag));
 
 #define STR2(s) #s
 #define DEFNUMSTR(s)  STR2(s)
@@ -874,6 +888,61 @@ void menuProcDiagVers(uint8_t event)
   lcd_puts_P(0, 4*FH,PSTR("TIME: " TIME_STR)); 
 }
 
+void menuProcTrainer(uint8_t event)
+{
+  static MState mState;
+  TITLE("TRAINER");  
+  mState.checkExit(event);
+  mState.checkChain(2,menuTabDiag,DIM(menuTabDiag));
+  int8_t  sub = mState.checkVert(1+4+1)-1;
+  uint8_t y;
+  bool    edit;
+  
+  for(uint8_t i=0; i<4; i++){
+    y=(i+2)*FH;
+    uint8_t subSub=0;
+    if(sub==i){
+      //subSub = mState.checkHorz(sub+1,5);
+    }
+    subSub = mState.checkHorz(i+1,5);
+    putsChnRaw( 0, y,i+1,
+                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
+    edit = (sub==i && subSub==1);
+    lcd_putsnAtt(   4*FW, y, PSTR("off += :=")+3*g_trainer.chanMix[i].mode,3,
+                    edit ? BLINK : 0);
+    if(edit) g_trainer.chanMix[i].mode = checkIncDec_v( event, g_trainer.chanMix[i].mode, 0,2); //!! bitfield
+
+    edit = (sub==i && subSub==2);
+    lcd_outdezAtt( 11*FW, y, g_trainer.chanMix[i].weight*25/16,
+                   edit ? BLINK : 0);
+    if(edit) g_trainer.chanMix[i].weight = checkIncDec_v( event, g_trainer.chanMix[i].weight, 0,63); //!! bitfield
+
+    edit = (sub==i && subSub==3);
+    lcd_putsnAtt(  12*FW, y, PSTR("ch1ch2ch3ch4")+3*g_trainer.chanMix[i].srcChn,3, edit ? BLINK : 0);
+    if(edit) g_trainer.chanMix[i].srcChn = checkIncDec_v( event, g_trainer.chanMix[i].srcChn, 0,3); //!! bitfield
+
+    edit = (sub==i && subSub==4);
+    putsDrSwitches(16*FW, y, g_trainer.chanMix[i].swtch, edit ? BLINK : 0);
+    if(edit) g_trainer.chanMix[i].swtch = checkIncDec_v( event, g_trainer.chanMix[i].swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+
+
+  }
+  edit = (sub==4);
+  y    = 7*FH;
+  lcd_putsnAtt(  0*FW, y, PSTR("Cal"),3,(sub==4) ? BLINK : 0);
+  for(uint8_t i=0; i<4; i++)
+  {
+    uint8_t x = (i*8+16)*FW/2;
+    lcd_outdezAtt( x , y, (g_ppmIns[i]-g_trainer.calib[i])*2,PREC1 );
+  }
+  if(edit)
+  {
+    if(event==EVT_KEY_FIRST(KEY_MENU)){
+      memcpy(g_trainer.calib,g_ppmIns,sizeof(g_trainer.calib));
+    }
+  }
+  
+}
 void menuProcSetup0(uint8_t event)
 {
   static MState mState;
@@ -881,7 +950,7 @@ void menuProcSetup0(uint8_t event)
   mState.checkExit(event,false);
   mState.checkChain(1,menuTabDiag,DIM(menuTabDiag));
   int8_t sub = mState.checkVert(4)-1;
-  uint8_t y=16;
+  uint8_t y=2*FH;
   lcd_outdezAtt(5*FW,y,g_eeGeneral.contrast,sub==0 ? BLINK : 0);
   if(sub==0){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.contrast, 20, 45);
@@ -1033,6 +1102,7 @@ void menuProcStatistic(uint8_t event)
 
 }
 
+extern volatile uint16_t captureRing[16];
 
 
 void menuProc0(uint8_t event)
@@ -1130,10 +1200,10 @@ void menuProc0(uint8_t event)
   {
     uint8_t x = (i%4*9+3)*FW/2;
     uint8_t y = i/4*FH+40;
-    //lcd_outdezAtt( x+4*FW , y, ((int16_t)pulses2MHz[i]-1200*2),PREC1 );
-    //*1000/512 =   *2 - 24/512
+    // *1000/512 =   *2 - 24/512
     lcd_outdezAtt( x+4*FW , y, chans512[i]*2-chans512[i]/21,PREC1 );
-    //lcd_outdezAtt( x+4*FW , y, g_ppmIns[i]*2,PREC1 );
+    // lcd_outdezAtt( x+4*FW , y-2*FH, g_ppmIns[i]*2,PREC1 );
+    // lcd_outdezAtt( x+4*FW , y, captureRing[i],PREC1 );
   }
 
 }
@@ -1176,7 +1246,7 @@ void perOut()
     v  = v * ((signed)RESX/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
     if(v <= -(signed)RESX) v = -(signed)RESX;
     if(v >= (signed) RESX) v =  (signed)RESX;
-    anaCalib[i] = v;
+    anaCalib[i] = v; //for show in expo
 
     //expo  [-512..512]  9+1 Bit
     v  = expo(v,
@@ -1184,6 +1254,23 @@ void perOut()
               g_model.expoData[i].expDr           :
               g_model.expoData[i].expNorm
     );
+    
+    if(g_trainer.chanMix[i].mode && getSwitch(g_trainer.chanMix[i].swtch,1)){
+      uint8_t chStud = g_trainer.chanMix[i].srcChn;
+      int16_t vStud  = (g_ppmIns[chStud]- g_trainer.calib[chStud])*
+        g_trainer.chanMix[i].weight/64;
+
+      switch(g_trainer.chanMix[i].mode)
+      {
+        case 1: // add-mode
+          v += vStud;
+          break;
+        case 2: // subst-mode
+          v = vStud;
+          break;
+      }
+    }
+
 
     //trace throttle
     if((2-g_model.stickMode&1) == i)  //stickMode=0123 -> thr=2121
