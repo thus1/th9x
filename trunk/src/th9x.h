@@ -135,7 +135,7 @@ typedef          char  char_P; //this is not for data-definitions
 #define INP_E_AileDR  1 
 #define INP_E_ThrCt   0
 
-#define OUT_G_SIM_CTL  4
+#define OUT_G_SIM_CTL  4 //1 : phone-jack=ppm_in
 #define INP_G_ID1      3
 #define INP_G_RF_POW   1
 #define INP_G_RuddDR   0
@@ -274,6 +274,8 @@ bool checkIncDecModVar(uint8_t event, void*p, uint8_t flags)
 int16_t checkIncDec_hm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
+///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
+int16_t checkIncDec_v(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 
 #define _FL_SIZE2     4
 #define _FL_VERT      8
@@ -298,6 +300,7 @@ extern uint8_t            g_beepCnt;
 extern const PROGMEM char modi12x3[];
 //extern uint16_t           pulses2MHz[9];
 extern uint16_t           pulses2MHz[60];
+extern int16_t            g_ppmIns[8];
 
 /// Erzeugt einen beep der laenge b
 inline void _beep(uint8_t b) {
@@ -363,6 +366,7 @@ void menuProcDiagCalib(uint8_t event);
 void menuProcDiagAna(uint8_t event);
 void menuProcDiagKeys(uint8_t event);
 void menuProcDiagVers(uint8_t event);
+void menuProcTrainer(uint8_t event);
 void menuProcSetup0(uint8_t event);
 void menuProcMain(uint8_t event);
 void menuProcModelSelect(uint8_t event);
@@ -376,6 +380,20 @@ void setupPulsesPPM();
 void setupPulsesSilver();
 void setupPulsesTracerCtp1009();
 
+
+typedef struct t_TrainerData1 {
+  uint8_t srcChn:3; //0-7 = ch1-8
+  int8_t  swtch:5;
+  uint8_t weight:6;
+  uint8_t mode:2;   //off,add-mode,subst-mode
+} __attribute__((packed)) TrainerData1; //
+
+typedef struct t_TrainerData {
+  int16_t       calib[4];
+  TrainerData1  chanMix[4];
+} __attribute__((packed)) TrainerData; //
+
+//extern TrainerData g_trainer;
 
 #include "lcd.h"
 

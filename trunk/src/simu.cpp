@@ -28,7 +28,6 @@ unsigned char pinb,portb,pind;
 unsigned char pine,ping;
 unsigned char dummyport;
 char g_title[80];
-int16_t g_ppmIns[8];
 
 
 void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)

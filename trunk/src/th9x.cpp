@@ -11,10 +11,14 @@
  * GNU General Public License for more details.
 
 bugs:
-- overflow in mixer
++ save data befor load
++ menu-taste in mixer 
++ overflow in mixer
 + no-trim in pos-neg beruecksichtigen?
 + submenu in calib
 todo
+- trim func as polynom
+- fast multiply 8*16 > 32
 - doku einschaltverhalten, trainermode
 - stat mit times
 - trainer
@@ -259,6 +263,11 @@ int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_ma
   checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_MODEL);
   return i_val;
 }
+int16_t checkIncDec_v(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+{
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT);
+  return i_val;
+}
 
 uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
 {
@@ -338,6 +347,8 @@ void pushMenu(MenuFuncP newMenu)
 
 
 
+void evalCaptures();
+
 void perMain()
 {
   perOut();
@@ -349,14 +360,27 @@ void perMain()
   evt = checkTrim(evt);
   g_menuStack[g_menuStackPtr](evt);
   refreshDiplay();
+  if(PING & (1<<INP_G_RF_POW)) { //no power -> only phone jack = slave mode
+    PORTG &= ~(1<<OUT_G_SIM_CTL); // 0=ppm out
+  }else{
+    PORTG |=  (1<<OUT_G_SIM_CTL); // 1=ppm-in
+#ifndef SIM
+    evalCaptures();
+#endif
+  }
 }
+volatile uint16_t captureRing[16];
+volatile uint8_t  captureWr;
+volatile uint8_t  captureRd;
+int16_t g_ppmIns[8];
+uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
 #ifndef SIM
 #include <avr/interrupt.h>
 
 extern uint16_t g_tmr1Latency;
 //ISR(TIMER1_OVF_vect)
-ISR(TIMER1_COMPA_vect) //2MHz
+ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 {
   static uint8_t   pulsePol;
   static uint16_t *pulsePtr = pulses2MHz;
@@ -379,7 +403,7 @@ ISR(TIMER1_COMPA_vect) //2MHz
     pulsePtr = pulses2MHz;
     pulsePol = 0;
 
-    TIMSK &= ~(1<<OCIE1A);
+    TIMSK &= ~(1<<OCIE1A); //stop reentrance 
     sei();
     setupPulses();
     cli();
@@ -387,39 +411,9 @@ ISR(TIMER1_COMPA_vect) //2MHz
   }
 }
 
-#if 0
-static uint8_t  currpulse;
-extern uint16_t g_tmr1Latency;
-//ISR(TIMER1_OVF_vect)
-ISR(TIMER1_COMPA_vect) //2MHz
-{
-  uint16_t dt=TCNT1;//-OCR1A;
-  g_tmr1Latency = max(dt,g_tmr1Latency);
-
-  if(currpulse & 1)
-  {
-    PORTB |=  (1<<OUT_B_PPM);
-  }else{
-    PORTB &= ~(1<<OUT_B_PPM);
-    //dt = 300*2;
-  }
-  dt = pulses2MHz[currpulse++];
-  OCR1A  = dt;
-
-  uint16_t dt2=pulses2MHz[currpulse];
-  if( dt2 == 0) {
-    currpulse=0;
-    TIMSK &= ~(1<<OCIE1A);
-    sei();
-    setupPulses();
-    cli();
-    TIMSK |= (1<<OCIE1A);
-  }
-}
-#endif
 volatile uint8_t g_tmr16KHz;
 
-ISR(TIMER0_OVF_vect) 
+ISR(TIMER0_OVF_vect) //continuous timer 16ms (16MHz/1024)
 {
   g_tmr16KHz++;
 }
@@ -431,9 +425,9 @@ uint16_t getTmr16KHz()
     if(hb-g_tmr16KHz==0) return (hb<<8)|lb;
   }
 }
-ISR(TIMER0_COMP_vect) //10ms
+ISR(TIMER0_COMP_vect) //10ms timer
 {
-  TIMSK &= ~(1<<OCIE0);
+  TIMSK &= ~(1<<OCIE0); //stop reentrance 
   OCR0 = OCR0 + 156;
   sei();
   if(g_beepCnt){
@@ -446,7 +440,52 @@ ISR(TIMER0_COMP_vect) //10ms
   cli();
   TIMSK |= (1<<OCIE0);
 }
+
+
+
+ISR(TIMER3_CAPT_vect) //capture ppm in 16MHz / 8 = 2MHz
+{
+  uint16_t capture=ICR3;
+  ETIMSK &= ~(1<<TICIE3); //stop reentrance 
+  sei();
   
+  static uint16_t lastCapt;
+  uint8_t nWr = (captureWr+1) % DIM(captureRing);
+  if(nWr == captureRd) //overflow
+  {
+    captureRing[(captureWr+DIM(captureRing)-1) % DIM(captureRing)] = 0; //distroy last value
+    beepErr();
+  }else{
+    captureRing[captureWr] = capture - lastCapt;
+    captureWr              = nWr;
+  }
+  lastCapt = capture;
+
+  cli();
+  ETIMSK |= (1<<TICIE3);
+}
+
+void evalCaptures()
+{
+  while(captureRd != captureWr)
+  {
+    uint16_t val = captureRing[captureRd] / 2; // us
+    captureRd = (captureRd + 1)  % DIM(captureRing); //next read
+    if(ppmInState && ppmInState<=8){
+      if(val>800 && val <2200){
+        g_ppmIns[ppmInState++ - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
+      }else{
+        ppmInState=0; //not triggered
+      }
+    }else{
+      if(val>4000 && val < 16000)
+      {
+        ppmInState=1; //triggered
+      }
+    }
+  }
+}
+
 
 extern uint16_t g_timeMain;
 int main()
@@ -457,7 +496,7 @@ int main()
   DDRD = 0x00;  PORTD = 0xff; //pullups keys
   DDRE = 0x08;  PORTE = 0xff-(1<<OUT_E_BUZZER); //pullups + buzzer 0
   DDRF = 0x00;  PORTF = 0xff; //anain
-  DDRG = 0x10;  PORTG = 0xff-(1<<OUT_G_SIM_CTL); //pullups + SIM_CTL 0
+  DDRG = 0x10;  PORTG = 0xff; //pullups + SIM_CTL=1 = phonejack = ppm_in
   lcd_init();
 
   // TCNT0         10ms = 16MHz/160000
@@ -472,6 +511,10 @@ int main()
   TIMSK |= (1<<OCIE1A);
   //OCR1AH = (300*2-1)>>8;
   //OCR1AL = (300*2-1);
+
+  TCCR3A  = 0;
+  TCCR3B  = (1<<ICNC3) | (2<<CS30);      //ICNC3 16MHz / 8
+  ETIMSK |= (1<<TICIE3);
 
   sei(); //damit alert in eeReadGeneral() nicht haengt
   g_menuStack[0] =  menuProc0;
