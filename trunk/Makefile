@@ -21,10 +21,10 @@ eeprom.bin:
 	dd if=/dev/null of=$@ bs=1 count=2048
 
 tgt_bin:
-	make.rb bin
+	./make.rb bin
 
 dump:
-	make.rb dump
+	./make.rb dump
 
 
 -include OBJS/*.dsimu
