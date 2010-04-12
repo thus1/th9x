@@ -18,6 +18,13 @@
 
 typedef unsigned char prog_uchar;
 typedef const char prog_char;
+typedef const uint16_t prog_uint16_t;
+typedef const uint8_t prog_uint8_t;
+typedef const int16_t prog_int16_t;
+typedef const int8_t prog_int8_t;
+
+
+
 #define PROGMEM
 #define pgm_read_byte(address_short) (*(uint8_t*)(address_short))
 #define pgm_read_word(address_short) (*(uint16_t*)(address_short))
