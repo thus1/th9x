@@ -250,7 +250,7 @@ bool    getSwitch(int8_t swtch, bool nc);
 ///
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att);
 
-///   Prüft beim Einschalten ob alle Switches 'off' sind.
+///   Prï¿½ft beim Einschalten ob alle Switches 'off' sind.
 void    checkSwitches();
 
 /// Bearbeite alle events die zum gewaehlten mode passen.
@@ -358,6 +358,7 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert);
 void menuProcLimits(uint8_t event);
 void menuProcMixOne(uint8_t event);
 void menuProcMix(uint8_t event);
+void menuProcCurve(uint8_t event);
 void menuProcTrim(uint8_t event);
 void menuProcExpoOne(uint8_t event);
 void menuProcExpoAll(uint8_t event);
@@ -380,6 +381,7 @@ void setupPulsesPPM();
 void setupPulsesSilver();
 void setupPulsesTracerCtp1009();
 
+extern int16_t intpol(int16_t, uint8_t);
 
 typedef struct t_TrainerData1 {
   uint8_t srcChn:3; //0-7 = ch1-8
