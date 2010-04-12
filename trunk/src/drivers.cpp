@@ -104,6 +104,17 @@ extern void eeprom_overflow();
     g_eeGeneral.sizeGeneral = sizeof(EEGeneral);
     g_eeGeneral.sizeModel   = sizeof(ModelData);
     g_eeGeneral.numModels   = MAX_MODELS;
+    for (int i = 0; i < 3; ++i) {
+      g_eeGeneral.table[i][0] = -128;
+      g_eeGeneral.table[i][1] = -75 * 128 / 100;
+      g_eeGeneral.table[i][2] = -50 * 128 / 100;
+      g_eeGeneral.table[i][3] = -25 * 128 / 100;
+      g_eeGeneral.table[i][4] = 0;
+      g_eeGeneral.table[i][5] = 25 * 128 / 100;
+      g_eeGeneral.table[i][6] = 50 * 128 / 100;
+      g_eeGeneral.table[i][7] = 75 * 128 / 100;
+      g_eeGeneral.table[i][8] = 127;
+    }
 
     memset(&g_model,0,sizeof(g_model));
     strcpy_P(g_model.name,PSTR("MODEL     "));
