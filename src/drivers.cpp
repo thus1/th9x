@@ -310,7 +310,7 @@ void per10ms()
     keys[enuk].input(in & (1<<i),(EnumKeys)enuk);
     ++enuk;
   }
-  static  prog_uchar  crossTrim[]={
+  static  prog_uchar  APM crossTrim[]={
     1<<INP_D_TRM_LH_DWN,
     1<<INP_D_TRM_LH_UP,
     1<<INP_D_TRM_LV_DWN,
@@ -327,7 +327,7 @@ void per10ms()
     keys[enuk].input(in & pgm_read_byte(crossTrim+i),(EnumKeys)enuk);
     ++enuk;
   }
-  static prog_char crossAna[]={3,1,2,0,4,5,6,7};
+  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7};
   static uint16_t s_ana[8];
   for(int i=0; i<8; i++)
   {

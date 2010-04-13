@@ -37,9 +37,9 @@ void lcd_clear()
 }
 
 
-void lcd_img(uint8_t i_x,uint8_t i_y,const uchar_P * imgdat,uint8_t idx,uint8_t mode)
+void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8_t mode)
 {
-  const uchar_P  *q = imgdat;
+  const prog_uchar  *q = imgdat;
   uint8_t w    = pgm_read_byte(q++);
   uint8_t hb   = (pgm_read_byte(q++)+7)/8;
   uint8_t sze1 = pgm_read_byte(q++);
@@ -60,7 +60,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
   uint8_t *pmax = &displayBuf[ min(y+8,DISPLAY_H)/8 * DISPLAY_W ];
   
-  uchar_P    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
+  prog_uchar    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
   for(char i=5; i!=0; i--){
     uint8_t b = pgm_read_byte(q++);
@@ -75,7 +75,7 @@ void lcd_putc(uint8_t x,uint8_t y,const char c)
 {
   lcd_putcAtt(x,y,c,false);
 }
-void lcd_putsnAtt(uint8_t x,uint8_t y,const char_P * s,uint8_t len,uint8_t mode)
+void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mode)
 {
   while(len!=0) {
     char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
@@ -84,11 +84,11 @@ void lcd_putsnAtt(uint8_t x,uint8_t y,const char_P * s,uint8_t len,uint8_t mode)
     len--;
   }
 }
-void lcd_putsn_P(uint8_t x,uint8_t y,const char_P * s,uint8_t len)
+void lcd_putsn_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t len)
 {
   lcd_putsnAtt( x,y,s,len,false);
 }
-uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const char_P * s,uint8_t mode)
+uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
 {
   //while(char c=pgm_read_byte(s++)) {
   while(1) {
@@ -99,7 +99,7 @@ uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const char_P * s,uint8_t mode)
   }
   return x;
 }
-void lcd_puts_P(uint8_t x,uint8_t y,const char_P * s)
+void lcd_puts_P(uint8_t x,uint8_t y,const prog_char * s)
 {
   lcd_putsAtt( x, y, s, 0);
 }

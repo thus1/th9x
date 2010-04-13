@@ -694,7 +694,7 @@ void menuProcExpoAll(uint8_t event)
     }
   }
 }
-const prog_char s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
+const prog_char APM s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
 #define NUMCHARS (sizeof(s_charTab)-1)
 
 uint8_t char2idx(char c)
@@ -1331,7 +1331,7 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
 //uint16_t pulses2MHz[9]={1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,10500*2};
 uint16_t pulses2MHz[60];
 
-prog_uint8_t timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};   // 16 - 2
+prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};   // 16 - 2
 
 void perOut()
 {
@@ -1376,7 +1376,7 @@ void perOut()
 
 
     //trace throttle
-    if((2-g_model.stickMode&1) == i)  //stickMode=0123 -> thr=2121
+    if(((2-g_model.stickMode)&1) == i)  //stickMode=0123 -> thr=2121
       trace((v+512)/32); //trace thr 0..32
 
     anaNoTrim[i]  = v;

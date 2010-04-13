@@ -16,8 +16,6 @@
 #define VERS 1
 
 #include <inttypes.h>
-typedef unsigned char uchar_P; //only marker for pgmspace pointers
-typedef          char  char_P; //this is not for data-definitions
 #include <string.h>
 #ifdef SIM
   #include "simpgmspace.h"
@@ -36,18 +34,14 @@ typedef          char  char_P; //this is not for data-definitions
   //Workarounds:
   //
   //PSTR is fixed below
-  //prog_[u]char are fixed below, but are only usable for 
-  //data definitions and no longer in prototypes -> use [u]char_P
-  //all other definitions must use APM explicitely
+  //all prog_xx definitions must use APM explicitely
 
-  #define __ATTR_PROGMEM__   
+  //#define __ATTR_PROGMEM__   
   #include <avr/pgmspace.h>
   #ifdef __cplusplus
     #define APM __attribute__(( section(".progmem.data") ))
     #undef PSTR
-    #define PSTR(s) (__extension__({static prog_char __c[] APM = (s);&__c[0];}))
-    #define prog_uchar unsigned char APM
-    #define prog_char           char APM
+    #define PSTR(s) (__extension__({static prog_char APM __c[] = (s);&__c[0];}))
   #endif
 
   #include <avr/eeprom.h>
@@ -223,7 +217,7 @@ void    pushMenu(MenuFuncP newMenu);
 void    popMenu();
 /// Gibt Alarm Maske auf lcd aus. 
 /// Die Maske wird so lange angezeigt bis eine beliebige Taste gedrueckt wird.
-void    alert(const char_P * s);
+void    alert(const prog_char * s);
 /// periodisches Hauptprogramm
 void    perMain();
 /// Bearbeitet alle zeitkritischen Jobs.
