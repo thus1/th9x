@@ -88,7 +88,7 @@ ModelData g_model;
 
 
 
-const prog_char modi12x3[]="RUDELETHRAILRUDTHRELEAILAILELETHRRUDAILTHRELERUD";
+const prog_char APM modi12x3[]="RUDELETHRAILRUDTHRELEAILAILELETHRRUDAILTHRELERUD";
 
 
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
@@ -156,7 +156,7 @@ uint8_t  g_menuStackPtr = 0;
 // uint8_t  g_menuStackSub[5];
 uint8_t  g_beepCnt;
 
-void alert(const char_P * s)
+void alert(const prog_char * s)
 {
   lcd_clear();
   lcd_puts_P(50,0*FH,PSTR("ALERT"));  
