@@ -1315,13 +1315,16 @@ void calcLimitCache()
 
 int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 100
 {
+  int16_t erg;
+
   int16_t a = (x + RESX) / (RESX * 2 / 8);
   int16_t modu = (x + RESX) % (RESX * 2 / 8);
   if (a < 0)
-    a = 0;
-  else if (a > 8)
-    a = 8;
-  int16_t erg = g_eeGeneral.table[idx][a] * 4 + (g_eeGeneral.table[idx][a + 1]
+    erg = g_eeGeneral.table[idx][0] * 4;
+  else if (a >= 8)
+    erg = g_eeGeneral.table[idx][8] * 4;
+  else
+    erg = g_eeGeneral.table[idx][a] * 4 + (g_eeGeneral.table[idx][a + 1]
       * 4 - g_eeGeneral.table[idx][a] * 4) * modu / (RESX / 4);
   if (erg == RESX - 4) // Leichtes gemurkse, sieht aber im Ergebnis einfach besser aus
     erg = RESX;
