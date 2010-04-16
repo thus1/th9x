@@ -270,9 +270,9 @@ int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_ma
   checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_MODEL);
   return i_val;
 }
-int16_t checkIncDec_v(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+int16_t checkIncDec_vg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT);
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_GENERAL);
   return i_val;
 }
 
