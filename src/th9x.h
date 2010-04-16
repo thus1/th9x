@@ -269,7 +269,7 @@ int16_t checkIncDec_hm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_ma
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int16_t checkIncDec_v(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
+int16_t checkIncDec_vg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 
 #define _FL_SIZE2     4
 #define _FL_VERT      8
@@ -377,17 +377,6 @@ void setupPulsesTracerCtp1009();
 
 extern int16_t intpol(int16_t, uint8_t);
 
-typedef struct t_TrainerData1 {
-  uint8_t srcChn:3; //0-7 = ch1-8
-  int8_t  swtch:5;
-  uint8_t weight:6;
-  uint8_t mode:2;   //off,add-mode,subst-mode
-} __attribute__((packed)) TrainerData1; //
-
-typedef struct t_TrainerData {
-  int16_t       calib[4];
-  TrainerData1  chanMix[4];
-} __attribute__((packed)) TrainerData; //
 
 //extern TrainerData g_trainer;
 
