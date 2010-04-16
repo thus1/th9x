@@ -23,7 +23,6 @@ TC_PAR1=%w(
 
 class Builder
   def bin()
-    mkStamp
 
     felf  = "#{@projectName}.elf"
     fbin  = "#{@projectName}.bin"
@@ -75,7 +74,9 @@ class Builder
         end
       }
       checkDep(felf,objs+[mkrb]) {
+        mkStamp("../src/stamp-#{@projectName}.h")
         cmd  = @pars[:CC] 
+        cmd += " ../src/stamp.cpp"
         cmd += " -o #{felf}"
         cmd += " -Wl,-Map=#{@projectName}.map,--cref,-v"
         cmd += " -mmcu=#{@pars[:MCU]}"
@@ -89,6 +90,7 @@ class Builder
         cmd += " -O binary #{felf} #{fbin}"
         #      $(BIN) -O binary $< $(@:.rom=.bin)
         sys "#{@pars[:OBJCOPY]} #{fbin}",cmd
+        sys "cp #{fbin} #{felf}","cp  #{fbin} #{felf} .."
       }
     }
     return [fbin,felf]
@@ -228,8 +230,7 @@ class Builder
     setup()
     send ARGV[0]
   end
-  def mkStamp
-    stf= @pars[:DIR]+"/stamp-#{@projectName}.h"
+  def mkStamp(stf)
     vers=0
     begin
       File.read(stf)=~/VERS\s+(\d+)/

@@ -959,7 +959,6 @@ void menuProcDiagKeys(uint8_t event)
     lcd_putcAtt(x+FW*6,  y, tp+'0',tp ? INVERS : 0);
   }
 }
-#include "stamp-th9x.h"
 void menuProcDiagVers(uint8_t event)
 {
   static MState mState;
@@ -967,12 +966,9 @@ void menuProcDiagVers(uint8_t event)
   mState.checkExit(event);
   mState.checkChain(3,menuTabDiag,DIM(menuTabDiag));
 
-#define STR2(s) #s
-#define DEFNUMSTR(s)  STR2(s)
-
-  lcd_puts_P(0, 2*FH,PSTR("VERS: V" DEFNUMSTR(VERS) "." DEFNUMSTR(SUB_VERS)  )); 
-  lcd_puts_P(0, 3*FH,PSTR("DATE: " DATE_STR)); 
-  lcd_puts_P(0, 4*FH,PSTR("TIME: " TIME_STR)); 
+  lcd_puts_P(0, 2*FH,stamp1 ); 
+  lcd_puts_P(0, 3*FH,stamp2 ); 
+  lcd_puts_P(0, 4*FH,stamp3 ); 
 }
 
 void menuProcTrainer(uint8_t event)
@@ -1421,7 +1417,7 @@ void perOut()
     if (md.speedDir) {
       if (md.speed > 1) {
         uint8_t timerend;
-        timerend = timer_table[md.speed - 2];
+        timerend = pgm_read_byte(&timer_table[md.speed - 2]);
         if (timer[i] != 0) {
           if (timer[i] > timerend)
             timer[i] = timerend;
@@ -1488,7 +1484,7 @@ void perOut()
   setupPulses();
   static int s_cnt;
   if(s_cnt++%100==0){
-    for(int j=0; j<DIM(pulses2MHz); j++){
+    for(unsigned j=0; j<DIM(pulses2MHz); j++){
       printf(" %d:%d",j&1,pulses2MHz[j]);
       if(pulses2MHz[j]==0) break;
     }
