@@ -1,5 +1,6 @@
 /*
  * Author	Thomas Husterer <thus1@t-online.de>
+ * Author	Josef Glatthaar <josef.glatthaar@googlemail.com >
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
