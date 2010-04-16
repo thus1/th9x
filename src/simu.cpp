@@ -193,7 +193,7 @@ void Th9xSim::makeSnapshot(const FXDrawable* drawable)
      FXFileStream stream;
      char buf[100];
      sprintf(buf,"PNG/snapshot%s.png",g_title);
-     for(int i=4; i<strlen(buf); i++)
+     for(unsigned i=4; i<strlen(buf); i++)
      {
        if(!isalnum(buf[i]) && buf[i]!='.' ) buf[i]='_';
      }
@@ -218,6 +218,7 @@ long Th9xSim::onKeypress(FXObject*,FXSelector,void*v)
   if(evt->code=='s'){
     makeSnapshot(bmf);
   }
+  return 0;
 }
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
@@ -230,6 +231,7 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
   per10ms();
   getApp()->addChore(this,1);
   getApp()->addTimeout(this,2,10);
+  return 0;
 }
 void Th9xSim::refreshDiplay()
 {
@@ -274,7 +276,7 @@ void Th9xSim::refreshDiplay()
     };
 
     pinb &= ~ 0x7e;
-    for(int i=0; i<DIM(keys1);i+=2){
+    for(unsigned i=0; i<DIM(keys1);i+=2){
       if(getApp()->getKeyState(keys1[i]))  pinb |= (1<<keys1[i+1]);
     }
 

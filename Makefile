@@ -12,8 +12,9 @@ LIB=-L/usr/local/lib -lFOX-1.6
 
 
 
+CFLAGS= -g -Wall
 simu: $(SRC) Makefile src/*.h src/*.lbm eeprom.bin
-	gcc $(SRC) -g -o$@ $(INC) $(LIB)  -MD -DSIM
+	gcc src/stamp.cpp $(SRC) $(CFLAGS) -o$@ $(INC) $(LIB)  -MD -DSIM
 	mv *.dsimu OBJS
 
 
@@ -26,5 +27,7 @@ tgt_bin:
 dump:
 	ruby ./make.rb dump
 
+file: src/file.cpp
+	g++  -DTEST -DSIM $(CFLAGS) src/file.cpp -o$@
 
 -include OBJS/*.dsimu

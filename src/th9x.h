@@ -392,6 +392,9 @@ typedef struct t_TrainerData {
 //extern TrainerData g_trainer;
 
 #include "lcd.h"
+extern const char stamp1[];
+extern const char stamp2[];
+extern const char stamp3[];
 
 
 #endif
