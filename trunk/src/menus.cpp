@@ -187,16 +187,16 @@ void menuProcCurveOne(uint8_t event) {
   for (uint8_t i = 0; i < 5; i++) {
     uint8_t y = i * FH + 16;
     uint8_t attr = sub == i ? BLINK : 0;
-    lcd_outdezAtt(4 * FW, y, (g_eeGeneral.table[s_curveChan][i] * 100) / 128,
+    lcd_outdezAtt(4 * FW, y, (g_eeGeneral.curve[s_curveChan][i] * 100) / 128,
         attr);
   }
   for (uint8_t i = 0; i < 4; i++) {
     uint8_t y = i * FH + 16;
     uint8_t attr = sub == i + 5 ? BLINK : 0;
-    lcd_outdezAtt(8 * FW, y, (g_eeGeneral.table[s_curveChan][i + 5] * 100)
+    lcd_outdezAtt(8 * FW, y, (g_eeGeneral.curve[s_curveChan][i + 5] * 100)
         / 128, attr);
   }
-  CHECK_INCDEC_H_GENVAR( event, g_eeGeneral.table[s_curveChan][sub], -128,127);
+  CHECK_INCDEC_H_GENVAR( event, g_eeGeneral.curve[s_curveChan][sub], -128,127);
 
 #define WCHART 32
 #define X0     (128-WCHART-2)
@@ -233,16 +233,16 @@ void menuProcCurve(uint8_t event) {
   for (uint8_t i = 0; i < 3; i++) {
     uint8_t y = i * 2 * FH + 16;
     uint8_t attr = sub == i ? BLINK : 0;
-    lcd_outdezAtt(4 * FW, y, g_eeGeneral.table[i][0] * 100 / 128, attr);
-    lcd_outdezAtt(8 * FW, y, g_eeGeneral.table[i][1] * 100 / 128, attr);
-    lcd_outdezAtt(12 * FW, y, g_eeGeneral.table[i][2] * 100 / 128, attr);
-    lcd_outdezAtt(16 * FW, y, g_eeGeneral.table[i][3] * 100 / 128, attr);
-    lcd_outdezAtt(20 * FW, y, g_eeGeneral.table[i][4] * 100 / 128, attr);
+    lcd_outdezAtt(4 * FW, y, g_eeGeneral.curve[i][0] * 100 / 128, attr);
+    lcd_outdezAtt(8 * FW, y, g_eeGeneral.curve[i][1] * 100 / 128, attr);
+    lcd_outdezAtt(12 * FW, y, g_eeGeneral.curve[i][2] * 100 / 128, attr);
+    lcd_outdezAtt(16 * FW, y, g_eeGeneral.curve[i][3] * 100 / 128, attr);
+    lcd_outdezAtt(20 * FW, y, g_eeGeneral.curve[i][4] * 100 / 128, attr);
     y += FH;
-    lcd_outdezAtt(4 * FW, y, g_eeGeneral.table[i][5] * 100 / 128, attr);
-    lcd_outdezAtt(8 * FW, y, g_eeGeneral.table[i][6] * 100 / 128, attr);
-    lcd_outdezAtt(12 * FW, y, g_eeGeneral.table[i][7] * 100 / 128, attr);
-    lcd_outdezAtt(16 * FW, y, g_eeGeneral.table[i][8] * 100 / 128, attr);
+    lcd_outdezAtt(4 * FW, y, g_eeGeneral.curve[i][5] * 100 / 128, attr);
+    lcd_outdezAtt(8 * FW, y, g_eeGeneral.curve[i][6] * 100 / 128, attr);
+    lcd_outdezAtt(12 * FW, y, g_eeGeneral.curve[i][7] * 100 / 128, attr);
+    lcd_outdezAtt(16 * FW, y, g_eeGeneral.curve[i][8] * 100 / 128, attr);
   }
 }
 
@@ -265,7 +265,7 @@ void menuProcMixOne(uint8_t event)
   {
     uint8_t y=i*FH+8;
     uint8_t attr = sub==i ? BLINK : 0; 
-    lcd_putsn_P( FW*6, y,PSTR("SRC  PRC  CURVESWTCHDELAY          ")+5*i,5);
+    lcd_putsn_P( FW*6, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
     switch(i){
       case 0:   putsChnRaw(   FW*2,y,md2->srcRaw,attr);         
         if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,MAX_CHNRAW); //!! bitfield
@@ -283,13 +283,12 @@ void menuProcMixOne(uint8_t event)
       case 3:   putsDrSwitches(0,  y,md2->swtch,attr);
         if(attr) md2->swtch=checkIncDec_hm( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
         break;
-      case 4:   lcd_putsnAtt( FW*2,y,PSTR(" - POSNEGALL")+md2->speedDir*3,3,attr);
-        if(attr)  md2->speedDir=checkIncDec_hm( event, md2->speedDir, 0,3); //!! bitfield
+      case 4:   lcd_outdezAtt(FW*3,y,md2->speedUp,attr);
+        if(attr)  md2->speedUp=checkIncDec_hm( event, md2->speedUp, 0,15); //!! bitfield
         break;
-      case 5:   lcd_outdezAtt(FW*13,y-FH,md2->speed,attr);
-        if(attr)  md2->speed=checkIncDec_hm( event, md2->speed, 0,15); //!! bitfield
+      case 5:   lcd_outdezAtt(FW*5,y-FH,md2->speedDown,attr);
+        if(attr)  md2->speedDown=checkIncDec_hm( event, md2->speedDown, 0,15); //!! bitfield
         break;
-                //case 5:   lcd_outdezAtt(FW*5,y,md2->tableIdx,sub == 6 ? BLINK : 0);     break;
       case 6:   lcd_putsAtt(  FW*3,y,PSTR("RM"),attr);
                 lcd_puts_P(  FW*6,y,PSTR("remove [Menu]"));
         if(attr && event==EVT_KEY_FIRST(KEY_MENU)){
@@ -400,9 +399,8 @@ void menuProcMix(uint8_t event)
         md[s_currMixIdx].weight      = 100;
         md[s_currMixIdx].swtch       = 1; //on
         md[s_currMixIdx].curve      = 0; //linear
-        md[s_currMixIdx].speed 		 = 0;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
-        md[s_currMixIdx].speedDir 	 = 0;      // 00 nichts 11 beide richtungen 01 nur hoch 10 nur runter
-        //md[s_currMixIdx].tableIdx    = 0;      // Index Kennlinie
+        md[s_currMixIdx].speedUp 		 = 0;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
+        md[s_currMixIdx].speedDown 	 = 0;      // 0 nichts
         STORE_MODELVARS;
       }
       pushMenu(menuProcMixOne);
@@ -1304,20 +1302,19 @@ void calcLimitCache()
   }
 }
 
-
 int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 100
 {
   int16_t erg;
 
   int16_t a = (x + RESX) / (RESX * 2 / 8);
-  int16_t modu = (x + RESX) % (RESX * 2 / 8);
+  int8_t modu = (x + RESX) % (RESX * 2 / 8);
   if (a < 0)
-    erg = g_eeGeneral.table[idx][0] * 4;
+    erg = g_eeGeneral.curve[idx][0] * 4;
   else if (a >= 8)
-    erg = g_eeGeneral.table[idx][8] * 4;
+    erg = g_eeGeneral.curve[idx][8] * 4;
   else
-    erg = g_eeGeneral.table[idx][a] * 4 + (g_eeGeneral.table[idx][a + 1]
-      * 4 - g_eeGeneral.table[idx][a] * 4) * modu / (RESX / 4);
+    erg = (int16_t)g_eeGeneral.curve[idx][a] * 4 + (int32_t)((int16_t)g_eeGeneral.curve[idx][a + 1]
+      * 4 - (int16_t)g_eeGeneral.curve[idx][a] * 4) * modu / (RESX / 4);
   if (erg == RESX - 4) // Leichtes gemurkse, sieht aber im Ergebnis einfach besser aus
     erg = RESX;
   return erg;
@@ -1326,14 +1323,14 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
 //uint16_t pulses2MHz[9]={1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,10500*2};
 uint16_t pulses2MHz[60];
 
-prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};   // 16 - 2
+prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12};   // 15 - 3
 
 void perOut()
 {
   static int16_t anaNoTrim[8];
   static int16_t anas[8];
 
-  for(uint8_t i=0;i<4;i++){
+  for(uint8_t i=0;i<4;i++){        // calc Sticks
 
     //Normierung  [0..1024] ->   [-512..512]
     
@@ -1383,83 +1380,97 @@ void perOut()
     int16_t v= g_anaIns[i];
     anaNoTrim[i] = anas[i] = v-512; // [-512..511]
   }
-  anaNoTrim[7] = anas[7] = 511; //100%
+  anaNoTrim[7] = anas[7] = 512; //100% für MAX
+/* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
+   in anas mit Trimmung */
 
-
-  static int32_t chans[8]; //
-  memset(chans,0,sizeof(chans));
+  static int32_t chans[8];          // Ausgänge
+  memset(chans,0,sizeof(chans));		// Alle Ausgänge auf 0
 
   //mixer loop
   for(uint8_t i=0;i<MAX_MIXERS;i++){
     MixData &md = g_model.mixData[i];
 
-    static uint16_t timer[MAX_MIXERS];
+    static uint8_t timer[MAX_MIXERS];
     static int16_t act[MAX_MIXERS];
 
 
     if(md.destCh==0) break;
 
-    if( !getSwitch(md.swtch,1)) continue;
-    int16_t v = anas[md.srcRaw-1];
+    if(!md.swtch) continue;     // 0 Zeile nicht verwendet
+    int16_t v;
     if(md.curve){
-      v = anaNoTrim[md.srcRaw-1];
+      v = !getSwitch(md.swtch,1) ? 0 : anaNoTrim[md.srcRaw-1];
       switch(md.curve){
         case 1: if( v<0 ) v=0;   break;//x|x>0
         case 2: if( v>0 ) v=0;   break;//x|x<0
         case 3: v = abs(v);      break; //ABS
           //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
-        case 4:
-        case 5:
-        case 6: v = intpol(v, md.curve - 4); break;
+        // Kurve soll erst nach Speed gerechnet werden
       }
     }
-    if (md.speedDir) {
-      if (md.speed > 1) {
-        uint8_t timerend;
-        timerend = pgm_read_byte(&timer_table[md.speed - 2]);
-        if (timer[i] != 0) {
-          if (timer[i] > timerend)
-            timer[i] = timerend;
-          if (timer[i] > 0)
-            --timer[i];
-        } else {
-          if (timerend > 10) {
-            timer[i] = timerend - 10;
-            int diff = v - act[i];
-            if (diff) {
-              if (diff >= 0)
-                act[i] += md.speedDir & 1 ? min(diff, 1) : diff;
-              else
-                act[i] += md.speedDir & 2 ? max(diff, -1) : diff;
-            }
-          } else {
-            timer[i] = timerend;
-            int diff = v - act[i];
-            if (diff) {
-              if (diff >= 0)
-                act[i] += md.speedDir & 1 ? min(diff, 3) : diff; // 3 333ms
-              else
-                act[i] += md.speedDir & 2 ? max(diff, -3) : diff;
-            }
-          }
-        }
-      } else {
-        int diff = v - act[i];
-        if (diff) {
-          if (diff >= 0)
+    else
+      v = !getSwitch(md.swtch,1) ? 0 : anas[md.srcRaw-1];
 
-            act[i] += md.speedDir & 1 ? min(diff, md.speed == 0 ? 5 : 3) : diff; // 5 200ms   // 3 333ms
+    if (md.speedUp || md.speedDown)
+    {
+      if(v > act[i])            // hochzählen
+      {
+        if (md.speedUp > 2)
+        {
+          uint8_t timerend = timer_table[md.speedUp - 3];
+          if (timer[i] != 0)
+          {
+            if (timer[i] > timerend)
+              timer[i] = timerend;
+            if (timer[i] > 0)
+              --timer[i];
+          }
           else
-            act[i] += md.speedDir & 2 ? max(diff, md.speed == 0 ? -5 : -3) : diff;
-        }
+          {
+            ++act[i];
+            timer[i] = timerend;
+          }
+        }   //timer hier unten auch schreiben!!
+        else if (md.speedUp > 0)        // 1 und 2
+          act[i] += min(v - act[i], md.speedUp == 1 ? 5 : 3); // 5 200ms   // 3 333ms
+        else
+          act[i] = v;
+      }
+      else if (v < act[i])        // runterzählen
+      {
+         if (md.speedDown > 2)
+         {
+           uint8_t timerend = timer_table[md.speedDown - 3];
+           if (timer[i] != 0)
+           {
+             if (timer[i] > timerend)
+               timer[i] = timerend;
+             if (timer[i] > 0)
+               --timer[i];
+           }
+           else
+           {
+             --act[i];
+             timer[i] = timerend;
+           }
+         }   //timer hier unten auch schreiben!!
+         else if (md.speedDown > 0)
+           act[i] += max(v - act[i], md.speedDown == 1 ? -5 : -3); // 5 200ms   // 3 333ms
+         else
+           act[i] = v;
       }
       v = act[i];
     }
+    if((md.curve > 3) && (md.curve < 7))
+      v = intpol(v, md.curve - 4);
+
+
     //    if (md.tableIdx)
     //      v = intpol(v, md.tableIdx - 1);
 
     int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
-    chans[md.destCh-1] += dv; //(dv + (dv>0 ? 100/2 : -100/2))/(100);
+    chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
   }
 
   //limit + revert loop

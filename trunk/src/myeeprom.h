@@ -57,10 +57,9 @@ typedef struct t_MixData {
   uint8_t srcRaw:4; //0=off
   int8_t  weight;
   int8_t  swtch:5;
-  uint8_t curve:3; //0=symmetrisch 1=x>0 2=x<0 pos 3=|x|  4-6=curv1-3
-  uint8_t speed:4;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
-  uint8_t speedDir:2;      // 00 nichts 11 beide richtungen 01 nur hoch 10 nur runter
-  //uint8_t tableIdx:2;      // Index Kennlinie
+  uint8_t curve:3; //0=symmetrisch 1=no neg 2=no pos
+  uint8_t speedUp:4;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
+  uint8_t speedDown:4;      // 0 nichts
 } __attribute__((packed)) MixData;
 
 
@@ -78,7 +77,7 @@ typedef struct t_EEGeneral {
   uint8_t numModels;
   int8_t  lightSw;
   int8_t  vBatCalib;  
-  int8_t  table[3][9];   // 27
+  int8_t  curve[3][9];   // 27
   uint8_t resv[5];  
   TrainerData trainer;
 } __attribute__((packed)) EEGeneral;
