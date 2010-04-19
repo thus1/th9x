@@ -62,104 +62,140 @@ uint16_t anaIn(uint8_t chan)
 }
 
 #else
-extern void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t size);
 
 #endif
 
+EFile theFile; //used for any ile operation
 
+void generalDefault()
+{
+  memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
+  g_eeGeneral.myVers   =  1;
+  g_eeGeneral.currModel=  0;
+  g_eeGeneral.contrast = 30;
+  g_eeGeneral.vBatWarn = 90;
+  //g_eeGeneral.sizeGeneral = sizeof(EEGeneral);
+  //  g_eeGeneral.sizeModel   = sizeof(ModelData);
+  //g_eeGeneral.numModels   = MAX_MODELS;
+  int16_t sum=0;
+  for (int i = 0; i < 4; ++i) {
+    sum += g_eeGeneral.calibMid[i]  = 0x200;
+    sum += g_eeGeneral.calibSpan[i] = 0x180;
+  }
+  g_eeGeneral.chkSum = sum;
+}
 void eeWriteGeneral()
 {
-  eeWriteBlockCmp(&g_eeGeneral,0,sizeof(EEGeneral));
+  //eeWriteBlockCmp(&g_eeGeneral,0,sizeof(EEGeneral));
+  //theFile.open(FILE_GENERAL);
+  theFile.writeRlc(FILE_GENERAL,1,(uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
+  //theFile.trunc();
 }
-void eeReadAll()
+bool eeLoadGeneral()
 {
-  if(TOTAL_EEPROM_USAGE > 2048){
-    //TOTAL_EEPROM_USAGE();
-extern void eeprom_overflow();
-    eeprom_overflow();
-  }
-
-
-  eeprom_read_block(&g_eeGeneral,0,sizeof(EEGeneral));
+  theFile.open(FILE_GENERAL);
+  theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
   uint16_t sum=0;
   for(int i=0; i<8;i++) sum+=g_eeGeneral.calibMid[i];
-
-  if(g_eeGeneral.version     != EE_VERSION || 
-     g_eeGeneral.chkSum      != sum ||
-     g_eeGeneral.sizeGeneral != sizeof(EEGeneral) ||
-     g_eeGeneral.sizeModel   != sizeof(ModelData) ||
-     g_eeGeneral.numModels   != MAX_MODELS
-  )
-  {
 #ifdef SIM
-    printf("bad eeprom vers=%d sum=%d != sum=%d\n",g_eeGeneral.version,g_eeGeneral.chkSum,sum);
-#else
-    alert(PSTR("Bad EEprom Data"));
-#endif
-    memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
-    g_eeGeneral.version  = EE_VERSION;
-    g_eeGeneral.contrast = 30;
-    g_eeGeneral.vBatWarn = 90;
-    g_eeGeneral.currModel=  0;
-    g_eeGeneral.sizeGeneral = sizeof(EEGeneral);
-    g_eeGeneral.sizeModel   = sizeof(ModelData);
-    g_eeGeneral.numModels   = MAX_MODELS;
-    for (int i = 0; i < 3; ++i) {
-      g_eeGeneral.curve[i][0] = -128;
-      g_eeGeneral.curve[i][1] = -75 * 128 / 100;
-      g_eeGeneral.curve[i][2] = -50 * 128 / 100;
-      g_eeGeneral.curve[i][3] = -25 * 128 / 100;
-      g_eeGeneral.curve[i][4] = 0;
-      g_eeGeneral.curve[i][5] = 25 * 128 / 100;
-      g_eeGeneral.curve[i][6] = 50 * 128 / 100;
-      g_eeGeneral.curve[i][7] = 75 * 128 / 100;
-      g_eeGeneral.curve[i][8] = 127;
-    }
-
-    memset(&g_model,0,sizeof(g_model));
-    strcpy_P(g_model.name,PSTR("MODEL     "));
-    g_model.stickMode=1;
-    for(int i=0; i<8; i++)
-    {
-      g_model.limitData[i].min = -100;
-      g_model.limitData[i].max =  100;
-    }
-    for(unsigned i=0; i<MAX_MODELS;i++){
-      g_model.name[5]='0'+(i+1)/10;
-      g_model.name[6]='0'+(i+1)%10;
-      eeSaveModel(i);
-    }
-    eeWriteGeneral();
-  }
-  eeLoadModel(g_eeGeneral.currModel);
+  if(g_eeGeneral.myVers != 1)    printf("bad g_eeGeneral.myVers == 1\n");
+  if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
+#endif  
+  return g_eeGeneral.myVers == 1 && g_eeGeneral.chkSum == sum;
 }
 
-unsigned modelEeOfs(uint8_t id)
+void modelDefault(uint8_t id)
 {
-  return sizeof(EEGeneral)+sizeof(ModelData)*id;
+  memset(&g_model,0,sizeof(g_model));
+  strcpy_P(g_model.name,PSTR("MODEL     "));
+  g_model.stickMode=1;
+  //for(int i=0; i<8; i++)
+  //  {
+  //    g_model.limitData[i].min = -100;
+  //    g_model.limitData[i].max =  100;
+  //  }
+  g_model.name[5]='0'+(id+1)/10;
+  g_model.name[6]='0'+(id+1)%10;
+  g_model.mixData[0].destCh = 1;
+  g_model.mixData[0].srcRaw = 1;
+  g_model.mixData[0].weight = 100;
 }
-
-void eeLoadModelName(uint8_t id,char*buf)
+void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
 {
   if(id<MAX_MODELS)
   {
-    eeprom_read_block(buf,(void*)modelEeOfs(id),sizeof(g_model.name));
+    //eeprom_read_block(buf,(void*)modelEeOfs(id),sizeof(g_model.name));
+    theFile.open(FILE_MODEL(id));
+    memset(buf,' ',len);
+    if(theFile.readRlc((uint8_t*)buf,sizeof(g_model.name)) == sizeof(g_model.name) )
+    {
+      uint16_t sz=theFile.size();
+      buf+=len;
+      while(sz){ --buf; *buf='0'+sz%10; sz/=10;}
+    }
   }
 }
 void eeLoadModel(uint8_t id)
 {
   if(id<MAX_MODELS)
   {
-    eeprom_read_block(&g_model,(void*)modelEeOfs(id),sizeof(ModelData));
+    theFile.open(FILE_MODEL(id));
+    if(theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)) != sizeof(g_model) )
+    {
+#ifdef SIM
+      printf("bad model%d data using default\n",id+1);
+#endif
+      modelDefault(id);
+    }
+    //eeprom_read_block(&g_model,(void*)modelEeOfs(id),sizeof(ModelData));
   }
 }
 void eeSaveModel(uint8_t id)
 {
   if(id<MAX_MODELS)
   {
-    eeWriteBlockCmp(&g_model,(void*)modelEeOfs(id),sizeof(ModelData));
+    // theFile.open(FILE_MODEL(id));
+    theFile.writeRlc(FILE_MODEL(id),2,(uint8_t*)&g_model, sizeof(g_model));
+    // theFile.trunc();
+    //eeWriteBlockCmp(&g_model,(void*)modelEeOfs(id),sizeof(ModelData));
   }
 }
+
+
+void eeReadAll()
+{
+  //  if(TOTAL_EEPROM_USAGE > 2048){
+  //    //TOTAL_EEPROM_USAGE();
+  //extern void eeprom_overflow();
+  //    eeprom_overflow();
+  //  }
+  //eeprom_read_block(&g_eeGeneral,0,sizeof(EEGeneral));
+
+  //  if(g_eeGeneral.version     != EE_VERSION || 
+  //     g_eeGeneral.chkSum      != sum ||
+  //     g_eeGeneral.sizeGeneral != sizeof(EEGeneral) ||
+  //     g_eeGeneral.sizeModel   != sizeof(ModelData) ||
+  //     g_eeGeneral.numModels   != MAX_MODELS
+  //  )
+  if(!EeFsOpen() || !eeLoadGeneral())
+  {
+#ifdef SIM
+    printf("bad eeprom contents\n");
+#else
+    alert(PSTR("Bad EEprom Data"));
+#endif
+    EeFsFormat();
+    generalDefault();
+    eeWriteGeneral();
+
+    //    for(unsigned i=0; i<MAX_MODELS;i++){
+    modelDefault(0);
+    eeSaveModel(0);
+    //    }
+  }
+  eeLoadModel(g_eeGeneral.currModel);
+}
+
 
 static uint8_t  s_eeDirtyMsk;
 static uint16_t s_eeDirtyTime10ms;
@@ -169,11 +205,11 @@ void eeDirty(uint8_t msk)
   s_eeDirtyMsk      |= msk;
   s_eeDirtyTime10ms  = g_tmr10ms;
 }
-void eeCheck()
+void eeCheck(bool immediately)
 {
   uint8_t msk  = s_eeDirtyMsk;
   if(!msk) return;
-  if( (g_tmr10ms - s_eeDirtyTime10ms) < 1000) return;
+  if( !immediately && ((g_tmr10ms - s_eeDirtyTime10ms) < 1000)) return;
   s_eeDirtyMsk = 0;
   if(msk & EE_GENERAL) eeWriteGeneral();
   if(msk & EE_MODEL)   eeSaveModel(g_eeGeneral.currModel);

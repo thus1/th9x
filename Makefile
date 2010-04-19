@@ -1,6 +1,6 @@
 
 
-SRC= simu.cpp th9x.cpp menus.cpp lcd.cpp drivers.cpp
+SRC= simu.cpp th9x.cpp menus.cpp lcd.cpp drivers.cpp file.cpp
 SRC:=$(foreach f,$(SRC),src/$(f))
 
 
@@ -19,7 +19,7 @@ simu: $(SRC) Makefile src/*.h src/*.lbm eeprom.bin
 
 
 eeprom.bin:
-	dd if=/dev/null of=$@ bs=1 count=2048
+	dd if=/dev/zero of=$@ bs=1 count=2048
 
 tgt_bin:
 	ruby ./make.rb bin

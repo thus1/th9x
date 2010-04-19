@@ -16,22 +16,26 @@ bugs:
 + overflow in mixer
 + no-trim in pos-neg beruecksichtigen?
 + submenu in calib
-- timer_table progmem
++ timer_table progmem
 todo
-
-- 2-stuf mixer?
-- dynamisches eeprom/ free-anzeige/size anzeige bei models
-- curve+mode in einem parameter
-- curve modellspec
-- 5-pkt-curve?
-- trim func as polynom
+- delay algo rework
+- 2-stuf mixer?, mixer with intermediates
+- 5-pkt-curve? curves 5+9
++ model with def 1 mixer
++ limit def==0
++ curves def==0
++ dynamisches eeprom/ free-anzeige/size anzeige bei models
++ curve+mode in einem parameter
++ curve modellspec
++ trim func as polynom
 - fast multiply 8*16 > 32
 - doku einschaltverhalten, trainermode, curves
 - stat mit times
-- trainer persistent
++ trainer persistent
 - pcm 
 - light auto off
-- move/copy/del model
++ move
+- copy/del model
 done
 + silverlit
 + bat spanng. calib
