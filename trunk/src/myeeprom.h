@@ -17,7 +17,7 @@
 
 //eeprom data
 #define EE_VERSION 2
-#define MAX_MODELS 12
+#define MAX_MODELS 16
 #define MAX_MIXERS 20
 
 
@@ -65,26 +65,24 @@ typedef struct t_MixData {
 
 
 typedef struct t_EEGeneral {
-  uint8_t version;
-  uint8_t contrast;
-  uint8_t vBatWarn;
-  uint8_t currModel;
+  uint8_t myVers;
   int16_t calibMid[4];
   int16_t calibSpan[4];
   uint16_t chkSum;
-  uint8_t sizeGeneral;
-  uint8_t sizeModel;
-  uint8_t numModels;
-  int8_t  lightSw;
+  //uint8_t sizeGeneral;
+  //  uint8_t sizeModel;
+  //  uint8_t numModels;
+  uint8_t currModel; //0..15
+  uint8_t contrast;
+  uint8_t vBatWarn;
   int8_t  vBatCalib;  
-  int8_t  curve[3][9];   // 27
-  uint8_t resv[5];  
+  int8_t  lightSw;
   TrainerData trainer;
 } __attribute__((packed)) EEGeneral;
 
 
 typedef struct t_ModelData {
-  char      name[10];    // 10
+  char      name[10];    // 10 must be first for eeLoadModelName
   uint8_t   stickMode;   // 1
   uint8_t   tmrMode;     // 1
   uint16_t  tmrVal;      // 2
@@ -93,6 +91,7 @@ typedef struct t_ModelData {
   LimitData limitData[8];// 3*8
   ExpoData  expoData[4]; // 3*4
   MixData   mixData[MAX_MIXERS]; //3*20
+  int8_t    curves[3][9];   // 27
   TrimData  trimData[4]; // 3*4
 } __attribute__((packed)) ModelData; //126
 

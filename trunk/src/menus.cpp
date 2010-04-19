@@ -54,7 +54,7 @@ struct MState
   static uint8_t event;
   void init(){sVert=sHorz=0;};
   
-  void checkExit(uint8_t event,bool immediate=false);
+  void checkExit(uint8_t event,int8_t exitMode=0);
   /// schltet horiz weiter zum naechsten menu. 
   /// entry    initialisiert, 
   /// key_exit schaltet in zwei stufen zurueck zuerst sub=0, dann popmenu
@@ -69,12 +69,13 @@ struct MState
   uint8_t checkHorz( uint8_t myVert, uint8_t maxHoriz);
 };
 uint8_t MState::event;
-void MState::checkExit(uint8_t i_event,bool immediate)
+void MState::checkExit(uint8_t i_event,int8_t exitMode)
 {
   event=i_event;
   if(event == EVT_ENTRY)  init();
+  if(exitMode<0) return;
   if(event == EVT_KEY_FIRST(KEY_EXIT)){
-    if(sVert==0 || immediate)   popMenu();  
+    if(sVert==0 || exitMode)   popMenu();  
     else                        init();
   }
 }
@@ -82,7 +83,7 @@ void MState::checkExit(uint8_t i_event,bool immediate)
 void MState::checkChain( uint8_t curr, MenuFuncP *menuTab, uint8_t size)
 {
   uint8_t attr = INVERS; 
-  curr--;
+  curr--; //calc from 0, user counts from 1
   if(sVert==0){
     attr = BLINK;
     switch(event)
@@ -144,9 +145,15 @@ void menuProcLimits(uint8_t event)
     subSub=mState.checkHorz(sub+1,4);
     switch(subSub)
     {
-      case 1: if(CHECK_INCDEC_V_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
+      case 1:
+        ld->min -=  100;
+        if(CHECK_INCDEC_V_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
+        ld->min +=  100;
         break;
-      case 2: if(CHECK_INCDEC_V_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
+      case 2: 
+        ld->max +=  100;
+        if(CHECK_INCDEC_V_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
+        ld->max -=  100;
         break;
       case 3: CHECK_INCDEC_V_MODELVAR( event, ld->revert,    0,1); 
         break;
@@ -168,8 +175,8 @@ void menuProcLimits(uint8_t event)
     uint8_t k=i+s_pgOfs;
     LimitData *ld = &g_model.limitData[k];
     putsChn(0,y,k+1,(sub==k && subSub==0) ? INVERS : 0);
-    lcd_outdezAtt(  9*FW, y, ld->min,   (sub==k && subSub==1) ? BLINK : 0);
-    lcd_outdezAtt( 14*FW, y, ld->max,   (sub==k && subSub==2) ? BLINK : 0);
+    lcd_outdezAtt(  9*FW, y, (int8_t)(ld->min-100),   (sub==k && subSub==1) ? BLINK : 0);
+    lcd_outdezAtt( 14*FW, y, (int8_t)(ld->max+100),   (sub==k && subSub==2) ? BLINK : 0);
     lcd_putsnAtt(   15*FW, y, PSTR(" - INV")+ld->revert*3,3,(sub==k && subSub==3) ? BLINK : 0);
   }
 }
@@ -182,21 +189,30 @@ void menuProcCurveOne(uint8_t event) {
   uint8_t x = TITLE("CURVE ");
   lcd_putcAtt(x, 0, s_curveChan + '1', INVERS);
 
-  mState.checkExit(event, true);
-  int8_t sub = mState.checkVert(9);
+  mState.checkExit(event, 1);
+  int8_t sub = mState.checkVert(10);
   for (uint8_t i = 0; i < 5; i++) {
     uint8_t y = i * FH + 16;
     uint8_t attr = sub == i ? BLINK : 0;
-    lcd_outdezAtt(4 * FW, y, (g_eeGeneral.curve[s_curveChan][i] * 100) / 128,
-        attr);
+    lcd_outdezAtt(4 * FW, y, (g_model.curves[s_curveChan][i] * 100) / 128, attr);
   }
   for (uint8_t i = 0; i < 4; i++) {
     uint8_t y = i * FH + 16;
     uint8_t attr = sub == i + 5 ? BLINK : 0;
-    lcd_outdezAtt(8 * FW, y, (g_eeGeneral.curve[s_curveChan][i + 5] * 100)
-        / 128, attr);
+    lcd_outdezAtt(8 * FW, y, (g_model.curves[s_curveChan][i + 5] * 100) / 128, attr);
   }
-  CHECK_INCDEC_H_GENVAR( event, g_eeGeneral.curve[s_curveChan][sub], -128,127);
+  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == 9 ? BLINK : 0);
+
+  static int8_t dfltCrv;
+  if(sub<9)  CHECK_INCDEC_H_MODELVAR( event, g_model.curves[s_curveChan][sub], -128,127);
+  else {
+    if( checkIncDecGen2(event, &dfltCrv, -4, 4, 0)){
+      for (uint8_t i = 0; i < 9; i++) {
+        g_model.curves[s_curveChan][i] = min((i-4)*dfltCrv*8,127);
+      }
+      eeDirty(EE_MODEL);
+    }
+  }
 
 #define WCHART 32
 #define X0     (128-WCHART-2)
@@ -231,18 +247,13 @@ void menuProcCurve(uint8_t event) {
     break;
   }
   for (uint8_t i = 0; i < 3; i++) {
-    uint8_t y = i * 2 * FH + 16;
+    uint8_t y    = i * 2 * FH + 16;
     uint8_t attr = sub == i ? BLINK : 0;
-    lcd_outdezAtt(4 * FW, y, g_eeGeneral.curve[i][0] * 100 / 128, attr);
-    lcd_outdezAtt(8 * FW, y, g_eeGeneral.curve[i][1] * 100 / 128, attr);
-    lcd_outdezAtt(12 * FW, y, g_eeGeneral.curve[i][2] * 100 / 128, attr);
-    lcd_outdezAtt(16 * FW, y, g_eeGeneral.curve[i][3] * 100 / 128, attr);
-    lcd_outdezAtt(20 * FW, y, g_eeGeneral.curve[i][4] * 100 / 128, attr);
-    y += FH;
-    lcd_outdezAtt(4 * FW, y, g_eeGeneral.curve[i][5] * 100 / 128, attr);
-    lcd_outdezAtt(8 * FW, y, g_eeGeneral.curve[i][6] * 100 / 128, attr);
-    lcd_outdezAtt(12 * FW, y, g_eeGeneral.curve[i][7] * 100 / 128, attr);
-    lcd_outdezAtt(16 * FW, y, g_eeGeneral.curve[i][8] * 100 / 128, attr);
+    lcd_putsAtt(   FW*0, y,PSTR("CV"),attr);
+    lcd_outdezAtt( FW*3, y,i+1 ,attr);
+    for (uint8_t j = 1; j < 10; j++) {
+      lcd_outdezAtt( (j%5+1) *4 * FW, y+(j/5*FH), g_model.curves[i][j-1] * 100 / 128, 0);
+    }
   }
 }
 
@@ -257,7 +268,7 @@ void menuProcMixOne(uint8_t event)
   putsChn(x,0,md2->destCh,0);
 
   // int8_t sub=checkSub_v(event,5);
-  mState.checkExit(event,true);
+  mState.checkExit(event,1);
   int8_t sub = mState.checkVert(7);
 
 #define CURV_STR " - x>0x<0|x|cv1cv2cv3"
@@ -463,9 +474,7 @@ void menuProcMix(uint8_t event)
 int16_t trimVal(uint8_t idx)
 {
   int8_t trim = g_model.trimData[idx].trim;
-  int16_t sum = 0;
-  for(uint8_t j=0; j<=abs(trim); j++) sum+=j;
-  return trim > 0 ? sum : -sum;
+  return trim*(abs(trim)+1)/2;
 }
 
 void menuProcTrim(uint8_t event)
@@ -579,7 +588,7 @@ void menuProcExpoOne(uint8_t event)
   static MState mState;
   uint8_t x=TITLE("EXPO/DR ");  
   putsChnRaw(x,0,s_expoChan+1,0);
-  mState.checkExit(event,true);
+  mState.checkExit(event,1);
   int8_t sub = mState.checkVert(3);
 
   int8_t   kView  = 0;
@@ -785,18 +794,31 @@ void menuProcModel(uint8_t event)
 }
 void menuProcModelSelect(uint8_t event)
 {
-  static MState mState;
-  TITLE("MODELSELECT");  
-  mState.checkExit(event,true);
-  mState.sVert++;
-  mState.checkChain(1,menuTabModel,DIM(menuTabModel));
-  mState.sVert--;
-  int8_t sub = mState.checkVert(MAX_MODELS);
+  static MState  mState;
+  static uint8_t s_editMode;
+  TITLE("MODELSEL");  
+  lcd_puts_P(     10*FW, 0, PSTR("free"));
+  lcd_outdezAtt(  18*FW, 0, EeFsGetFree(),0);
+  //mState.event = event;
+  //if(!s_editMode) 
+  mState.checkExit(event,s_editMode ? -1 : 1); // EVT_ENTRY no KEY_EXIT -> init,popMenu
+  //mState.sVert++; //trick, never 0 -> only print x/5
+  //mState.checkChain(1,menuTabModel,DIM(menuTabModel));
+  //mState.sVert--;
+  lcd_putsAtt(128-FW*3,0,PSTR("1/7"),INVERS);
+
+  int8_t sub = mState.sVert;
+  int8_t subOld=sub;
+  sub = mState.checkVert(MAX_MODELS);
   static uint8_t s_pgOfs;
   switch(event)
   {
     //case  EVT_KEY_FIRST(KEY_MENU):
     case  EVT_KEY_FIRST(KEY_EXIT):
+      if(s_editMode){
+        s_editMode = false;
+        break;
+      }
     case  EVT_KEY_FIRST(KEY_RIGHT):
       if(g_eeGeneral.currModel != mState.sVert)
       {
@@ -807,19 +829,30 @@ void menuProcModelSelect(uint8_t event)
       //case EXIT handled in checkExit
       if(event==EVT_KEY_FIRST(KEY_RIGHT))  chainMenu(menuProcModel);
       break;
+    case  EVT_KEY_FIRST(KEY_MENU):
+      s_editMode = true;
+      break;
+
     case EVT_ENTRY:
+      s_editMode = false;
+      
       mState.sVert = g_eeGeneral.currModel;
+      eeCheck(true); //force writing of current model data before this is changed
       break;
   }
+  if(s_editMode && subOld!=sub){
+    EFile::swap(FILE_MODEL(subOld),FILE_MODEL(sub));
+  }
+
   if(sub-s_pgOfs < 1)        s_pgOfs = max(0,sub-1);
   else if(sub-s_pgOfs >4 )  s_pgOfs = min(MAX_MODELS-6,sub-4);
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
-    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? BLINK : 0) + LEADING0,2);
-    static char buf[sizeof(g_model.name)];
-    eeLoadModelName(k,buf);
-    lcd_putsnAtt(  3*FW, y, buf,sizeof(g_model.name),BSS_NO_INV);
+    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_editMode ? INVERS : BLINK ) : 0) + LEADING0,2);
+    static char buf[sizeof(g_model.name)+5];
+    eeLoadModelName(k,buf,sizeof(buf));
+    lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_editMode ? BLINK : 0 ) : 0));
   }
 
 }
@@ -976,6 +1009,7 @@ void menuProcTrainer(uint8_t event)
   
   for(uint8_t i=0; i<4; i++){
     y=(i+2)*FH;
+    TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
     uint8_t subSub=0;
     if(sub==i){
       //subSub = mState.checkHorz(sub+1,5);
@@ -984,22 +1018,22 @@ void menuProcTrainer(uint8_t event)
     putsChnRaw( 0, y,i+1,
                 sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
     edit = (sub==i && subSub==1);
-    lcd_putsnAtt(   4*FW, y, PSTR("off += :=")+3*g_eeGeneral.trainer.chanMix[i].mode,3,
+    lcd_putsnAtt(   4*FW, y, PSTR("off += :=")+3*td->mode,3,
                     edit ? BLINK : 0);
-    if(edit) g_eeGeneral.trainer.chanMix[i].mode = checkIncDec_vg( event, g_eeGeneral.trainer.chanMix[i].mode, 0,2); //!! bitfield
+    if(edit) td->mode = checkIncDec_vg( event, td->mode, 0,2); //!! bitfield
 
     edit = (sub==i && subSub==2);
-    lcd_outdezAtt( 11*FW, y, g_eeGeneral.trainer.chanMix[i].weight*25/16,
+    lcd_outdezAtt( 11*FW, y, td->weight*25/16,
                    edit ? BLINK : 0);
-    if(edit) g_eeGeneral.trainer.chanMix[i].weight = checkIncDec_vg( event, g_eeGeneral.trainer.chanMix[i].weight, 0,63); //!! bitfield
+    if(edit) td->weight = checkIncDec_vg( event, td->weight, 0,63); //!! bitfield
 
     edit = (sub==i && subSub==3);
-    lcd_putsnAtt(  12*FW, y, PSTR("ch1ch2ch3ch4")+3*g_eeGeneral.trainer.chanMix[i].srcChn,3, edit ? BLINK : 0);
-    if(edit) g_eeGeneral.trainer.chanMix[i].srcChn = checkIncDec_vg( event, g_eeGeneral.trainer.chanMix[i].srcChn, 0,3); //!! bitfield
+    lcd_putsnAtt(  12*FW, y, PSTR("ch1ch2ch3ch4")+3*td->srcChn,3, edit ? BLINK : 0);
+    if(edit) td->srcChn = checkIncDec_vg( event, td->srcChn, 0,3); //!! bitfield
 
     edit = (sub==i && subSub==4);
-    putsDrSwitches(16*FW, y, g_eeGeneral.trainer.chanMix[i].swtch, edit ? BLINK : 0);
-    if(edit) g_eeGeneral.trainer.chanMix[i].swtch = checkIncDec_vg( event, g_eeGeneral.trainer.chanMix[i].swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+    putsDrSwitches(16*FW, y, td->swtch, edit ? BLINK : 0);
+    if(edit) td->swtch = checkIncDec_vg( event, td->swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
 
 
   }
@@ -1024,7 +1058,7 @@ void menuProcSetup0(uint8_t event)
 {
   static MState mState;
   TITLE("SETUP BASIC");  
-  mState.checkExit(event,false);
+  mState.checkExit(event);
   mState.checkChain(1,menuTabDiag,DIM(menuTabDiag));
   int8_t sub = mState.checkVert(4)-1;
   uint8_t y=2*FH;
@@ -1295,9 +1329,9 @@ void calcLimitCache()
 #endif  
   s_limitCacheOk = true;
   for(uint8_t i=0; i<8; i++){
-    int16_t v = g_model.limitData[i].min;
+    int16_t v = g_model.limitData[i].min-100;
     s_cacheLimitsMin[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
-    v = g_model.limitData[i].max;
+    v = g_model.limitData[i].max+100;
     s_cacheLimitsMax[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
   }
 }
@@ -1309,12 +1343,12 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
   int16_t a = (x + RESX) / (RESX * 2 / 8);
   int8_t modu = (x + RESX) % (RESX * 2 / 8);
   if (a < 0)
-    erg = g_eeGeneral.curve[idx][0] * 4;
+    erg = g_model.curves[idx][0] * 4;
   else if (a >= 8)
-    erg = g_eeGeneral.curve[idx][8] * 4;
+    erg = g_model.curves[idx][8] * 4;
   else
-    erg = (int16_t)g_eeGeneral.curve[idx][a] * 4 + (int32_t)((int16_t)g_eeGeneral.curve[idx][a + 1]
-      * 4 - (int16_t)g_eeGeneral.curve[idx][a] * 4) * modu / (RESX / 4);
+    erg = (int16_t)g_model.curves[idx][a] * 4 + (int32_t)((int16_t)g_model.curves[idx][a + 1]
+      * 4 - (int16_t)g_model.curves[idx][a] * 4) * modu / (RESX / 4);
   if (erg == RESX - 4) // Leichtes gemurkse, sieht aber im Ergebnis einfach besser aus
     erg = RESX;
   return erg;
@@ -1349,23 +1383,19 @@ void perOut()
               g_model.expoData[i].expDr           :
               g_model.expoData[i].expNorm
     );
-    
-    if(g_eeGeneral.trainer.chanMix[i].mode && getSwitch(g_eeGeneral.trainer.chanMix[i].swtch,1)){
-      uint8_t chStud = g_eeGeneral.trainer.chanMix[i].srcChn;
-      int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
-        g_eeGeneral.trainer.chanMix[i].weight/64;
 
-      switch(g_eeGeneral.trainer.chanMix[i].mode)
+    TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
+    if(td->mode && getSwitch(td->swtch,1)){
+      uint8_t chStud = td->srcChn;
+      int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
+        td->weight/64;
+
+      switch(td->mode)
       {
-        case 1: // add-mode
-          v += vStud;
-          break;
-        case 2: // subst-mode
-          v = vStud;
-          break;
+        case 1: v += vStud;   break; // add-mode
+        case 2: v  = vStud;   break; // subst-mode
       }
     }
-
 
     //trace throttle
     if(((2-g_model.stickMode)&1) == i)  //stickMode=0123 -> thr=2121
@@ -1397,7 +1427,8 @@ void perOut()
 
     if(md.destCh==0) break;
 
-    if(!md.swtch) continue;     // 0 Zeile nicht verwendet
+    //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
+    //if(!md.swtch) continue;     // 0 Zeile nicht verwendet
     int16_t v;
     if(md.curve){
       v = !getSwitch(md.swtch,1) ? 0 : anaNoTrim[md.srcRaw-1];

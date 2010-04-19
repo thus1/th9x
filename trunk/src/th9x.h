@@ -25,7 +25,7 @@
 ///opt/cross/avr/include/avr/pgmspace.h
   #include <stddef.h>
   #include <avr/io.h>
-
+  #define assert(x)
   //disable whole pgmspace functionality for all avr-gcc because
   //avr-gcc > 4.2.1 does not work anyway
   //http://www.mail-archive.com/gcc-bugs@gcc.gnu.org/msg239240.html
@@ -54,6 +54,7 @@
 //#define eeprom_write_block eeWriteBlockCmp
 
 #include "myeeprom.h"
+#include "file.h"
 //
 //                  elev                        thr 
 //                   LV                         RV
@@ -327,11 +328,12 @@ template<class t> inline t max(t a, t b){ return a>b?a:b; }
 #define EE_MODEL   2
 /// Markiert einen EEPROM-Bereich als dirty. der Bereich wird dann in
 /// eeCheck ins EEPROM zurueckgeschrieben.
+void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t size);
 void eeDirty(uint8_t msk);
-void eeCheck();
+void eeCheck(bool immediately=false);
 void eeWriteGeneral();
 void eeReadAll();
-void eeLoadModelName(uint8_t id,char*buf);
+void eeLoadModelName(uint8_t id,char*buf,uint8_t len);
 void eeLoadModel(uint8_t id);
 void eeSaveModel(uint8_t id);
 

@@ -126,6 +126,8 @@ module CStruct
   class CStructBase
     attr_reader :offset
     def initialize(offset)   @offset=offset; @membn=[]; @membv={};           end
+    def each() @membn.each{|n| yield n,@membv[n].get,@membv[n].obj} end
+    def obj()            self;                                            end
     def get()            self;                                            end
     def sizeof()         self.class.sizeof                                end
     def toBin() ret= ""; @membn.each { |n|; ret += @membv[n].toBin}; ret; end
@@ -136,7 +138,8 @@ module CStruct
     def to_sInternal(ofs,nest=0)
       s=nest>0 ? "\n" : ""; 
       @membn.each { |n|;
-        s+=sprintf("%3d %3d",ofs,@membv[n].offset)
+        ofs==@membv[n].offset or raise
+        s+=sprintf("%3d ",@membv[n].offset)
         x,ofs = @membv[n].to_sInternal(ofs,nest+1)
         s+="    "*nest + "#{n}\t= "+x
       }; 
@@ -154,7 +157,7 @@ module CStruct
       }
     end
     def []=(i,v) @membv[i].set(v)                                         end
-    def [](i)    @membv[i]                                         end
+    def [](i)    @membv[i].get()                                         end
   end
   class CString < CStructBase
     def initialize(offset,n) @offset=offset; @strlen=n                      end
@@ -231,7 +234,7 @@ module CStruct
         end
         def #{tname}.granu() #{@granu}
         end
-        def initialize(offset)    
+        def initialize(offset=0)    
           super(offset);   
           #{@init}; 
         end
@@ -259,7 +262,7 @@ module CStruct
         END
       @defs += <<-"END"
       def #{name} ()
-        @membv["#{name}"]
+        @membv["#{name}"].get()
       end
       END
       @pos+=cnt
@@ -288,7 +291,7 @@ module CStruct
       END
       @defs += <<-"END"
       def #{name}= (v)  @membv["#{name}"].set(v)    end
-      def #{name} ()    @membv["#{name}"]     end
+      def #{name} ()    @membv["#{name}"].get()     end
       END
       @pos+=CStruct.module_eval("#{typ}.sizeof")
     end
