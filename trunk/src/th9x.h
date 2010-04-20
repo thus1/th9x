@@ -152,8 +152,8 @@ enum EnumKeys {
   TRM_RV_UP   ,
   TRM_RH_DWN  ,
   TRM_RH_UP   ,
-  SW_NC     ,
-  SW_ON     ,
+  //SW_NC     ,
+  //SW_ON     ,
   SW_ThrCt  ,
   SW_RuddDR ,
   SW_ElevDR ,
@@ -164,10 +164,11 @@ enum EnumKeys {
   SW_Gear   ,
   SW_Trainer 
 };
-#define SW_BASE      SW_NC
+//#define SW_BASE      SW_NC
+#define SW_BASE      SW_ThrCt
 #define SW_BASE_DIAG SW_ThrCt
-#define SWITCHES_STR "  NC  ON THR RUD ELE ID0 ID1 ID2 AILGEARTRNR"
-#define MAX_DRSWITCH (SW_Trainer-SW_NC)
+//#define SWITCHES_STR "  NC  ON THR RUD ELE ID0 ID1 ID2 AILGEARTRNR"
+#define MAX_DRSWITCH (1+SW_Trainer-SW_ThrCt+1)
 
 #define NUM_KEYS TRM_RH_UP+1
 #define TRM_BASE TRM_LH_DWN
@@ -338,10 +339,12 @@ void eeLoadModel(uint8_t id);
 void eeSaveModel(uint8_t id);
 
 
-#define MAX_CHNRAW 8
+#define NUM_CHNRAW 12
+#define NUM_CHNOUT 12
+//#define MAX_CHNRAW 8
 /// Schreibt [RUD ELE THR AIL P1 P2 P3 MAX] aufs lcd
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
-#define MAX_CHN 8
+//#define MAX_CHN 8
 
 /// Schreibt [CH1 CH2 CH3 CH4 CH5 CH6 CH7 CH8] aufs lcd
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);

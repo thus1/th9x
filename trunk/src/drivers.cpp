@@ -304,8 +304,8 @@ bool keyState(EnumKeys enuk)
   if(enuk < (int)DIM(keys))  return keys[enuk].state() ? 1 : 0;
   switch(enuk){
     //case SW_ID     : return PING & (1<<INP_G_ID1)    ? ( PINE & (1<<INP_E_ID2) ? 1 : 2) : 0;
-    case SW_NC     : return true;
-    case SW_ON     : return true;
+    //case SW_NC     : return true;
+    //case SW_ON     : return true;
     case SW_ElevDR : return PINE & (1<<INP_E_ElevDR);
     case SW_AileDR : return PINE & (1<<INP_E_AileDR);
     case SW_RuddDR : return PING & (1<<INP_G_RuddDR);
