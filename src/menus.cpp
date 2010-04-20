@@ -284,7 +284,7 @@ void menuProcMixOne(uint8_t event)
   mState.checkExit(event,1);
   int8_t sub = mState.checkVert(7);
 
-#define CURV_STR "  -x>0x<0|x|cv1cv2cv3"
+#define CURV_STR "  -x>0x<0|x|cv1cv2cv3cv4"
   for(uint8_t i=0; i<=6; i++)
   {
     uint8_t y=i*FH+8;
@@ -298,7 +298,7 @@ void menuProcMixOne(uint8_t event)
         if(attr) CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         break;
       case 2:   lcd_putsnAtt( FW*2,y,PSTR(CURV_STR)+md2->curve*3,3,attr);
-        if(attr) md2->curve=checkIncDec_hm( event, md2->curve, 0,6); //!! bitfield
+        if(attr) md2->curve=checkIncDec_hm( event, md2->curve, 0,7); //!! bitfield
         if(attr && md2->curve>=4 && event==EVT_KEY_FIRST(KEY_MENU)){
           s_curveChan = md2->curve-4;
           pushMenu(menuProcCurveOne);
