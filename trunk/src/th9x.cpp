@@ -22,7 +22,7 @@ todo
 + switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
 + delay algo rework delay 0???
 + 2-stuf mixer?, mixer with intermediates
-- 5-pkt-curve? curves 5+9
++ 5-pkt-curve? curves 5+9
 + model with def 1 mixer
 + limit def==0
 + curves def==0
