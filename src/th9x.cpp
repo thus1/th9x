@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
+- change currmod on move 
 + save data befor load
 + menu-taste in mixer 
 + overflow in mixer
@@ -18,8 +19,9 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- delay algo rework
-- 2-stuf mixer?, mixer with intermediates
++ switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
++ delay algo rework delay 0???
++ 2-stuf mixer?, mixer with intermediates
 - 5-pkt-curve? curves 5+9
 + model with def 1 mixer
 + limit def==0
@@ -113,10 +115,6 @@ void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {
   lcd_putc(      x+ 4*FW,   y,    'V');
   lcd_outdezAtt( x+ 4*FW,   y,    g_vbat100mV,att|PREC1);
-  //lcd_plot(    x+ 3*FWNUM,   y+7);//komma
-  // lcd_plot(    x+ 3*FW-1, y+6);
-  // lcd_plot(    x+ 3*FW-1, y+7);
-  
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
@@ -124,34 +122,61 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
   {
     lcd_putsnAtt(x,y,modi12x3+g_model.stickMode*12+3*(idx1-1),3,att);  
   }else{
-    lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAX")+3*(idx1-5),3,att);  
+    lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAX X1 X2 X3 X4")+3*(idx1-5),3,att);  
   }
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
-  lcd_putsnAtt(x,y,PSTR("   CH1CH2CH3CH4CH5CH6CH7CH8")+3*idx1,3,att);  
+  lcd_putsnAtt(x,y,PSTR("   CH1CH2CH3CH4CH5CH6CH7CH8 X1 X2 X3 X4")+3*idx1,3,att);  
 }
-void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)
+
+
+#define SWITCHES_STR "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN"
+
+
+void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)//, bool nc)
 {
+  switch(idx1){
+    case  0:            lcd_putsAtt(x+FW,y,PSTR("  -"),att);return; 
+    case  MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR(" ON"),att);return; 
+    case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
+  }
   lcd_putcAtt(x,y, idx1<0 ? '!' : ' ',att);  
-  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+4*abs(idx1),4,att);  
+  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*abs(idx1-1),3,att);  
 }
 bool getSwitch(int8_t swtch, bool nc)
 {
-  if(swtch==0)return nc; 
-  if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch));
-  return keyState((EnumKeys)(SW_BASE+swtch));
+  switch(swtch){
+    case  0:            return nc; 
+    case  MAX_DRSWITCH: return true; 
+    case -MAX_DRSWITCH: return false; 
+  }
+  if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch+1));
+  return               keyState((EnumKeys)(SW_BASE+swtch-1));
 }
+
+// void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)
+// {
+//   lcd_putcAtt(x,y, idx1<0 ? '!' : ' ',att);  
+//   lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+4*abs(idx1),4,att);  
+// }
+// bool getSwitch(int8_t swtch, bool nc)
+// {
+//   if(swtch==0)return nc; 
+//   if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch));
+//   return keyState((EnumKeys)(SW_BASE+swtch));
+// }
+
 void checkSwitches()
 {
   uint8_t i;
   for(i=SW_BASE_DIAG; i< SW_Trainer; i++)
   {
     if(i==SW_ID0) continue;
-    if(getSwitch(i-SW_BASE,0)) break;
+    //if(getSwitch(i-SW_BASE,0)) break;
+    if(keyState((EnumKeys)i)) break;
   }
   if(i==SW_Trainer) return;
-  //alert(PSTR("switch error"));
   beepErr();
   pushMenu(menuProcDiagKeys);
 }

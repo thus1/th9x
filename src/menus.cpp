@@ -191,25 +191,29 @@ void menuProcCurveOne(uint8_t event) {
 
   mState.checkExit(event, 1);
   int8_t sub = mState.checkVert(10);
-  for (uint8_t i = 0; i < 5; i++) {
-    uint8_t y = i * FH + 16;
-    uint8_t attr = sub == i ? BLINK : 0;
-    lcd_outdezAtt(4 * FW, y, (g_model.curves[s_curveChan][i] * 100) / 128, attr);
-  }
-  for (uint8_t i = 0; i < 4; i++) {
-    uint8_t y = i * FH + 16;
-    uint8_t attr = sub == i + 5 ? BLINK : 0;
-    lcd_outdezAtt(8 * FW, y, (g_model.curves[s_curveChan][i + 5] * 100) / 128, attr);
-  }
+
+  bool    cv9 = s_curveChan >= 2;
+  int8_t *crv = cv9 ? g_model.curves9[s_curveChan-2] : g_model.curves5[s_curveChan];
+
+    for (uint8_t i = 0; i < 5; i++) {
+      uint8_t y = i * FH + 16;
+      uint8_t attr = sub == i ? BLINK : 0;
+      lcd_outdezAtt(4 * FW, y, (crv[i] * 100) / 128, attr);
+    }
+  if(cv9)
+    for (uint8_t i = 0; i < 4; i++) {
+      uint8_t y = i * FH + 16;
+      uint8_t attr = sub == i + 5 ? BLINK : 0;
+      lcd_outdezAtt(8 * FW, y, (crv[i + 5] * 100) / 128, attr);
+    }
   lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == 9 ? BLINK : 0);
 
   static int8_t dfltCrv;
-  if(sub<9)  CHECK_INCDEC_H_MODELVAR( event, g_model.curves[s_curveChan][sub], -128,127);
+  if(sub<9)  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -128,127);
   else {
     if( checkIncDecGen2(event, &dfltCrv, -4, 4, 0)){
-      for (uint8_t i = 0; i < 9; i++) {
-        g_model.curves[s_curveChan][i] = min((i-4)*dfltCrv*8,127);
-      }
+      if(cv9) for (uint8_t i = 0; i < 9; i++) crv[i] = min((i-4)*dfltCrv* 8,127);
+      else    for (uint8_t i = 0; i < 5; i++) crv[i] = min((i-2)*dfltCrv*16,127);
       eeDirty(EE_MODEL);
     }
   }
@@ -222,7 +226,7 @@ void menuProcCurveOne(uint8_t event) {
 
   for (uint8_t xv = 0; xv < WCHART * 2; xv++) {
     uint16_t yv = intpol(xv * (RESX / WCHART) - RESX, s_curveChan) / (RESX
-        / WCHART);
+                                                                      / WCHART);
     lcd_plot(X0 + xv - WCHART, Y0 - yv);
     if ((xv & 3) == 0) {
       lcd_plot(X0 + xv - WCHART, Y0 + 0);
@@ -236,7 +240,7 @@ void menuProcCurve(uint8_t event) {
   TITLE("CURVE");
   mState.checkExit(event);
   mState.checkChain(6, menuTabModel, DIM(menuTabModel));
-  int8_t sub = mState.checkVert(3 + 1) - 1;
+  int8_t sub = mState.checkVert(4 + 1) - 1;
 
   switch (event) {
   case EVT_KEY_FIRST(KEY_MENU):
@@ -246,13 +250,23 @@ void menuProcCurve(uint8_t event) {
     }
     break;
   }
-  for (uint8_t i = 0; i < 3; i++) {
-    uint8_t y    = i * 2 * FH + 16;
+  uint8_t y    = 2*FH;
+  for (uint8_t i = 0; i < 4; i++) {
     uint8_t attr = sub == i ? BLINK : 0;
     lcd_putsAtt(   FW*0, y,PSTR("CV"),attr);
     lcd_outdezAtt( FW*3, y,i+1 ,attr);
-    for (uint8_t j = 1; j < 10; j++) {
-      lcd_outdezAtt( (j%5+1) *4 * FW, y+(j/5*FH), g_model.curves[i][j-1] * 100 / 128, 0);
+
+    bool    cv9 = i >= 2;
+    int8_t *crv = cv9 ? g_model.curves9[i-2] : g_model.curves5[i];
+    for (uint8_t j = 0; j < 5; j++) {
+      lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j] * 100 / 128, 0);
+    }
+    y += FH;
+    if(cv9){
+      for (uint8_t j = 0; j < 4; j++) {
+        lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j+5] * 100 / 128, 0);
+      }
+      y += FH;
     }
   }
 }
@@ -267,11 +281,10 @@ void menuProcMixOne(uint8_t event)
   MixData *md2 = &g_model.mixData[s_currMixIdx];
   putsChn(x,0,md2->destCh,0);
 
-  // int8_t sub=checkSub_v(event,5);
   mState.checkExit(event,1);
   int8_t sub = mState.checkVert(7);
 
-#define CURV_STR " - x>0x<0|x|cv1cv2cv3"
+#define CURV_STR "  -x>0x<0|x|cv1cv2cv3"
   for(uint8_t i=0; i<=6; i++)
   {
     uint8_t y=i*FH+8;
@@ -279,7 +292,7 @@ void menuProcMixOne(uint8_t event)
     lcd_putsn_P( FW*6, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
     switch(i){
       case 0:   putsChnRaw(   FW*2,y,md2->srcRaw,attr);         
-        if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,MAX_CHNRAW); //!! bitfield
+        if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_CHNRAW); //!! bitfield
         break;
       case 1:   lcd_outdezAtt(FW*5,y,md2->weight,attr);         
         if(attr) CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
@@ -291,14 +304,14 @@ void menuProcMixOne(uint8_t event)
           pushMenu(menuProcCurveOne);
         }
         break;
-      case 3:   putsDrSwitches(0,  y,md2->swtch,attr);
+      case 3:   putsDrSwitches(FW,  y,md2->swtch,attr);
         if(attr) md2->swtch=checkIncDec_hm( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
         break;
-      case 4:   lcd_outdezAtt(FW*3,y,md2->speedUp,attr);
-        if(attr)  md2->speedUp=checkIncDec_hm( event, md2->speedUp, 0,15); //!! bitfield
-        break;
-      case 5:   lcd_outdezAtt(FW*5,y-FH,md2->speedDown,attr);
+      case 4:   lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
         if(attr)  md2->speedDown=checkIncDec_hm( event, md2->speedDown, 0,15); //!! bitfield
+        break;
+      case 5:   lcd_outdezAtt(FW*5,y-FH,md2->speedUp,attr);
+        if(attr)  md2->speedUp=checkIncDec_hm( event, md2->speedUp, 0,15); //!! bitfield
         break;
       case 6:   lcd_putsAtt(  FW*3,y,PSTR("RM"),attr);
                 lcd_puts_P(  FW*6,y,PSTR("remove [Menu]"));
@@ -350,7 +363,7 @@ void genMixTab()
   for(uint8_t i=0; i<MAX_MIXERS; i++)
   {
     uint8_t destCh = md[i].destCh;
-    if(destCh==0) destCh=8;
+    if(destCh==0) destCh=NUM_CHNOUT;
     if(destCh > maxDst){
       while(destCh > maxDst){ //ch-loop, hole alle channels auf
         maxDst++;
@@ -408,10 +421,10 @@ void menuProcMix(uint8_t event)
         md[s_currMixIdx].destCh      = s_currDestCh; //-s_mixTab[sub];
         md[s_currMixIdx].srcRaw      = s_currDestCh; //1;   //
         md[s_currMixIdx].weight      = 100;
-        md[s_currMixIdx].swtch       = 1; //on
-        md[s_currMixIdx].curve      = 0; //linear
-        md[s_currMixIdx].speedUp 		 = 0;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
-        md[s_currMixIdx].speedDown 	 = 0;      // 0 nichts
+        md[s_currMixIdx].swtch       = 0; //no switch
+        md[s_currMixIdx].curve       = 0; //linear
+        md[s_currMixIdx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
+        md[s_currMixIdx].speedDown   = 0; //
         STORE_MODELVARS;
       }
       pushMenu(menuProcMixOne);
@@ -447,8 +460,8 @@ void menuProcMix(uint8_t event)
       lcd_outdezAtt(  8*FW, y, md2->weight,attr);
       lcd_putcAtt(    8*FW+1, y, '%',0);
       putsChnRaw(     10*FW-2, y, md2->srcRaw,0);
-      putsDrSwitches( 14*FW-4, y, md2->swtch,0);
-      lcd_putsnAtt(   18*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
+      if(md2->swtch)putsDrSwitches( 15*FW-4, y, md2->swtch,0);
+      if(md2->curve)lcd_putsnAtt(   18*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
       if(attr == BLINK){
         CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         s_currMixIdx     = s_mixTab[k].editIdx;
@@ -622,7 +635,7 @@ void menuProcExpoOne(uint8_t event)
   }
   int8_t k= g_model.expoData[s_expoChan].drSw;
   lcd_puts_P(0,y,PSTR("DrSw"));  
-  putsDrSwitches(4*FW,y,k,invBlk);
+  putsDrSwitches(5*FW,y,k,invBlk);
   y+=FH;
 
   
@@ -689,11 +702,12 @@ void menuProcExpoAll(uint8_t event)
 
     lcd_outdezAtt( 8*FW, y, g_model.expoData[i].expNorm,invNorm);
     if(g_model.expoData[i].drSw){
-      putsDrSwitches( 10*FW, y, g_model.expoData[i].drSw,0);
+      putsDrSwitches( 11*FW, y, g_model.expoData[i].drSw,0);
       lcd_outdezAtt( 19*FW, y, g_model.expoData[i].expDr,invDr);
-    }else{
-      lcd_putc( 13*FW, y,'-');
     }
+    //else{
+    //  lcd_putc( 13*FW, y,'-');
+    //}
   }
 }
 const prog_char APM s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
@@ -819,6 +833,7 @@ void menuProcModelSelect(uint8_t event)
         s_editMode = false;
         break;
       }
+      //fallthrough
     case  EVT_KEY_FIRST(KEY_RIGHT):
       if(g_eeGeneral.currModel != mState.sVert)
       {
@@ -958,7 +973,7 @@ void menuProcDiagKeys(uint8_t event)
     uint8_t y=i*FH; //+FH;
     if(i>(SW_ID0-SW_BASE_DIAG)) y-=FH; //overwrite ID0
     bool t=keyState((EnumKeys)(SW_BASE_DIAG+i));
-    putsDrSwitches(x-FW,y,i+2,0); //ohne off,on
+    putsDrSwitches(x,y,i+1,0); //ohne off,on
     lcd_putcAtt(x+FW*4+2,  y,t+'0',t ? INVERS : 0);
   }
 
@@ -1032,7 +1047,7 @@ void menuProcTrainer(uint8_t event)
     if(edit) td->srcChn = checkIncDec_vg( event, td->srcChn, 0,3); //!! bitfield
 
     edit = (sub==i && subSub==4);
-    putsDrSwitches(16*FW, y, td->swtch, edit ? BLINK : 0);
+    putsDrSwitches(15*FW, y, td->swtch, edit ? BLINK : 0);
     if(edit) td->swtch = checkIncDec_vg( event, td->swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
 
 
@@ -1077,7 +1092,7 @@ void menuProcSetup0(uint8_t event)
   lcd_puts_P( 5*FW, y,PSTR("V BAT WARNING"));
   y+=8;
 
-  putsDrSwitches(0,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
+  putsDrSwitches(FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
   
   if(sub==2){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH); //5-10V
@@ -1339,30 +1354,43 @@ void calcLimitCache()
 int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 100
 {
   int16_t erg;
+  bool    cv9 = idx >= 2;
+  int8_t *crv = cv9 ? g_model.curves9[idx-2] : g_model.curves5[idx];
 
-  int16_t a = (x + RESX) / (RESX * 2 / 8);
-  int8_t modu = (x + RESX) % (RESX * 2 / 8);
+  int16_t    a;
+  int16_t modu;
+  x+=RESX;
+  if(cv9){
+    a    = x / (RESX * 2 / 8);
+    modu = x % (RESX * 2 / 8);
+  }else{
+    a    = x / (RESX * 2 / 4);
+    modu = x % (RESX * 2 / 4);
+  }
   if (a < 0)
-    erg = g_model.curves[idx][0] * 4;
-  else if (a >= 8)
-    erg = g_model.curves[idx][8] * 4;
-  else
-    erg = (int16_t)g_model.curves[idx][a] * 4 + (int32_t)((int16_t)g_model.curves[idx][a + 1]
-      * 4 - (int16_t)g_model.curves[idx][a] * 4) * modu / (RESX / 4);
+    erg = crv[0] * 4;
+  else if (a >= (cv9 ? 8 : 4))
+    erg = crv[(cv9 ? 8 : 4)] * 4;
+  else{
+    if(cv9)
+      erg = (int16_t)crv[a] * 4 + 
+        (int32_t) ( crv[a + 1] - crv[a]) * modu / (RESX / 4 /4);
+    else               
+      erg = (int16_t)crv[a] * 4 + 
+        (int32_t) ( crv[a + 1] - crv[a]) * modu / (RESX / 2 /4);
+  }
   if (erg == RESX - 4) // Leichtes gemurkse, sieht aber im Ergebnis einfach besser aus
     erg = RESX;
   return erg;
 }
 
-//uint16_t pulses2MHz[9]={1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,1200*2,10500*2};
 uint16_t pulses2MHz[60];
 
-prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12};   // 15 - 3
 
 void perOut()
 {
-  static int16_t anaNoTrim[8];
-  static int16_t anas[8];
+  static int16_t anaNoTrim[NUM_CHNOUT];
+  static int16_t anas     [NUM_CHNOUT];
 
   for(uint8_t i=0;i<4;i++){        // calc Sticks
 
@@ -1414,111 +1442,147 @@ void perOut()
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
    in anas mit Trimmung */
 
-  static int32_t chans[8];          // Ausgänge
+  static int32_t chans[NUM_CHNOUT];          // Ausgänge + intermidiates
   memset(chans,0,sizeof(chans));		// Alle Ausgänge auf 0
 
   //mixer loop
-  for(uint8_t i=0;i<MAX_MIXERS;i++){
-    MixData &md = g_model.mixData[i];
-
-    static uint8_t timer[MAX_MIXERS];
-    static int16_t act[MAX_MIXERS];
-
-
-    if(md.destCh==0) break;
-
-    //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
-    //if(!md.swtch) continue;     // 0 Zeile nicht verwendet
-    int16_t v;
-    if(md.curve){
-      v = !getSwitch(md.swtch,1) ? 0 : anaNoTrim[md.srcRaw-1];
-      switch(md.curve){
-        case 1: if( v<0 ) v=0;   break;//x|x>0
-        case 2: if( v>0 ) v=0;   break;//x|x<0
-        case 3: v = abs(v);      break; //ABS
-          //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
-        // Kurve soll erst nach Speed gerechnet werden
-      }
+  for(uint8_t stage=1; stage<=2; stage++){
+    if(stage==2){
+      for(uint8_t i=8;i<12;i++)
+        if(chans[i])
+          anaNoTrim[i]= anas[i]=
+            (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
     }
-    else
-      v = !getSwitch(md.swtch,1) ? 0 : anas[md.srcRaw-1];
+    for(uint8_t i=0;i<MAX_MIXERS;i++){
+      MixData &md = g_model.mixData[i];
 
-    if (md.speedUp || md.speedDown)
-    {
-      if(v > act[i])            // hochzählen
+      static uint8_t timer[MAX_MIXERS];
+      static int16_t act  [MAX_MIXERS];
+
+      if(stage==1){
+        if(md.destCh<=8) continue; //im ersten durchlauf alle intermediates X1-X4
+      }else{
+        if(md.destCh>8) break;     //im zweiten Durchlauf alle outputs CH1-CH8
+      }
+      if(md.destCh==0) break;
+
+      //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
+      //if(!md.swtch) continue;     // 0 Zeile nicht verwendet
+      int16_t v;
+      if(md.curve){
+        v = !getSwitch(md.swtch,1) ? 0 : anaNoTrim[md.srcRaw-1];
+        switch(md.curve){
+          case 1: if( v<0 ) v=0;   break;//x|x>0
+          case 2: if( v>0 ) v=0;   break;//x|x<0
+          case 3: v = abs(v);      break; //ABS
+            //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
+            // Kurve soll erst nach Speed gerechnet werden
+        }
+      }
+      else
+        v = !getSwitch(md.swtch,1) ? 0 : anas[md.srcRaw-1];
+
+      if (md.speedUp || md.speedDown)
       {
-        if (md.speedUp > 2)
+#if 1 //this variant is 130 Bytes less text, but possibly a bit slower
+        static prog_uint8_t APM tmr_t[] = {0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11};
+        static prog_uint8_t APM dlt_t[] = {0,5,3,2,1 }; 
+        int16_t     diff     = v - act[i];
+        if(diff){
+          uint8_t   speed    = (diff > 0) ? md.speedUp : md.speedDown;
+          if(speed){
+            uint8_t timerend =                pgm_read_byte(&tmr_t[speed]);
+            int8_t  dlt      = timerend ? 1 : pgm_read_byte(&dlt_t[speed]);
+            dlt              = min((int16_t)dlt, abs(diff)) ;
+            if(diff < 0) dlt = -dlt;
+
+            if (timer[i] != 0)
+            {
+              if (--timer[i] > timerend)     timer[i] = timerend;
+            }
+            else
+            {
+              act[i]        += dlt;
+              timer[i]       = timerend;
+            }
+          }else{
+            act[i] = v;
+          }
+        }
+#else
+        static prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12}; // 15 - 3
+        if(v > act[i])            // hochzählen
         {
-          uint8_t timerend = timer_table[md.speedUp - 3];
-          if (timer[i] != 0)
+          if (md.speedUp > 2)
           {
-            if (timer[i] > timerend)
+            uint8_t timerend = timer_table[md.speedUp - 3];
+            if (timer[i] != 0)
+            {
+              if (timer[i] > timerend)     timer[i] = timerend;
+              if (timer[i] > 0)          --timer[i];
+            }
+            else
+            {
+              ++act[i];
               timer[i] = timerend;
-            if (timer[i] > 0)
-              --timer[i];
-          }
+            }
+          }   //timer hier unten auch schreiben!!
+          else if (md.speedUp > 0)        // 1 und 2
+            act[i] += min(v - act[i], md.speedUp == 1 ? 5 : 3); // 5 200ms   // 3 333ms
           else
+            act[i] = v;
+        }
+        else if (v < act[i])        // runterzählen
+        {
+          if (md.speedDown > 2)
           {
-            ++act[i];
-            timer[i] = timerend;
-          }
-        }   //timer hier unten auch schreiben!!
-        else if (md.speedUp > 0)        // 1 und 2
-          act[i] += min(v - act[i], md.speedUp == 1 ? 5 : 3); // 5 200ms   // 3 333ms
-        else
-          act[i] = v;
+            uint8_t timerend = timer_table[md.speedDown - 3];
+            if (timer[i] != 0)
+            {
+              if (timer[i] > timerend)
+                timer[i] = timerend;
+              if (timer[i] > 0)
+                --timer[i];
+            }
+            else
+            {
+              --act[i];
+              timer[i] = timerend;
+            }
+          }   //timer hier unten auch schreiben!!
+          else if (md.speedDown > 0)
+            act[i] += max(v - act[i], md.speedDown == 1 ? -5 : -3); // 5 200ms   // 3 333ms
+          else
+            act[i] = v;
+        }
+#endif
+        v = act[i];
       }
-      else if (v < act[i])        // runterzählen
-      {
-         if (md.speedDown > 2)
-         {
-           uint8_t timerend = timer_table[md.speedDown - 3];
-           if (timer[i] != 0)
-           {
-             if (timer[i] > timerend)
-               timer[i] = timerend;
-             if (timer[i] > 0)
-               --timer[i];
-           }
-           else
-           {
-             --act[i];
-             timer[i] = timerend;
-           }
-         }   //timer hier unten auch schreiben!!
-         else if (md.speedDown > 0)
-           act[i] += max(v - act[i], md.speedDown == 1 ? -5 : -3); // 5 200ms   // 3 333ms
-         else
-           act[i] = v;
-      }
-      v = act[i];
+      if((md.curve > 3) && (md.curve < 7))
+        v = intpol(v, md.curve - 4);
+
+
+      int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
+      chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
     }
-    if((md.curve > 3) && (md.curve < 7))
-      v = intpol(v, md.curve - 4);
-
-
-    //    if (md.tableIdx)
-    //      v = intpol(v, md.tableIdx - 1);
-
-    int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
-    chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
   }
 
   //limit + revert loop
   calcLimitCache();
   for(uint8_t i=0;i<8;i++){
-    int16_t v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+    int16_t v = 0;
+    if(chans[i]) v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
 
     v = max(s_cacheLimitsMin[i],v);
     v = min(s_cacheLimitsMax[i],v);
     if(g_model.limitData[i].revert) v=-v;
 
     cli();
-    chans512[i] = v;
+    chans512[i] = v; //copy consistent word to int-level
     sei();
   }
 
-  if( getSwitch(g_eeGeneral.lightSw,1)) PORTB |=  (1<<OUT_B_LIGHT);
+  if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
   else                                  PORTB &= ~(1<<OUT_B_LIGHT);
 
 #ifdef xSIM
@@ -1534,7 +1598,16 @@ void perOut()
 #endif
 
 }
-void setupPulses()
+
+
+
+/******************************************************************************
+  the functions below are from int-level
+  the functions below are from int-level
+  the functions below are from int-level
+******************************************************************************/
+
+void setupPulses() 
 {
   switch(g_model.protocol)
   {

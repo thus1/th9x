@@ -91,7 +91,8 @@ typedef struct t_ModelData {
   LimitData limitData[8];// 3*8
   ExpoData  expoData[4]; // 3*4
   MixData   mixData[MAX_MIXERS]; //3*20
-  int8_t    curves[3][9];   // 27
+  int8_t    curves5[2][5];   // 10
+  int8_t    curves9[2][9];   // 18
   TrimData  trimData[4]; // 3*4
 } __attribute__((packed)) ModelData; //126
 
