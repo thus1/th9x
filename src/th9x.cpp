@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
-- change currmod on move 
+- dont use trim-keys when re-sorting models 
 + save data befor load
 + menu-taste in mixer 
 + overflow in mixer
@@ -19,6 +19,13 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- copy/del model
+- pcm 
+- light auto off
+- stat mit times
+- fast multiply 8*16 > 32
+- doku einschaltverhalten, trainermode, curves  light-pin B7 pin17
+done
 + switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
 + delay algo rework delay 0???
 + 2-stuf mixer?, mixer with intermediates
@@ -30,15 +37,8 @@ todo
 + curve+mode in einem parameter
 + curve modellspec
 + trim func as polynom
-- fast multiply 8*16 > 32
-- doku einschaltverhalten, trainermode, curves
-- stat mit times
 + trainer persistent
-- pcm 
-- light auto off
 + move
-- copy/del model
-done
 + silverlit
 + bat spanng. calib
 - timer stop/start mit switch
