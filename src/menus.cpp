@@ -1426,7 +1426,7 @@ void perOut()
     }
 
     //trace throttle
-    if(((2-g_model.stickMode)&1) == i)  //stickMode=0123 -> thr=2121
+    if((2-(g_model.stickMode&1)) == i)  //stickMode=0123 -> thr=2121
       trace((v+512)/32); //trace thr 0..32
 
     anaNoTrim[i]  = v;
