@@ -413,6 +413,11 @@ uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
 #ifndef SIM
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
+#define HEART_TIMER2Mhz 1;
+#define HEART_TIMER10ms 2;
+
+uint8_t heartbeat;
 
 extern uint16_t g_tmr1Latency;
 //ISR(TIMER1_OVF_vect)
@@ -445,6 +450,7 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     cli();
     TIMSK |= (1<<OCIE1A);
   }
+  heartbeat |= HEART_TIMER2Mhz;
 }
 
 volatile uint8_t g_tmr16KHz;
@@ -475,6 +481,7 @@ ISR(TIMER0_COMP_vect) //10ms timer
   per10ms();
   cli();
   TIMSK |= (1<<OCIE0);
+  heartbeat |= HEART_TIMER10ms;
 }
 
 
@@ -560,6 +567,7 @@ int main()
   uint16_t old10ms;
   checkSwitches();
   setupPulses();
+  wdt_enable(WDTO_500MS);
   while(1){
     old10ms=g_tmr10ms;
     uint16_t t0 = getTmr16KHz();
@@ -568,6 +576,11 @@ int main()
     g_timeMain = max(g_timeMain,t0);
     while(g_tmr10ms==old10ms) sleep_mode();
     //while(g_tmr10ms==old10ms) sleep_mode();
+    if(heartbeat == 0x3)
+    {
+      wdt_reset();
+      heartbeat = 0;
+    }
   }
 }
 #endif
