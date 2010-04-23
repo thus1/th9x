@@ -122,7 +122,7 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
   {
     lcd_putsnAtt(x,y,modi12x3+g_model.stickMode*12+3*(idx1-1),3,att);  
   }else{
-    lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAX X1 X2 X3 X4")+3*(idx1-5),3,att);  
+    lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAXFUL X1 X2 X3 X4")+3*(idx1-5),3,att);
   }
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)

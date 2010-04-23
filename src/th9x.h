@@ -341,8 +341,8 @@ void eeSaveModel(uint8_t id);
 #define NUM_VIRT     4
 //number of real outputchannels CH1-CH8
 #define NUM_CHNOUT   8
-///number of real input channels (1-8) plus virtual input channels X1-X4
-#define NUM_XCHNRAW (8+         NUM_VIRT)
+///number of real input channels (1-9) plus virtual input channels X1-X4
+#define NUM_XCHNRAW (9+         NUM_VIRT)
 ///number of real output channels (CH1-CH8) plus virtual output channels X1-X4
 #define NUM_XCHNOUT (NUM_CHNOUT+NUM_VIRT)
 
