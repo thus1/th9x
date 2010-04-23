@@ -289,28 +289,30 @@ void menuProcMixOne(uint8_t event)
   {
     uint8_t y=i*FH+8;
     uint8_t attr = sub==i ? BLINK : 0; 
-    lcd_putsn_P( FW*6, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
+    lcd_putsn_P( FW*8, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
     switch(i){
-      case 0:   putsChnRaw(   FW*2,y,md2->srcRaw,attr);         
+      case 0:   putsChnRaw(   FW*4,y,md2->srcRaw,attr);
         if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_XCHNRAW); //!! bitfield
         break;
-      case 1:   lcd_outdezAtt(FW*5,y,md2->weight,attr);         
+      case 1:   lcd_outdezAtt(FW*7,y,md2->weight,attr);
         if(attr) CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         break;
-      case 2:   lcd_putsnAtt( FW*2,y,PSTR(CURV_STR)+md2->curve*3,3,attr);
+      case 2:   lcd_putsnAtt( FW*4,y,PSTR(CURV_STR)+md2->curve*3,3,attr);
         if(attr) md2->curve=checkIncDec_hm( event, md2->curve, 0,7); //!! bitfield
         if(attr && md2->curve>=4 && event==EVT_KEY_FIRST(KEY_MENU)){
           s_curveChan = md2->curve-4;
           pushMenu(menuProcCurveOne);
         }
         break;
-      case 3:   putsDrSwitches(FW,  y,md2->swtch,attr);
+      case 3:   putsDrSwitches(3*FW,  y,md2->swtch,attr);
         if(attr) md2->swtch=checkIncDec_hm( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
         break;
-      case 4:   lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
+      case 4:   lcd_putcAtt(0*FW+1, y, '<',0);
+        lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
         if(attr)  md2->speedDown=checkIncDec_hm( event, md2->speedDown, 0,15); //!! bitfield
         break;
-      case 5:   lcd_outdezAtt(FW*5,y-FH,md2->speedUp,attr);
+      case 5:   lcd_putcAtt(4*FW+1, y-FH, '>',0);
+        lcd_outdezAtt(FW*7,y-FH,md2->speedUp,attr);
         if(attr)  md2->speedUp=checkIncDec_hm( event, md2->speedUp, 0,15); //!! bitfield
         break;
       case 6:   lcd_putsAtt(  FW*3,y,PSTR("RM"),attr);
@@ -457,11 +459,12 @@ void menuProcMix(uint8_t event)
       uint8_t attr = sub==s_mixTab[k].selDat ? BLINK : 0; 
       minSel = min(minSel,s_mixTab[k].selDat);
       maxSel = max(maxSel,s_mixTab[k].selDat);
-      lcd_outdezAtt(  8*FW, y, md2->weight,attr);
-      lcd_putcAtt(    8*FW+1, y, '%',0);
-      putsChnRaw(     10*FW-2, y, md2->srcRaw,0);
-      if(md2->swtch)putsDrSwitches( 15*FW-4, y, md2->swtch,0);
-      if(md2->curve)lcd_putsnAtt(   18*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
+      lcd_outdezAtt(  7*FW, y, md2->weight,attr);
+      lcd_putcAtt(    7*FW+1, y, '%',0);
+      putsChnRaw(     9*FW-2, y, md2->srcRaw,0);
+      if(md2->swtch)putsDrSwitches( 13*FW-4, y, md2->swtch,0);
+      if(md2->curve)lcd_putsnAtt(   17*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
+      if(md2->speedDown || md2->speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
       if(attr == BLINK){
         CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         s_currMixIdx     = s_mixTab[k].editIdx;
@@ -1439,6 +1442,7 @@ void perOut()
     anaNoTrim[i] = anas[i] = v-512; // [-512..511]
   }
   anaNoTrim[7] = anas[7] = 512; //100% für MAX
+  anaNoTrim[8] = anas[8] = 512; //100% für MAX
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
    in anas mit Trimmung */
 
@@ -1472,7 +1476,7 @@ void perOut()
       //if(!md.swtch) continue;     // 0 Zeile nicht verwendet
       int16_t v;
       if(md.curve){
-        v = !getSwitch(md.swtch,1) ? 0 : anaNoTrim[md.srcRaw-1];
+        v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anaNoTrim[md.srcRaw-1];
         switch(md.curve){
           case 1: if( v<0 ) v=0;   break;//x|x>0
           case 2: if( v>0 ) v=0;   break;//x|x<0
@@ -1482,11 +1486,10 @@ void perOut()
         }
       }
       else
-        v = !getSwitch(md.swtch,1) ? 0 : anas[md.srcRaw-1];
+        v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
 
       if (md.speedUp || md.speedDown)
       {
-#if 1 //this variant is 130 Bytes less text, but possibly a bit slower
         static prog_uint8_t APM tmr_t[] = {0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11};
         static prog_uint8_t APM dlt_t[] = {0,5,3,2,1 }; 
         int16_t     diff     = v - act[i];
@@ -1509,55 +1512,9 @@ void perOut()
             }
           }else{
             act[i] = v;
+            timer[i] = 0;
           }
         }
-#else
-        static prog_uint8_t APM timer_table[] = {1,2,3,4,5,6,7,8,9,10,11,12}; // 15 - 3
-        if(v > act[i])            // hochzählen
-        {
-          if (md.speedUp > 2)
-          {
-            uint8_t timerend = timer_table[md.speedUp - 3];
-            if (timer[i] != 0)
-            {
-              if (timer[i] > timerend)     timer[i] = timerend;
-              if (timer[i] > 0)          --timer[i];
-            }
-            else
-            {
-              ++act[i];
-              timer[i] = timerend;
-            }
-          }   //timer hier unten auch schreiben!!
-          else if (md.speedUp > 0)        // 1 und 2
-            act[i] += min(v - act[i], md.speedUp == 1 ? 5 : 3); // 5 200ms   // 3 333ms
-          else
-            act[i] = v;
-        }
-        else if (v < act[i])        // runterzählen
-        {
-          if (md.speedDown > 2)
-          {
-            uint8_t timerend = timer_table[md.speedDown - 3];
-            if (timer[i] != 0)
-            {
-              if (timer[i] > timerend)
-                timer[i] = timerend;
-              if (timer[i] > 0)
-                --timer[i];
-            }
-            else
-            {
-              --act[i];
-              timer[i] = timerend;
-            }
-          }   //timer hier unten auch schreiben!!
-          else if (md.speedDown > 0)
-            act[i] += max(v - act[i], md.speedDown == 1 ? -5 : -3); // 5 200ms   // 3 333ms
-          else
-            act[i] = v;
-        }
-#endif
         v = act[i];
       }
       if((md.curve > 3) && (md.curve < 7))

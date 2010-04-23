@@ -204,6 +204,7 @@ void Th9xSim::makeSnapshot(const FXDrawable* drawable)
          snapshot.savePixels(stream);
          stream.close();
      }
+     else printf("Kann Datei %s nicht öffnen",buf);
 }
 void Th9xSim::doEvents()
 {
