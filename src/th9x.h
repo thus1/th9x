@@ -53,7 +53,6 @@
 #endif
 //#define eeprom_write_block eeWriteBlockCmp
 
-#include "myeeprom.h"
 #include "file.h"
 //
 //                  elev                        thr 
@@ -338,9 +337,15 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len);
 void eeLoadModel(uint8_t id);
 void eeSaveModel(uint8_t id);
 
+//number of virtual output/input channels X1..X4
+#define NUM_VIRT     4
+//number of real outputchannels CH1-CH8
+#define NUM_CHNOUT   8
+///number of real input channels (1-8) plus virtual input channels X1-X4
+#define NUM_XCHNRAW (8+         NUM_VIRT)
+///number of real output channels (CH1-CH8) plus virtual output channels X1-X4
+#define NUM_XCHNOUT (NUM_CHNOUT+NUM_VIRT)
 
-#define NUM_CHNRAW 12
-#define NUM_CHNOUT 12
 //#define MAX_CHNRAW 8
 /// Schreibt [RUD ELE THR AIL P1 P2 P3 MAX] aufs lcd
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
@@ -389,6 +394,7 @@ extern int16_t intpol(int16_t, uint8_t);
 extern const char stamp1[];
 extern const char stamp2[];
 extern const char stamp3[];
+#include "myeeprom.h"
 
 
 #endif

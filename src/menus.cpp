@@ -20,7 +20,7 @@
 
 
 static int16_t anaCalib[4];
-static int16_t chans512[8];
+static int16_t chans512[NUM_CHNOUT];
 //static TrainerData g_trainer;
 
 //sticks
@@ -292,7 +292,7 @@ void menuProcMixOne(uint8_t event)
     lcd_putsn_P( FW*6, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
     switch(i){
       case 0:   putsChnRaw(   FW*2,y,md2->srcRaw,attr);         
-        if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_CHNRAW); //!! bitfield
+        if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_XCHNRAW); //!! bitfield
         break;
       case 1:   lcd_outdezAtt(FW*5,y,md2->weight,attr);         
         if(attr) CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
@@ -363,7 +363,7 @@ void genMixTab()
   for(uint8_t i=0; i<MAX_MIXERS; i++)
   {
     uint8_t destCh = md[i].destCh;
-    if(destCh==0) destCh=NUM_CHNOUT;
+    if(destCh==0) destCh=NUM_XCHNOUT;
     if(destCh > maxDst){
       while(destCh > maxDst){ //ch-loop, hole alle channels auf
         maxDst++;
@@ -1083,14 +1083,14 @@ void menuProcSetup0(uint8_t event)
     lcdSetRefVolt(g_eeGeneral.contrast);
   }
   lcd_puts_P( 5*FW, y,PSTR("  CONTRAST"));
-  y+=8;
+  y+=FH;
 
   lcd_outdezAtt(5*FW,y,g_eeGeneral.vBatWarn,(sub==1 ? BLINK : 0)|PREC1);
   if(sub==1){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 100); //5-10V
   }
   lcd_puts_P( 5*FW, y,PSTR("V BAT WARNING"));
-  y+=8;
+  y+=FH;
 
   putsDrSwitches(FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
   
@@ -1322,7 +1322,7 @@ void menuProc0(uint8_t event)
     lcd_vline(xm+MW/2,ym-MW/2,MW);
     lcd_hline(xm-MW/2,ym-MW/2,MW);
   }
-  for(uint8_t i=0; i<8; i++)
+  for(uint8_t i=0; i<NUM_CHNOUT; i++)
   {
     uint8_t x = (i%4*9+3)*FW/2;
     uint8_t y = i/4*FH+40;
@@ -1334,8 +1334,8 @@ void menuProc0(uint8_t event)
 
 }
 
-static int16_t s_cacheLimitsMin[8];
-static int16_t s_cacheLimitsMax[8];
+static int16_t s_cacheLimitsMin[NUM_CHNOUT];
+static int16_t s_cacheLimitsMax[NUM_CHNOUT];
 void calcLimitCache()
 {
   if(s_limitCacheOk) return;
@@ -1343,7 +1343,7 @@ void calcLimitCache()
   printf("calc limit cache\n");
 #endif  
   s_limitCacheOk = true;
-  for(uint8_t i=0; i<8; i++){
+  for(uint8_t i=0; i<NUM_CHNOUT; i++){
     int16_t v = g_model.limitData[i].min-100;
     s_cacheLimitsMin[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
     v = g_model.limitData[i].max+100;
@@ -1389,8 +1389,8 @@ uint16_t pulses2MHz[60];
 
 void perOut()
 {
-  static int16_t anaNoTrim[NUM_CHNOUT];
-  static int16_t anas     [NUM_CHNOUT];
+  static int16_t anaNoTrim[NUM_XCHNRAW];
+  static int16_t anas     [NUM_XCHNRAW];
 
   for(uint8_t i=0;i<4;i++){        // calc Sticks
 
@@ -1442,16 +1442,18 @@ void perOut()
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
    in anas mit Trimmung */
 
-  static int32_t chans[NUM_CHNOUT];          // Ausgänge + intermidiates
+  static int32_t chans[NUM_XCHNOUT];          // Ausgänge + intermidiates
   memset(chans,0,sizeof(chans));		// Alle Ausgänge auf 0
 
   //mixer loop
   for(uint8_t stage=1; stage<=2; stage++){
     if(stage==2){
-      for(uint8_t i=8;i<12;i++)
+      for(uint8_t i = NUM_CHNOUT;  i<NUM_XCHNOUT; i++){
+        uint8_t   j = i - NUM_XCHNOUT + NUM_XCHNRAW;
         if(chans[i])
-          anaNoTrim[i]= anas[i]=
+          anaNoTrim[j]= anas[j]=
             (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+      }
     }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
       MixData &md = g_model.mixData[i];
@@ -1460,9 +1462,9 @@ void perOut()
       static int16_t act  [MAX_MIXERS];
 
       if(stage==1){
-        if(md.destCh<=8) continue; //im ersten durchlauf alle intermediates X1-X4
+        if(md.destCh<=NUM_CHNOUT) continue; //im ersten durchlauf alle intermediates X1-X4
       }else{
-        if(md.destCh>8) break;     //im zweiten Durchlauf alle outputs CH1-CH8
+        if(md.destCh>NUM_CHNOUT) break;     //im zweiten Durchlauf alle outputs CH1-CH8
       }
       if(md.destCh==0) break;
 
@@ -1569,7 +1571,7 @@ void perOut()
 
   //limit + revert loop
   calcLimitCache();
-  for(uint8_t i=0;i<8;i++){
+  for(uint8_t i=0;i<NUM_CHNOUT;i++){
     int16_t v = 0;
     if(chans[i]) v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
 
@@ -1632,7 +1634,7 @@ void setupPulsesPPM()
   //uint16_t rest=22500u*2;
   uint16_t rest=22500u*2;
   uint8_t j=0;
-  for(uint8_t i=0;i<8;i++){
+  for(uint8_t i=0;i<8;i++){ //NUM_CHNOUT
     int16_t v = chans512[i];
     v = 2*v - v/21 + 1200*2; // 24/512 = 3/64 ~ 1/21
     rest-=v;//chans[i];

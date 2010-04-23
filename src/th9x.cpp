@@ -127,6 +127,7 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
+  // !! TODO NUM_CHN !!
   lcd_putsnAtt(x,y,PSTR("   CH1CH2CH3CH4CH5CH6CH7CH8 X1 X2 X3 X4")+3*idx1,3,att);  
 }
 

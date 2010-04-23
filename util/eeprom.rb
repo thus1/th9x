@@ -82,6 +82,9 @@ class Reader_V1
     @eep=CStruct::WholeEeprom_V1.new()
     @eep.read(f)
   end
+  def data()
+    @eep
+  end
   def info
     puts @eep
   end
@@ -106,8 +109,92 @@ CStruct.defStruct "EeFs_V4",<<-"END_TYP"
   DirEnt_V4   files[#{MAXFILES_V4}];
   END_TYP
 
+CStruct.defStruct "MixData_V4",<<-"END_TYP"
+  uint8_t destCh4_srcRaw4; //
+  int8_t  weight;
+  uint8_t  swtch5_curve3;
+  uint8_t  speedUp4_speedDwn4;
+  END_TYP
+
+
+
+CStruct.defStruct "Crv5_V4",<<-"END_TYP"
+  int8_t    c[5];
+  END_TYP
+CStruct.defStruct "Crv5_V9",<<-"END_TYP"
+  int8_t    c[9];
+  END_TYP
+CStruct.defStruct "ModelData_V4",<<-"END_TYP"
+  char      name[10];    // 10
+  uint8_t   stickMode;   // 1
+  uint8_t   tmrMode;     // 1
+  uint16_t  tmrVal;      // 2
+  uint8_t   protocol;    // 1
+  char      res[3];      // 3
+  LimitData_V1 limitData[8];// 3*8
+  ExpoData_V1  expoData[4]; // 3*4
+  MixData_V4   mixData[#{MAX_MIXERS_V1}]; //4*20
+  Crv5_V4   curves5[2];   // 10
+  Crv5_V9   curves9[2];   // 18
+  TrimData_V1  trimData[4]; // 3*4
+  END_TYP
+
+CStruct.defStruct "TrainerData1_V4",<<-"END_TYP"
+  uint8_t srcChn3_swtch5; //0-7 = ch1-8
+  uint8_t weight6_mode2;  //off,add-mode,subst-mode
+  END_TYP
+
+CStruct.defStruct "TrainerData_V4",<<-"END_TYP"
+  int16_t       calib[4];
+  TrainerData1_V4  chanMix[4];
+  END_TYP
+CStruct.defStruct "EEGeneral_V4",<<-"END_TYP"
+  uint8_t myVers;
+  int16_t calibMid[4];
+  int16_t calibSpan[4];
+  uint16_t chkSum;
+  uint8_t currModel; //0..15
+  uint8_t contrast;
+  uint8_t vBatWarn;
+  int8_t  vBatCalib;  
+  int8_t  lightSw;
+  TrainerData_V4 trainer;
+  END_TYP
 
 class Reader_V4
+  def deepCopy(dst,src,key="")
+    #pp "---",src
+    src.each{|n,val,obj|
+      n=n.sub(/swtch_posNeg/,"swtch5_curve3")
+      n=n.sub(/destCh_srcRaw/,"destCh4_srcRaw4")
+      k2 = key+"/"+n #.to_s
+      if(!dst.child(n))
+        puts "#{k2} not in dst"
+        next
+      end
+      if obj.is_a? CStruct::BaseT
+        dst.child(n).set(val)
+      else
+        deepCopy(dst.child(n),obj,k2)
+      end
+    }
+  end
+  def mod_fromV1(modv1)
+    modv4=CStruct::ModelData_V4.new()
+    deepCopy(modv4,modv1)
+    modv4.limitData.each{|n,val,obj|
+      obj.min+=100
+      obj.max-=100
+    }
+    modv4.mixData.each{|n,val,obj|
+      if (obj.swtch5_curve3 & 0x1f) != 0
+        obj.swtch5_curve3-=1 if (obj.swtch5_curve3 & 0x1f) <  0x10
+        obj.swtch5_curve3+=1 if (obj.swtch5_curve3 & 0x1f) >= 0x10
+      end
+    }
+    modv4
+    #puts modv4
+  end
   def read(f)
     @eefs=CStruct::EeFs_V4.new()
     @eefs.read(f)
@@ -143,6 +230,50 @@ class Reader_V4
       puts "ERROR lost block #{i}" if !f 
     }
   end
+  def format
+    @eefs=CStruct::EeFs_V4.new()
+    @eefs.version=4
+    @eefs.mySize=64
+    @eefs.bs=16
+    @blocks = 0.chr*2048
+    (5..127).each{|i|
+      @blocks[i*16]=i-1
+    }
+    @eefs.freeList=127
+    general=CStruct::EEGeneral_V4.new()
+    general.myVers = 1
+    general.contrast = 30
+    general.vBatWarn = 90
+    sum=0
+    4.times{|i|
+      general.calibMid[i]  = 0x200;
+      general.calibSpan[i] = 0x180;
+      sum+=0x200+0x180
+    }
+    general.chkSum = sum & 0xffff;
+    write(0,1,encode(general.toBin))
+  end
+  def alloc()
+    ret=@eefs.freeList
+    @eefs.freeList=@blocks[ret*16]
+    @blocks[ret*16]=0
+    ret
+  end
+  def write(fi,typ,buf)
+    @eefs.files[fi].startBlk = p = alloc()
+    @eefs.files[fi].size_typ = buf.length + (typ << 12 ) 
+    while buf.length!=0
+      ct=buf.lcut(15)
+      @blocks[p*16+1,ct.length] = ct
+      if buf.length!=0
+         p=@blocks[p*16]=alloc
+      end
+    end
+  end
+  def close
+    @eefs.toBin+@blocks[64..-1]
+  end
+
   def info
     @eefs.each{|n,val,obj|
       printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
@@ -160,7 +291,35 @@ class Reader_V4
     MAXFILES_V4.times{|i|infoFile(i)}
   end
 
+  def encode(buf)
+    buf=buf.dup
+    obuf   = ""
+    cnt    = 0
+    state0 = true
+    i_len  = buf.length
+    (i_len+1).times{|i|
+      nst0 = buf[i] == 0
+      nst0 = false if  nst0 && !state0 && buf[i+1]!=0
+      if nst0 != state0 || cnt>=0x7f || i==i_len
+        if(state0)
+          if cnt>0
+            cnt|=0x80;
+            obuf += cnt.chr
+            cnt=0;
+          end
+        else
+          obuf += cnt.chr
+          obuf += buf[i-cnt,cnt]
+          cnt=0;
+        end
+        state0 = nst0
+      end
+      cnt+=1
+    }
+    obuf
+  end
   def decode(inbuf)
+    inbuf=inbuf.dup
     outbuf=""
     while inbuf.length != 0
       ctrl = inbuf.lcut(1)[0]
@@ -225,7 +384,7 @@ Options
   def export()
     file = ARGV[0] || 'eeprom.bin'
     dir  = ARGV[1] || 'export'
-    Dir.mkdir(dir)
+    Dir.mkdir(dir) if !File.directory?(dir)
     r=read(file)
     r.export(dir)
   end
@@ -234,6 +393,26 @@ Options
     r=read(file)
     #puts "eeprom version: #{@vers}"
     r.info
+  end
+  def convert
+    file = ARGV[0] || 'eeprom.bin'
+    dir  = ARGV[1] || 'export'
+    Dir.mkdir(dir) if !File.directory?(dir)
+    dv1=read(file).data
+    puts dv1.modelData[0]
+    rv4=Reader_V4.new
+    rv4.format
+    16.times{|m|
+      dv4 = rv4.mod_fromV1(dv1.modelData[m])
+      buf = dv4.toBin
+      pp buf
+      buf2 = rv4.encode(buf)
+      buf == rv4.decode(buf2) or raise
+      pp buf2
+      #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
+      rv4.write(m+1,2,buf2)
+    }
+    File.open(dir+"/eeprom.gen","w"){|fh| fh.write( rv4.close) }
   end
   def read(file)
     File.open(file){|f|
