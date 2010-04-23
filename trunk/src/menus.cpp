@@ -1545,9 +1545,9 @@ void perOut()
   else                                  PORTB &= ~(1<<OUT_B_LIGHT);
 
 #ifdef xSIM
-  setupPulses();
   static int s_cnt;
   if(s_cnt++%100==0){
+    setupPulses();
     for(unsigned j=0; j<DIM(pulses2MHz); j++){
       printf(" %d:%d",j&1,pulses2MHz[j]);
       if(pulses2MHz[j]==0) break;
@@ -1732,21 +1732,27 @@ void setupPulsesTracerCtp1009()
   pulses2MHzPtr=pulses2MHz;
   static bool phase;
   if( (phase=!phase) ){
-    uint8_t thr = max(127u,(uint16_t)(chans512[0]+512+4) /  8u);
+    uint8_t thr = min(127u,(uint16_t)(chans512[0]+512+4) /  8u);
     uint8_t rot;
     if (chans512[1] >= 0)
     {
-      rot = max(63u,(uint16_t)( chans512[1]+8) / 16u) | 0x40;
+      rot = min(63u,(uint16_t)( chans512[1]+8) / 16u) | 0x40;
     }else{
-      rot = max(63u,(uint16_t)(-chans512[1]+8) / 16u);
+      rot = min(63u,(uint16_t)(-chans512[1]+8) / 16u);
     }
+#ifdef SIM
+    printf("thr %02x  rot %02x\n",thr,rot);
+#endif
     sendByteTra(thr);
     sendByteTra(rot);
     uint8_t chk=thr^rot;
     sendByteTra( (chk>>4) | (chk<<4) );
     _send_hilo( 5000*2, 2000*2 );
   }else{
-    uint8_t fwd = max(127u,(uint16_t)(chans512[2]+512) /  8u) | 0x80;
+    uint8_t fwd = min(127u,(uint16_t)(chans512[2]+512) /  8u) | 0x80;
+#ifdef SIM
+    printf("fwd %02x \n",fwd);
+#endif
     sendByteTra(fwd);
     sendByteTra(0x8e);
     uint8_t chk=fwd^0x8e;
