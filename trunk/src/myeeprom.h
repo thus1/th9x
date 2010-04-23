@@ -53,8 +53,8 @@ typedef struct t_LimitData {
   bool    revert;
 } __attribute__((packed)) LimitData;
 typedef struct t_MixData {
-  uint8_t destCh:4; //
-  uint8_t srcRaw:4; //0=off
+  uint8_t destCh:4; //        1..NUM_CHNOUT,X1-X4
+  uint8_t srcRaw:4; //0=off   1..8      ,X1-X4
   int8_t  weight;
   int8_t  swtch:5;
   uint8_t curve:3; //0=symmetrisch 1=no neg 2=no pos
@@ -88,7 +88,7 @@ typedef struct t_ModelData {
   uint16_t  tmrVal;      // 2
   uint8_t   protocol;    // 1
   char      res[3];      // 3
-  LimitData limitData[8];// 3*8
+  LimitData limitData[NUM_CHNOUT];// 3*8
   ExpoData  expoData[4]; // 3*4
   MixData   mixData[MAX_MIXERS]; //3*20
   int8_t    curves5[2][5];   // 10

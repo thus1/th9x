@@ -127,6 +127,7 @@ module CStruct
     attr_reader :offset
     def initialize(offset)   @offset=offset; @membn=[]; @membv={};           end
     def each() @membn.each{|n| yield n,@membv[n].get,@membv[n].obj} end
+    def child(n)      @membv[n]; end
     def obj()            self;                                            end
     def get()            self;                                            end
     def sizeof()         self.class.sizeof                                end
@@ -138,7 +139,7 @@ module CStruct
     def to_sInternal(ofs,nest=0)
       s=nest>0 ? "\n" : ""; 
       @membn.each { |n|;
-        ofs==@membv[n].offset or raise
+        #ofs==@membv[n].offset or raise " bad offset #{ofs} != #{@membv[n].offset}"
         s+=sprintf("%3d ",@membv[n].offset)
         x,ofs = @membv[n].to_sInternal(ofs,nest+1)
         s+="    "*nest + "#{n}\t= "+x
@@ -146,20 +147,22 @@ module CStruct
       [s+"\n",ofs]
     end
   end
+  class BaseT < CStructBase
+  end
 
   class CArray < CStructBase
     def initialize(offset,n,typ) 
       super(offset);  
-      n.times{|i|  
+      n.times{|j|  i=j.to_s
         @membn.push i; 
         @membv[i]  = typ.new(offset);
         offset     += @membv[i].sizeof()
       }
     end
-    def []=(i,v) @membv[i].set(v)                                         end
-    def [](i)    @membv[i].get()                                         end
+    def []=(i,v) @membv[i.to_s].set(v)                                         end
+    def [](i)    @membv[i.to_s].get()                                         end
   end
-  class CString < CStructBase
+  class CString < BaseT
     def initialize(offset,n) @offset=offset; @strlen=n                      end
     def sizeof()            @strlen                                      end
     def CString.granu()     1                                            end
@@ -179,8 +182,9 @@ module CStruct
     fmt=signed ? ["","c","s","","l"][sizeof] : ["","C","S","","L"][sizeof]
     cT2rbT name
     d = <<-"END"
-    class #{name} < CStructBase
+    class #{name} < BaseT
       def initialize(offset) @offset=offset; @value=0                        end
+      def each()                                                          end
       def #{name}.sizeof()    #{sizeof}                                   end
       def #{name}.granu()     #{sizeof}                                   end
       def to_sInternal(ofs,nest=0) 
