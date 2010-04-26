@@ -212,7 +212,11 @@ class Reader_V4
       buf=""
       chain_each(bi){ |j,cnt|
         buf+=@blocks[j*16+1,15]
-        puts "ERROR multiple use of block #{i}" if @fat[j] 
+        if @fat[j] 
+          puts "ERROR multiple use of block #{j}" 
+          infoMap
+          break
+        end
         @fat[j]=(fi+?a).chr+("%02d "%cnt);
       }
       @fbuf[fi]    = buf[0,sz]
@@ -222,7 +226,7 @@ class Reader_V4
     @freeBlks=0
     chain_each(@eefs.freeList){|j,cnt| 
       @freeBlks+=1
-      puts "ERROR used block is also in free chain #{i}" if @fat[j] 
+      puts "ERROR used block is also in free chain #{j}" if @fat[j] 
       @fat[j]=" .  "; 
     }
     @fat.each_with_index{|f,i|
@@ -274,12 +278,8 @@ class Reader_V4
     @eefs.toBin+@blocks[64..-1]
   end
 
-  def info
-    @eefs.each{|n,val,obj|
-      printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
-    }
-    puts
-    puts "allocation map freeBlks=#{@freeBlks} freeSz=#{@freeBlks*@bs}"
+  def infoMap
+    puts "allocation map"
     @fat.each_with_index{|fx,i|
       print fx ? fx : '////'
       puts if i%16==15
@@ -289,6 +289,15 @@ class Reader_V4
     puts "-----------------------"
     #     a    24  1   40  127, 126,
     MAXFILES_V4.times{|i|infoFile(i)}
+    MAXFILES_V4.times{|i|infoFileFull(i)} if $opt_v>=1
+  end
+  def info
+    @eefs.each{|n,val,obj|
+      printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
+    }
+    puts
+    puts "freeBlks=#{@freeBlks} freeSz=#{@freeBlks*@bs}"
+    infoMap
   end
 
   def encode(buf)
@@ -331,20 +340,39 @@ class Reader_V4
     end
     outbuf
   end
-  def chain_each(i)
+  def chain_each(i,lim=255)
     cnt=0
     while i!=0
       yield i,cnt if block_given?
       cnt+=1
+      break if cnt>=lim
       i=@blocks[i*16+0]
+    end
+  end
+  def infoFileFull(fi)
+    puts "--- File #{fi}: ---------------------------------"
+    return if @fbufdec[fi] == ""
+    if fi==0
+      general=CStruct::EEGeneral_V4.new()
+      general.fromBin(@fbufdec[fi])
+      puts general
+    else
+      buf=@fbufdec[fi]
+      if (l1=buf.length) < (l2=CStruct::ModelData_V4.sizeof)
+        puts "bad length #{l1} != #{l2} fill up with zeroes"
+        buf=buf+(0.chr*(l2-l1))
+      end
+      mod=CStruct::ModelData_V4.new()
+      mod.fromBin(buf)
+      puts mod
     end
   end
   def infoFile(fi)
     bi  = @eefs.files[fi].startBlk
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
-    printf("%s  %4d %2d  %3d ",(fi+?a).chr,sz,typ,@fbufdec[fi].length)
-    chain_each(bi){|j,cnt|  printf(" %d,",j)}
+    printf("%s  %4d %2d  %3d ",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0)
+    chain_each(bi,10){|j,cnt|  printf(" %d,",j)}
     puts
   end
   def export(dir)

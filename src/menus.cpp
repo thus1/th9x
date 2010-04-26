@@ -74,9 +74,12 @@ void MState::checkExit(uint8_t i_event,int8_t exitMode)
   event=i_event;
   if(event == EVT_ENTRY)  init();
   if(exitMode<0) return;
+  if(event == EVT_KEY_LONG(KEY_EXIT)){
+    popMenu(true); //return to uppermost
+  }
   if(event == EVT_KEY_FIRST(KEY_EXIT)){
     if(sVert==0 || exitMode)   popMenu();  
-    else                        init();
+    else                       init();
   }
 }
 
@@ -738,7 +741,7 @@ void menuProcModel(uint8_t event)
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
   mState.checkExit(event);
   mState.checkChain(2,menuTabModel,DIM(menuTabModel));
-  int8_t  sub = mState.checkVert(4+1);
+  int8_t  sub = mState.checkVert(5+1);
   uint8_t subSub;
   subSub = mState.checkHorz(1,1+sizeof(g_model.name));
   subSub = mState.checkHorz(3,4);
@@ -759,13 +762,15 @@ void menuProcModel(uint8_t event)
                  (sub==3 && subSub==3 ? BLINK:0));
 
 
-  lcd_putsAtt( 0,    5*FH, PSTR("Mode"),sub==4?INVERS:0);
-  lcd_putcAtt( 4*FW, 5*FH, '1'+g_model.stickMode,sub==4?INVERS:0);
+  lcd_putsAtt( 0,    6*FH, PSTR("Mode"),sub==4?INVERS:0);
+  lcd_putcAtt( 4*FW, 6*FH, '1'+g_model.stickMode,sub==4?INVERS:0);
   for(uint8_t i=0; i<4; i++)
   {
     lcd_img(    (6+4*i)*FW, (5)*FH, sticks,i,0);
     putsChnRaw( (6+4*i)*FW, (6)*FH,i+1,sub==4?BLINK:0);
   }
+  lcd_putsAtt(    0, (7)*FH, PSTR("RM"),sub==5?BLINK:0);
+  lcd_puts_P(  FW*6, (7)*FH, PSTR("remove [MENU]"));
 
   switch(sub)
   {
@@ -806,6 +811,14 @@ void menuProcModel(uint8_t event)
       break;
     case 4:
       CHECK_INCDEC_H_MODELVAR(event,g_model.stickMode,0,3);
+      break;
+    case 5:
+      if(event==EVT_KEY_LONG(KEY_MENU)){
+        killEvents(event);
+        EFile::rm(FILE_MODEL(g_eeGeneral.currModel)); //delete file
+        eeLoadModel(g_eeGeneral.currModel); //load default values
+        chainMenu(menuProcModelSelect);
+      }
       break;
   }
 }
@@ -849,6 +862,15 @@ void menuProcModelSelect(uint8_t event)
       break;
     case  EVT_KEY_FIRST(KEY_MENU):
       s_editMode = true;
+      break;
+    case  EVT_KEY_LONG(KEY_MENU):
+      if(s_editMode){
+        if(eeDuplicateModel(sub)) {
+          beep();
+          s_editMode = false;
+        }
+        else                      beepWarn();
+      }
       break;
 
     case EVT_ENTRY:
