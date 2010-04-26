@@ -15,8 +15,10 @@
 #define file_h
 
 
-/// Filenames
+/// fileId of general file
 #define FILE_GENERAL   0
+
+/// convert model number 0..MAX_MODELS-1  int fileId
 #define FILE_MODEL(n) (1+n)
 
 void EeFsFormat();
@@ -30,12 +32,27 @@ class EFile
   uint8_t currBlk;
   uint8_t ofs;
   uint8_t bRlc;
-  uint8_t read(uint8_t*buf,uint8_t i_len);  ///internal usage, for compressed data
-  uint8_t write(uint8_t*buf,uint8_t i_len); ///internal usage, for compressed data
 public:
+  /// create a new file with given fileId, 
+  /// !!! if this file already exists, then all blocks are reused
+  /// and all contents will be overwritten.
+  /// after writing closeTrunc has to be called
+  void    create(uint8_t i_fileId, uint8_t typ);
+  /// close file and truncate the blockchain if to long.
+  void    closeTrunc();
+
+  uint8_t read(uint8_t*buf,uint8_t i_len);
+  uint8_t write(uint8_t*buf,uint8_t i_len);
   ///remove contents of given file
   static void rm(uint8_t i_fileId); 
+
+  ///remove swap contents of file1 with them of file2
   static void swap(uint8_t i_fileId1,uint8_t i_fileId2); 
+
+  ///return true if the file with given fileid exists
+  static bool exists(uint8_t i_fileId); 
+
+
   ///return size of compressed file without block overhead
   uint16_t size(); 
   ///open file for reading, no close necessary
@@ -46,6 +63,7 @@ public:
   ///If file existed before, then contents is overwritten. If file was larger before, 
   ///then unused blocks are freed
   uint8_t writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len); 
+  bool copy(uint8_t i_fileIdDst, uint8_t i_fileIdSrc); 
 };
 
 #endif

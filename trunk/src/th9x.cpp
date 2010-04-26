@@ -25,6 +25,7 @@ todo
 - stat mit times
 - fast multiply 8*16 > 32
 - doku einschaltverhalten, trainermode, curves  light-pin B7 pin17
+- move file-based code from drivers.cpp to new file
 done
 + switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
 + delay algo rework delay 0???
@@ -127,7 +128,7 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
-  // !! TODO NUM_CHN !!
+  // !! todo NUM_CHN !!
   lcd_putsnAtt(x,y,PSTR("   CH1CH2CH3CH4CH5CH6CH7CH8 X1 X2 X3 X4")+3*idx1,3,att);  
 }
 
@@ -349,11 +350,10 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
   if(subOld!=sub) BLINK_SYNC;
   return sub;//false;
 }
-
-void popMenu()
+void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){
-    g_menuStackPtr--;
+    g_menuStackPtr = uppermost ? 0 : g_menuStackPtr-1;
     beep();  
     (*g_menuStack[g_menuStackPtr])(EVT_ENTRY_UP);
   }else{

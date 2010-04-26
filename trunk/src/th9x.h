@@ -215,7 +215,8 @@ void    chainMenu(MenuFuncP newMenu);
 /// goto given Menu, store current menu in menuStack
 void    pushMenu(MenuFuncP newMenu);
 /// return to last menu in menustack
-void    popMenu();
+/// if uppermost is set true, thenmenu return to uppermost menu in menustack
+void    popMenu(bool uppermost=false);
 /// Gibt Alarm Maske auf lcd aus. 
 /// Die Maske wird so lange angezeigt bis eine beliebige Taste gedrueckt wird.
 void    alert(const prog_char * s);
@@ -336,6 +337,7 @@ void eeReadAll();
 void eeLoadModelName(uint8_t id,char*buf,uint8_t len);
 void eeLoadModel(uint8_t id);
 void eeSaveModel(uint8_t id);
+bool eeDuplicateModel(uint8_t id);
 
 //number of virtual output/input channels X1..X4
 #define NUM_VIRT     4

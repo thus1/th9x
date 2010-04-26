@@ -132,18 +132,24 @@ bool EeFsOpen()
   return eeFs.version == EEFS_VERS && eeFs.mySize  == sizeof(eeFs);
 }
 
+bool EFile::exists(uint8_t i_fileId)
+{
+  return eeFs.files[i_fileId].startBlk;
+}
 
 void EFile::swap(uint8_t i_fileId1,uint8_t i_fileId2)
 {
   DirEnt            tmp = eeFs.files[i_fileId1];
   eeFs.files[i_fileId1] = eeFs.files[i_fileId2];
   eeFs.files[i_fileId2] = tmp;;
+  EeFsFlush();
 }
 
 void EFile::rm(uint8_t i_fileId){
   if(eeFs.files[i_fileId].startBlk)
     EeFsFree(eeFs.files[i_fileId].startBlk);
   memset(&eeFs.files[i_fileId],0,sizeof(eeFs.files[i_fileId]));
+  EeFsFlush();
 }
 
 uint16_t EFile::size(){
@@ -220,11 +226,24 @@ uint8_t EFile::write(uint8_t*buf,uint8_t i_len){
   pos += i_len - len;
   return i_len - len;
 }
-uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len){
+void EFile::create(uint8_t i_fileId, uint8_t typ){
   open(i_fileId);
   eeFs.files[i_fileId].typ      = typ; 
-  eeFs.files[m_fileId].size     = 0; 
+  eeFs.files[i_fileId].size     = 0; 
+  
+}
+void EFile::closeTrunc()
+{
+  eeFs.files[m_fileId].size     = pos; 
+  if(currBlk && EeFsGetLink(currBlk)){
+    EeFsFree(EeFsGetLink(currBlk));
+    EeFsSetLink(currBlk, 0);
+  }
+  EeFsFlush();
+}
 
+uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len){
+  create(i_fileId,typ);
   bool    state0 = true;
   uint8_t cnt    = 0;
   uint8_t i;
@@ -248,13 +267,7 @@ uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len)
     }
     cnt++;
   }
-
-  eeFs.files[m_fileId].size     = pos; 
-  if(currBlk && EeFsGetLink(currBlk)){
-    EeFsFree(EeFsGetLink(currBlk));
-    EeFsSetLink(currBlk, 0);
-  }
-  EeFsFlush();
+  closeTrunc();
   return i_len;
 }
 
