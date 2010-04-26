@@ -21,8 +21,9 @@
 /// convert model number 0..MAX_MODELS-1  int fileId
 #define FILE_MODEL(n) (1+n)
 
-void EeFsFormat();
 bool EeFsOpen();
+int8_t EeFsck();
+void EeFsFormat();
 uint16_t EeFsGetFree();
 
 class EFile

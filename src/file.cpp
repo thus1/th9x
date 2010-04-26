@@ -74,6 +74,14 @@ static void EeFsSetDat(uint8_t blk,uint8_t ofs,uint8_t*buf,uint8_t len){
   //EeFsWrite( blk,ofs+1,val);
   eeWriteBlockCmp(buf, (void*)(blk*BS+ofs+1), len);
 }
+static void EeFsFlushFreelist()
+{
+  eeWriteBlockCmp(&eeFs.freeList,&((EeFs*)0)->freeList ,sizeof(eeFs.freeList));
+}
+static void EeFsFlush()
+{
+  eeWriteBlockCmp(&eeFs, 0,sizeof(eeFs));
+}
   
 uint16_t EeFsGetFree()
 {
@@ -85,29 +93,64 @@ uint16_t EeFsGetFree()
   }
   return ret;
 }
-static void EeFsFree1(uint8_t blk){///free one or more blocks
-  EeFsSetLink(blk, eeFs.freeList);
-  eeFs.freeList = blk; //chain in front
-}
 static void EeFsFree(uint8_t blk){///free one or more blocks
   uint8_t i = blk;
   while( EeFsGetLink(i)) i = EeFsGetLink(i);
   EeFsSetLink(i,eeFs.freeList);
   eeFs.freeList = blk; //chain in front
+  EeFsFlushFreelist();
 }
-static uint8_t EeFsAlloc(){ ///alloc one block from frelist
+static uint8_t EeFsAlloc(){ ///alloc one block from freelist
   uint8_t ret=eeFs.freeList;
   if(ret){
     eeFs.freeList = EeFsGetLink(ret);
+    EeFsFlushFreelist();
     EeFsSetLink(ret,0);
   }
   return ret;
 }
-static void EeFsFlush()
-{
-  eeWriteBlockCmp(&eeFs, 0,sizeof(eeFs));
-}
 
+int8_t EeFsck()
+{
+  uint8_t *bufp;
+  uint8_t buffer[BLOCKS];
+  bufp = buffer;
+  memset(bufp,0,BLOCKS);
+  uint8_t blk ;
+  int8_t ret=0;
+  for(uint8_t i = 0; i <= MAXFILES; i++){
+    if(i == MAXFILES) blk = eeFs.freeList;
+    else              blk = eeFs.files[i].startBlk;
+    while(blk){
+      if(blk <  FIRSTBLK ) goto err_1; //bad blk index
+      if(blk >= BLOCKS   ) goto err_2; //bad blk index
+      if(bufp[blk])        goto err_3; //blk double usage
+      bufp[blk] = i+1;
+      blk = EeFsGetLink(blk);
+    }
+  }
+  for(blk = FIRSTBLK; blk < BLOCKS; blk++){
+    if(bufp[blk]==0)       //goto err_4; //unused block
+    {
+#ifdef SIM
+      printf("ERROR fsck -4 blk=%d readding..\n",blk);
+#endif
+      EeFsSetLink(blk,eeFs.freeList);
+      eeFs.freeList = blk; //chain in front
+      EeFsFlushFreelist();
+    }
+  }
+  if(0){
+    //err_4: ret--;
+    err_3: ret--;
+    err_2: ret--;
+    err_1: ret--;
+#ifdef SIM
+    printf("ERROR fsck %d blk=%d\n",ret,blk);
+#endif
+  }
+  return ret;
+}
 void EeFsFormat()
 {
   if(sizeof(eeFs) != RESV){
@@ -119,7 +162,9 @@ void EeFsFormat()
   eeFs.mySize   = sizeof(eeFs);
   eeFs.freeList = 0;
   eeFs.bs       = BS;
-  for(uint8_t i=FIRSTBLK; i < BLOCKS; i++)  EeFsFree1(i);
+  for(uint8_t i = FIRSTBLK; i < BLOCKS; i++) EeFsSetLink(i,i+1);
+  EeFsSetLink(BLOCKS-1, 0);
+  eeFs.freeList = FIRSTBLK;
   EeFsFlush();
 }
 bool EeFsOpen()
@@ -146,10 +191,11 @@ void EFile::swap(uint8_t i_fileId1,uint8_t i_fileId2)
 }
 
 void EFile::rm(uint8_t i_fileId){
-  if(eeFs.files[i_fileId].startBlk)
-    EeFsFree(eeFs.files[i_fileId].startBlk);
-  memset(&eeFs.files[i_fileId],0,sizeof(eeFs.files[i_fileId]));
-  EeFsFlush();
+  uint8_t i = eeFs.files[i_fileId].startBlk;
+  memset(&eeFs.files[i_fileId], 0, sizeof(eeFs.files[i_fileId]));
+  EeFsFlush(); //chained out
+
+  if(i) EeFsFree( i ); //chain in
 }
 
 uint16_t EFile::size(){
@@ -204,7 +250,6 @@ uint8_t EFile::write(uint8_t*buf,uint8_t i_len){
   if(!currBlk && pos==0)
   {
     eeFs.files[m_fileId].startBlk = currBlk = EeFsAlloc();
-      
   }
   while(len)
   {
@@ -234,12 +279,12 @@ void EFile::create(uint8_t i_fileId, uint8_t typ){
 }
 void EFile::closeTrunc()
 {
+  uint8_t fri=0;
   eeFs.files[m_fileId].size     = pos; 
-  if(currBlk && EeFsGetLink(currBlk)){
-    EeFsFree(EeFsGetLink(currBlk));
-    EeFsSetLink(currBlk, 0);
-  }
-  EeFsFlush();
+  if(currBlk && ( fri = EeFsGetLink(currBlk)))    EeFsSetLink(currBlk, 0);
+  EeFsFlush(); //chained out
+
+  if(fri) EeFsFree( fri );  //chain in
 }
 
 uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len){
@@ -255,17 +300,25 @@ uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len)
       if(state0){
         if(cnt>0){
           cnt|=0x80;
-          write(&cnt,1);
+          if( write(&cnt,1)!=1)           goto error;
           cnt=0;
         }
       }else{
-        write(&cnt,1);
-        write(&buf[i-cnt],cnt);
+        if( write(&cnt,1) !=1)            goto error;
+        uint8_t ret=write(&buf[i-cnt],cnt);
+        if( ret !=cnt) { cnt-=ret;        goto error;}
         cnt=0;
       }
       state0 = nst0;
     }
     cnt++;
+  }
+  if(0){
+    error:
+    i_len = i - cnt & 0x7f;
+#ifdef TEST
+    printf("ERROR filesystem overflow! written: %d missing: %d\n",i_len,cnt&0x7f);
+#endif
   }
   closeTrunc();
   return i_len;
@@ -297,6 +350,8 @@ int main();
 void showfiles()
 {
   printf("------ free: %d\n",EeFsGetFree());
+  int8_t err;
+  if((err=EeFsck())) printf("ERROR fsck %d\n",err);    
   EeFsDump();
   EFile f;
   for(int i=0; i<MAXFILES; i++){
@@ -316,18 +371,18 @@ int main()
   if(!EeFsOpen()) EeFsFormat();
   showfiles();
   EFile    f[FILES];
-  for(int i=0; i<FILES; i++){ f[i].create(i,5); }
+  uint8_t buf[1000];
+  //for(int i=0; i<FILES; i++){ f[i].create(i,5); }
 
   
   for(int i=0; i<FILES; i++){
-    uint8_t buf[20];
     for(int j=0; j<10; j++){ 
       buf[j*2]=i+'0';
       buf[j*2+1]=j+'a';
     }
-    f[i].writeRlc(buf,20);
+    f[i].writeRlc(i,3,buf,15);
   }
-  for(int i=0; i<FILES; i++){ f[i].trunc(); }
+  //for(int i=0; i<FILES; i++){ f[i].trunc(); }
   
  
   showfiles();
@@ -337,15 +392,18 @@ int main()
   EFile::rm(6);
   showfiles();
   
-  f[0].create(6,6);
-  for(int i=0; i<255; i++){ f[0].writeRlc((uint8_t*)"66666",5);   }
-  f[0].trunc(); 
+  //f[0].create(6,6);
+  for(int i=0; i<1000; i++) buf[i]='6';
+  f[0].writeRlc(6,6,buf,255);   
+  //f[0].trunc(); 
+
+  f[0].writeRlc(5,5,buf,5);   
 
   showfiles();
 
   f[0].open(6);
-  for(int i=0; i<9; i++){ uint8_t b; f[0].readRlc(&b,1);   }
-  f[0].trunc(); 
+  //  for(int i=0; i<9; i++){ uint8_t b; f[0].readRlc(&b,1);   }
+//f[0].trunc(); 
 
   showfiles();
 }
