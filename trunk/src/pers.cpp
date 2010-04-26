@@ -123,7 +123,10 @@ bool eeDuplicateModel(uint8_t id)
 }
 void eeReadAll()
 {
-  if(!EeFsOpen() || !eeLoadGeneral())
+  if(!EeFsOpen()  || 
+     EeFsck() < 0 || 
+     !eeLoadGeneral()
+  )
   {
 #ifdef SIM
     printf("bad eeprom contents\n");

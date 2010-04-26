@@ -210,7 +210,7 @@ class Reader_V4
       bi  = @eefs.files[fi].startBlk
       sz  = @eefs.files[fi].size_typ & 0xfff
       buf=""
-      chain_each(bi){ |j,cnt|
+      chain_each(bi){ |j,cnt,nxt|
         buf+=@blocks[j*16+1,15]
         if @fat[j] 
           puts "ERROR multiple use of block #{j}" 
@@ -224,10 +224,10 @@ class Reader_V4
     }
     #free chain
     @freeBlks=0
-    chain_each(@eefs.freeList){|j,cnt| 
+    chain_each(@eefs.freeList){|j,cnt,nxt| 
       @freeBlks+=1
       puts "ERROR used block is also in free chain #{j}" if @fat[j] 
-      @fat[j]=" .  "; 
+      @fat[j]="%+3d "%(nxt-j); 
     }
     @fat.each_with_index{|f,i|
       next if i<4
@@ -343,10 +343,11 @@ class Reader_V4
   def chain_each(i,lim=255)
     cnt=0
     while i!=0
-      yield i,cnt if block_given?
-      cnt+=1
+      nxt=@blocks[i*16+0]
+      yield i,cnt,nxt if block_given?
+      cnt += 1
       break if cnt>=lim
-      i=@blocks[i*16+0]
+      i = nxt
     end
   end
   def infoFileFull(fi)
@@ -372,7 +373,7 @@ class Reader_V4
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
     printf("%s  %4d %2d  %3d ",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0)
-    chain_each(bi,10){|j,cnt|  printf(" %d,",j)}
+    chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j)}
     puts
   end
   def export(dir)

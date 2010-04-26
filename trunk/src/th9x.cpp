@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
+- freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
 - dont use trim-keys when re-sorting models 
 + save data befor load
 + menu-taste in mixer 
@@ -19,7 +20,9 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- copy/del model
+- format eeprom
+- filesystem check
++ copy/del model
 - pcm 
 - light auto off
 - stat mit times
