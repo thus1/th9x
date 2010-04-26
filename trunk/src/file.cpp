@@ -113,7 +113,7 @@ static uint8_t EeFsAlloc(){ ///alloc one block from freelist
 int8_t EeFsck()
 {
   uint8_t *bufp;
-  uint8_t buffer[BLOCKS];
+  static uint8_t buffer[BLOCKS];
   bufp = buffer;
   memset(bufp,0,BLOCKS);
   uint8_t blk ;
