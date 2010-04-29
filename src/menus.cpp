@@ -799,8 +799,9 @@ void menuProcModel(uint8_t event)
         case 2:
           {
           int8_t sec=g_model.tmrVal%60;
-          sec = checkIncDec_vm( event,sec ,-1,60);
-          g_model.tmrVal += sec - g_model.tmrVal%60 ;
+          sec -= checkIncDec_vm( event,sec+2 ,1,62)-2;
+          g_model.tmrVal -= sec ;
+          if((int16_t)g_model.tmrVal < 0) g_model.tmrVal=0;
           break;
           }
         case 3:
@@ -1133,12 +1134,12 @@ void timer(uint8_t val)
   static uint16_t s_sum;
   s_cnt++;
   s_sum+=val;
-  if((g_tmr10ms-s_time)<100) //10 sec
+  if((g_tmr10ms-s_time)<100) //1 sec
     return;
-  s_time= g_tmr10ms;
-  val   = s_sum/s_cnt;
-  s_sum = 0;
-  s_cnt = 0;
+  s_time += 100;
+  val     = s_sum/s_cnt;
+  s_sum  -= val*s_cnt; //rest
+  s_cnt   = 0;
 
   switch(g_model.tmrMode)
   {
@@ -1155,7 +1156,7 @@ void timer(uint8_t val)
       break;
   }
   int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-  if(tmr<=0) {
+  if(tmr<=0 && tmr >= -MAX_ALERT_TIME) {
     static int16_t last_tmr;
     if(last_tmr != tmr){
       last_tmr = tmr;
@@ -1298,10 +1299,17 @@ void menuProc0(uint8_t event)
       chainMenu(menuProcStatistic2); 
       killEvents(event);
       break;
+    case EVT_KEY_LONG(KEY_EXIT):
+      s_timeCum16=0;
+      break;
+    case EVT_ENTRY:
+    case EVT_ENTRY_UP:
+      killEvents(EVT_KEY_LONG(KEY_EXIT));
+      break;
   }
 
 
-  uint8_t x=FW*3;
+  uint8_t x=FW*2;
   lcd_putsAtt(x,0,PSTR("Th9x"),sub==0 ? INVERS : 0);
   lcd_putsnAtt(x+ 5*FW,   0*FH, g_model.name ,sizeof(g_model.name),sub==1 ? BSS_INVERS : BSS_NO_INV);
 
@@ -1310,9 +1318,9 @@ void menuProc0(uint8_t event)
 
   if(g_model.tmrMode != TMRMODE_NONE){
     int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-    lcd_puts_P(   x+ 5*FW, FH*2, PSTR("TME"));
-    
-    putsTime( x+9*FW, FH*2, tmr, 0, 0);
+    uint8_t att = DBLSIZE | (tmr < 0 ? BLINK : 0);
+    putsTime( x+8*FW, FH*2, tmr, att,att);
+    lcd_putsnAtt(   x+ 4*FW, FH*2, PSTR(" TME THRTHR%")-4+4*g_model.tmrMode,4,0);
   }
   //trim sliders
   for(uint8_t i=0; i<4; i++)

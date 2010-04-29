@@ -37,6 +37,7 @@
 #define PREC2         0x40
 #define PREC3         0x60
 #define PREC(n)       (((n)>>5)&3)
+#define DBLSIZE       0x80
 
 
 //extern unsigned char font_5x8_x20_x7f[];
