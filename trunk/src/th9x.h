@@ -189,6 +189,7 @@ enum EnumKeys {
 #define TMRMODE_ABS      1
 #define TMRMODE_THR      2
 #define TMRMODE_THR_REL  3
+#define MAX_ALERT_TIME   20
 
 #define PROTO_PPM        0
 #define PROTO_SILV_A     1

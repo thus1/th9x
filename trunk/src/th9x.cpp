@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
-- freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
++ freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
 - dont use trim-keys when re-sorting models 
 + save data befor load
 + menu-taste in mixer 
@@ -21,14 +21,14 @@ bugs:
 + timer_table progmem
 todo
 - format eeprom
-- filesystem check
++ filesystem check
 + copy/del model
 - pcm 
 - light auto off
 - stat mit times
 - fast multiply 8*16 > 32
 - doku einschaltverhalten, trainermode, curves  light-pin B7 pin17
-- move file-based code from drivers.cpp to new file
++ move file-based code from drivers.cpp to new file
 done
 + switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
 + delay algo rework delay 0???
@@ -110,14 +110,20 @@ const prog_char APM modi12x3[]="RUDELETHRAILRUDTHRELEAILAILELETHRRUDAILTHRELERUD
 
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
 {
-  lcd_putc(      x+ 0*FW, y, tme<0 ?'-':' ');
-  lcd_outdezNAtt(x+ 3*FW, y, abs(tme)/60,LEADING0+att,2);
-  lcd_outdezNAtt(x+ 6*FW, y, abs(tme)%60,LEADING0+att2,2);
-  lcd_putc(      x+ 3*FW, y, ':');
+  //uint8_t fw=FWNUM; //FW-1;
+  //if(att&DBLSIZE) fw+=fw;
+  
+  lcd_putcAtt(   x,    y, tme<0 ?'-':' ',att);
+  x += (att&DBLSIZE) ? FWNUM*5 : FWNUM*3+2;
+  lcd_putcAtt(   x, y, ':',att);
+  lcd_outdezNAtt(x, y, abs(tme)/60,LEADING0+att,2);
+  x += (att&DBLSIZE) ? FWNUM*5-1 : FWNUM*4-2;
+  lcd_outdezNAtt(x, y, abs(tme)%60,LEADING0+att2,2);
 }
 void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {
-  lcd_putc(      x+ 4*FW,   y,    'V');
+  att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
+  lcd_putcAtt(   x+ 4*FW,   y,    'V',att);
   lcd_outdezAtt( x+ 4*FW,   y,    g_vbat100mV,att|PREC1);
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
