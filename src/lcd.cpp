@@ -26,7 +26,8 @@
 #include "th9x.h"
 
 
-unsigned char displayBuf[DISPLAY_W*DISPLAY_H/8]; 
+uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8]; 
+#define DISPLAY_END (displayBuf+sizeof(displayBuf))
 #include "font.lbm"
 #define font_5x8_x20_x7f (font+3)
 
@@ -58,7 +59,7 @@ void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
-  uint8_t *pmax = &displayBuf[ DISPLAY_H/8 * DISPLAY_W ];
+  //uint8_t *pmax = &displayBuf[ DISPLAY_H/8 * DISPLAY_W ];
   
   prog_uchar    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
@@ -69,7 +70,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
       if(inv) b=~b;
       static uint8_t dbl[]={0x00,0x03,0x0c,0x0f, 0x30,0x33,0x3c,0x3f,
                             0xc0,0xc3,0xcc,0xcf, 0xf0,0xf3,0xfc,0xff};
-      if(&p[DISPLAY_W+1] < pmax){
+      if(&p[DISPLAY_W+1] < DISPLAY_END){
         p[0] = p[1] = dbl[b&0xf];
         p[DISPLAY_W]=p[DISPLAY_W+1] = dbl[b>>4];
         p+=2;
@@ -78,12 +79,12 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
   }else{
     for(char i=5; i!=0; i--){
       uint8_t b = pgm_read_byte(q++);
-      if(p<pmax) *p++ = inv ? ~b : b;
+      if(p<DISPLAY_END) *p++ = inv ? ~b : b;
     }
-    if(p<pmax) *p++ = inv ? ~0 : 0;
+    if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
   }
 #ifdef SIM
-  assert(p<=pmax);
+  assert(p<=DISPLAY_END);
 #endif
 }
 void lcd_putc(uint8_t x,uint8_t y,const char c)
@@ -175,23 +176,48 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
 
 void lcd_plot(uint8_t x,uint8_t y)
 {
-  if(y>=64)  return;
-  if(x>=128) return;
-  displayBuf[ y / 8 * DISPLAY_W + x ] ^= BITMASK(y%8);
+  //  if(y>=64)  return;
+  //  if(x>=128) return;
+  //  displayBuf[ y / 8 * DISPLAY_W + x ] ^= BITMASK(y%8);
+  uint8_t *p   = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  if(p<DISPLAY_END) *p ^= BITMASK(y%8);
 }
-void lcd_hline(uint8_t x,uint8_t y, uint8_t w)
+void lcd_hlineStip(unsigned char x,unsigned char y, signed char w,uint8_t pat)
 {
+  if(w<0) {x+=w; w=-w;}
+  uint8_t *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  uint8_t msk = BITMASK(y%8);
   while(w){
-    lcd_plot(x++,y);
+    if(pat&1) {
+      //lcd_plot(x,y);
+      *p ^= msk;
+      pat = (pat >> 1) | 0x80;
+    }else{
+      pat = pat >> 1;
+    }
     w--;
+    p++;
   }
 }
-void lcd_vline(uint8_t x,uint8_t y, uint8_t h)
+
+void lcd_hline(uint8_t x,uint8_t y, int8_t w)
 {
-  while(h){
-    lcd_plot(x,y++);
-    h--;
+  lcd_hlineStip(x,y,w,0xff);
+}
+void lcd_vline(uint8_t x,uint8_t y, int8_t h)
+{
+  //while(h){
+  //    lcd_plot(x,y++);
+  //    h--;
+  //  }
+  uint8_t *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  uint8_t *q  = &displayBuf[ (y+h) / 8 * DISPLAY_W + x ];
+  *p ^= ~(BITMASK(y%8)-1);
+  while(p<q){
+    p  += DISPLAY_W;
+    *p ^= 0xff;
   }
+  *p ^= ~(BITMASK((y+h)%8)-1);
 }
 
 void lcdSendCtl(uint8_t val)

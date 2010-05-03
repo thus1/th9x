@@ -201,94 +201,106 @@ void EFile::rm(uint8_t i_fileId){
 uint16_t EFile::size(){
   return eeFs.files[m_fileId].size;
 }
-uint8_t EFile::open(uint8_t i_fileId){
+uint8_t EFile::openRd(uint8_t i_fileId){
   m_fileId = i_fileId;
-  ofs      = 0;
-  pos      = 0;
-  bRlc     = 0;
-  currBlk  = eeFs.files[m_fileId].startBlk; 
+  m_pos      = 0;
+  m_currBlk  = eeFs.files[m_fileId].startBlk; 
+  m_ofs      = 0;
+  m_bRlc     = 0;
+  m_err      = ERR_NONE;       //error reasons
   return  eeFs.files[m_fileId].typ; 
 }
 uint8_t EFile::read(uint8_t*buf,uint8_t i_len){
-  uint8_t len = eeFs.files[m_fileId].size - pos; 
+  uint8_t len = eeFs.files[m_fileId].size - m_pos; 
   if(len < i_len) i_len = len;
   len = i_len;
   while(len)
   {
-    if(!currBlk) break;
-    *buf++ = EeFsGetDat(currBlk, ofs++);
-    if(ofs>=(BS-1)){
-      ofs=0;
-      currBlk=EeFsGetLink(currBlk);
+    if(!m_currBlk) break;
+    *buf++ = EeFsGetDat(m_currBlk, m_ofs++);
+    if(m_ofs>=(BS-1)){
+      m_ofs=0;
+      m_currBlk=EeFsGetLink(m_currBlk);
     }
     len--;
   }
-  pos += i_len - len;
+  m_pos += i_len - len;
   return i_len - len;
 }
 uint8_t EFile::readRlc(uint8_t*buf,uint8_t i_len){
   uint8_t i;
   for( i=0; i<i_len; ){
-    if((bRlc&0x7f) == 0) {
-      if(read(&bRlc,1)!=1) break;
+    if((m_bRlc&0x7f) == 0) {
+      if(read(&m_bRlc,1)!=1) break;
     }
-    assert(bRlc & 0x7f);
-    uint8_t l=min(bRlc&0x7f,i_len-i);
-    if(bRlc&0x80){
+    assert(m_bRlc & 0x7f);
+    uint8_t l=min(m_bRlc&0x7f,i_len-i);
+    if(m_bRlc&0x80){
       memset(&buf[i],0,l);
     }else{
       uint8_t lr = read(&buf[i],l);
       if(lr!=l) return i+lr;
     }
     i    += l;
-    bRlc -= l;
+    m_bRlc -= l;
   }
   return i;
 }
 uint8_t EFile::write(uint8_t*buf,uint8_t i_len){
   uint8_t len=i_len;
-  if(!currBlk && pos==0)
+  if(!m_currBlk && m_pos==0)
   {
-    eeFs.files[m_fileId].startBlk = currBlk = EeFsAlloc();
+    eeFs.files[m_fileId].startBlk = m_currBlk = EeFsAlloc();
   }
   while(len)
   {
-    if(!currBlk) break;
-    if(ofs>=(BS-1)){
-      ofs=0;
-      if( ! EeFsGetLink(currBlk) ){
-        EeFsSetLink(currBlk, EeFsAlloc());
-      }
-      currBlk = EeFsGetLink(currBlk);
+    if( (int16_t)(m_stopTime10ms - g_tmr10ms) < 0)
+    {
+      m_err = ERR_TMO;
+      break;
     }
-    if(!currBlk) break;
-    uint8_t l = BS-1-ofs; if(l>len) l=len;
-    EeFsSetDat(currBlk, ofs, buf, l);
-    buf+=l;
-    ofs+=l;
-    len-=l;
+    if(!m_currBlk) {
+      m_err = ERR_FULL;
+      break;
+    }
+    if(m_ofs>=(BS-1)){
+      m_ofs=0;
+      if( ! EeFsGetLink(m_currBlk) ){
+        EeFsSetLink(m_currBlk, EeFsAlloc());
+      }
+      m_currBlk = EeFsGetLink(m_currBlk);
+    }
+    if(!m_currBlk) {
+      m_err = ERR_FULL;
+      break;
+    }
+    uint8_t l = BS-1-m_ofs; if(l>len) l=len;
+    EeFsSetDat(m_currBlk, m_ofs, buf, l);
+    buf   +=l;
+    m_ofs +=l;
+    len   -=l;
   }
-  pos += i_len - len;
-  return i_len - len;
+  m_pos += i_len - len;
+  return   i_len - len;
 }
-void EFile::create(uint8_t i_fileId, uint8_t typ){
-  open(i_fileId);
+void EFile::create(uint8_t i_fileId, uint8_t typ, uint8_t maxTme10ms){
+  openRd(i_fileId); //internal use
   eeFs.files[i_fileId].typ      = typ; 
   eeFs.files[i_fileId].size     = 0; 
-  
+  m_stopTime10ms = g_tmr10ms + maxTme10ms;
 }
 void EFile::closeTrunc()
 {
   uint8_t fri=0;
-  eeFs.files[m_fileId].size     = pos; 
-  if(currBlk && ( fri = EeFsGetLink(currBlk)))    EeFsSetLink(currBlk, 0);
+  eeFs.files[m_fileId].size     = m_pos; 
+  if(m_currBlk && ( fri = EeFsGetLink(m_currBlk)))    EeFsSetLink(m_currBlk, 0);
   EeFsFlush(); //chained out
 
   if(fri) EeFsFree( fri );  //chain in
 }
 
-uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len){
-  create(i_fileId,typ);
+uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len, uint8_t maxTme10ms){
+  create(i_fileId,typ,maxTme10ms);
   bool    state0 = true;
   uint8_t cnt    = 0;
   uint8_t i;
@@ -316,8 +328,19 @@ uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len)
   if(0){
     error:
     i_len = i - cnt & 0x7f;
-#ifdef TEST
-    printf("ERROR filesystem overflow! written: %d missing: %d\n",i_len,cnt&0x7f);
+#ifdef SIM
+    switch(m_err){
+      default:
+      case ERR_NONE:
+        assert(!"missing errno");
+        break;  
+      case ERR_FULL:
+        printf("ERROR filesystem overflow! written: %d missing: %d\n",i_len,cnt&0x7f);
+        break;  
+      case ERR_TMO:
+        printf("ERROR filesystem write timeout %d 0ms\n",(int16_t)(m_stopTime10ms - g_tmr10ms));
+        break;  
+    }
 #endif
   }
   closeTrunc();
@@ -380,7 +403,7 @@ int main()
       buf[j*2]=i+'0';
       buf[j*2+1]=j+'a';
     }
-    f[i].writeRlc(i,3,buf,15);
+    f[i].writeRlc(i,3,buf,15,100);
   }
   //for(int i=0; i<FILES; i++){ f[i].trunc(); }
   
@@ -394,10 +417,10 @@ int main()
   
   //f[0].create(6,6);
   for(int i=0; i<1000; i++) buf[i]='6';
-  f[0].writeRlc(6,6,buf,255);   
+  f[0].writeRlc(6,6,buf,255,100);   
   //f[0].trunc(); 
 
-  f[0].writeRlc(5,5,buf,5);   
+  f[0].writeRlc(5,5,buf,5,100);   
 
   showfiles();
 

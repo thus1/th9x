@@ -52,20 +52,41 @@ void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
   }
 }
 
-void eeWriteBlockCmp(const void *pointer_ram, void *pointer_eeprom, size_t size)
+void eeWriteBlockCmp(const void *i_pointer_ram, void *pointer_eeprom, size_t size)
 {
-  printf("eeWriteBlockCmp p=%p ofs=%d l=%d\n",pointer_ram,(int)pointer_eeprom,(int)size);
-  FILE *fp=fopen("eeprom.bin", "r+");
-  if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
-  fwrite(pointer_ram, size, 1,fp);
-  fclose(fp);
+  FILE *fp = fopen("eeprom.bin", "r+");
+  long ofs = (long) pointer_eeprom;
+  const char* pointer_ram= (const char*)i_pointer_ram;
+  printf("eeWr p=%10p blk%3d ofs=%2d l=%d",pointer_ram,
+         (int)pointer_eeprom/16,
+         (int)pointer_eeprom%16,
+         (int)size);
+  while(size){
+    if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
+    char buf[1];
+    fread(buf, 1, 1,fp);
 
+    if(buf[0] !=  pointer_ram[0]){
+      printf("X");
+      g_tmr10ms++;
+      if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
+      fwrite(pointer_ram, 1, 1,fp);
+    }else{
+      printf(".");
+    }
+
+    size--;
+    ofs++;
+    (const char*)pointer_ram++;
+  }
+  fclose(fp);
+  puts("");
 }
 void eeprom_write_blockxx (const void *pointer_ram,
                     void *pointer_eeprom,
                     size_t size)
 {
-  printf("eeprom_write_block p=%p ofs=%d l=%d\n",pointer_ram,(int)pointer_eeprom,(int)size);
+  printf("eeprom_write_block p=%p ofs=%d l=%2d\n",pointer_ram,(int)pointer_eeprom,(int)size);
   FILE *fp=fopen("eeprom.bin", "r+");
   if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
   fwrite(pointer_ram, size, 1,fp);

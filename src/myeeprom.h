@@ -69,15 +69,13 @@ typedef struct t_EEGeneral {
   int16_t calibMid[4];
   int16_t calibSpan[4];
   uint16_t chkSum;
-  //uint8_t sizeGeneral;
-  //  uint8_t sizeModel;
-  //  uint8_t numModels;
   uint8_t currModel; //0..15
   uint8_t contrast;
   uint8_t vBatWarn;
   int8_t  vBatCalib;  
   int8_t  lightSw;
   TrainerData trainer;
+  uint8_t view;
 } __attribute__((packed)) EEGeneral;
 
 
