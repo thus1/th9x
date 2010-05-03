@@ -1,3 +1,3 @@
-#define DATE_STR "28.04.2010"
-#define TIME_STR "22:16:20"
-#define SUB_VERS 1109-thus
+#define DATE_STR "03.05.2010"
+#define TIME_STR "23:51:57"
+#define SUB_VERS 1161-thus

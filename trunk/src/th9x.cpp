@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
++ watchdog in write-file
 + freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
 - dont use trim-keys when re-sorting models 
 + save data befor load
@@ -20,16 +21,21 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- key-beep off
+- low memory alert
 - format eeprom
-+ filesystem check
-+ copy/del model
 - pcm 
 - light auto off
 - stat mit times
 - fast multiply 8*16 > 32
 - doku einschaltverhalten, trainermode, curves  light-pin B7 pin17
-+ move file-based code from drivers.cpp to new file
 done
++ timer with 0, timer beep stop
++ fast vline/hline
++ display modes graf/numeric.. in general
++ filesystem check
++ copy/del model
++ move file-based code from drivers.cpp to new file
 + switch handling: zwei varianten: ALTERNATIVE oder  ACTIVATE
 + delay algo rework delay 0???
 + 2-stuf mixer?, mixer with intermediates
@@ -45,7 +51,7 @@ done
 + move
 + silverlit
 + bat spanng. calib
-- timer stop/start mit switch
++ timer stop/start mit switch
 + timer beep
 + pos-neg-abs, in mixer anzeigen
 + light schalten
@@ -423,7 +429,7 @@ uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
 #ifndef SIM
 #include <avr/interrupt.h>
-#include <avr/wdt.h>
+//#include <avr/wdt.h>
 #define HEART_TIMER2Mhz 1;
 #define HEART_TIMER10ms 2;
 

@@ -50,6 +50,7 @@
   #define F_CPU 16000000UL  // 16 MHz
   #include <util/delay.h>
   #define pgm_read_adr(address_short) pgm_read_word(address_short)
+  #include <avr/wdt.h>
 #endif
 //#define eeprom_write_block eeWriteBlockCmp
 
@@ -189,7 +190,7 @@ enum EnumKeys {
 #define TMRMODE_ABS      1
 #define TMRMODE_THR      2
 #define TMRMODE_THR_REL  3
-#define MAX_ALERT_TIME   20
+#define MAX_ALERT_TIME   60
 
 #define PROTO_PPM        0
 #define PROTO_SILV_A     1
@@ -333,11 +334,11 @@ template<class t> inline t max(t a, t b){ return a>b?a:b; }
 void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t size);
 void eeDirty(uint8_t msk);
 void eeCheck(bool immediately=false);
-void eeWriteGeneral();
+//void eeWriteGeneral();
 void eeReadAll();
 void eeLoadModelName(uint8_t id,char*buf,uint8_t len);
 void eeLoadModel(uint8_t id);
-void eeSaveModel(uint8_t id);
+//void eeSaveModel(uint8_t id);
 bool eeDuplicateModel(uint8_t id);
 
 //number of virtual output/input channels X1..X4

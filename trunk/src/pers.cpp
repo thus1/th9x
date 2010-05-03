@@ -38,13 +38,9 @@ void generalDefault()
   }
   g_eeGeneral.chkSum = sum;
 }
-void eeWriteGeneral()
-{
-  theFile.writeRlc(FILE_GENERAL,FILE_TYP_GENERAL,(uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
-}
 bool eeLoadGeneral()
 {
-  theFile.open(FILE_GENERAL);
+  theFile.openRd(FILE_GENERAL);
   theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
   uint16_t sum=0;
   for(int i=0; i<8;i++) sum+=g_eeGeneral.calibMid[i];
@@ -71,7 +67,7 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
   if(id<MAX_MODELS)
   {
     //eeprom_read_block(buf,(void*)modelEeOfs(id),sizeof(g_model.name));
-    theFile.open(FILE_MODEL(id));
+    theFile.openRd(FILE_MODEL(id));
     memset(buf,' ',len);
     if(theFile.readRlc((uint8_t*)buf,sizeof(g_model.name)) == sizeof(g_model.name) )
     {
@@ -85,7 +81,7 @@ void eeLoadModel(uint8_t id)
 {
   if(id<MAX_MODELS)
   {
-    theFile.open(FILE_MODEL(id));
+    theFile.openRd(FILE_MODEL(id));
     if(theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)) != sizeof(g_model) )
     {
 #ifdef SIM
@@ -93,13 +89,6 @@ void eeLoadModel(uint8_t id)
 #endif
       modelDefault(id);
     }
-  }
-}
-void eeSaveModel(uint8_t id)
-{
-  if(id<MAX_MODELS)
-  {
-    theFile.writeRlc(FILE_MODEL(id),FILE_TYP_MODEL,(uint8_t*)&g_model, sizeof(g_model));
   }
 }
 
@@ -112,11 +101,15 @@ bool eeDuplicateModel(uint8_t id)
   }
   if(i==MAX_MODELS) return false; //no free space in directory left
 
-  theFile.open(FILE_MODEL(id));
-  theFile2.create(FILE_MODEL(i),FILE_TYP_MODEL);
+  theFile.openRd(FILE_MODEL(id));
+  theFile2.create(FILE_MODEL(i),FILE_TYP_MODEL,20);
   uint8_t buf[15];
   uint8_t l;
-  while((l=theFile.read(buf,15))) theFile2.write(buf,l);
+  while((l=theFile.read(buf,15)))
+  {
+    theFile2.write(buf,l);
+    wdt_reset();
+  }
   theFile2.closeTrunc();
   //todo error handling
   return true;
@@ -135,10 +128,12 @@ void eeReadAll()
 #endif
     EeFsFormat();
     generalDefault();
-    eeWriteGeneral();
+    theFile.writeRlc(FILE_GENERAL,FILE_TYP_GENERAL,(uint8_t*)&g_eeGeneral, 
+                     sizeof(EEGeneral),200);
 
     modelDefault(0);
-    eeSaveModel(0);
+    theFile.writeRlc(FILE_MODEL(0),FILE_TYP_MODEL,(uint8_t*)&g_model, 
+                     sizeof(g_model),200);
   }
   eeLoadModel(g_eeGeneral.currModel);
 }
@@ -152,13 +147,47 @@ void eeDirty(uint8_t msk)
   s_eeDirtyMsk      |= msk;
   s_eeDirtyTime10ms  = g_tmr10ms;
 }
+#define WRITE_DELAY_10MS 100
 void eeCheck(bool immediately)
 {
   uint8_t msk  = s_eeDirtyMsk;
   if(!msk) return;
-  if( !immediately && ((g_tmr10ms - s_eeDirtyTime10ms) < 100)) return;
+  if( !immediately && ((g_tmr10ms - s_eeDirtyTime10ms) < WRITE_DELAY_10MS)) return;
   s_eeDirtyMsk = 0;
-  if(msk & EE_GENERAL) eeWriteGeneral();
-  if(msk & EE_MODEL)   eeSaveModel(g_eeGeneral.currModel);
+  if(msk & EE_GENERAL){
+    if(theFile.writeRlc(FILE_TMP, FILE_TYP_GENERAL, (uint8_t*)&g_eeGeneral, 
+                        sizeof(EEGeneral),20) == sizeof(EEGeneral))
+    {   
+      EFile::swap(FILE_GENERAL,FILE_TMP);
+    }else{
+      if(theFile.errno()==ERR_TMO){
+        s_eeDirtyMsk |= EE_GENERAL; //try again
+        s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
+#ifdef SIM
+        printf("writing aborted GENERAL\n");
+#endif
+      }else{
+        alert("EEPROM overflow");
+      }
+    }
+    
+  }
+  if(msk & EE_MODEL){
+    if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
+                        sizeof(g_model),20) == sizeof(g_model))
+    {
+      EFile::swap(FILE_MODEL(g_eeGeneral.currModel),FILE_TMP);
+    }else{
+      if(theFile.errno()==ERR_TMO){
+        s_eeDirtyMsk |= EE_MODEL; //try again
+        s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
+#ifdef SIM
+        printf("writing aborted MODEL\n");
+#endif
+      }else{
+        alert("EEPROM overflow");
+      }
+    }
+  }
   beep();
 }

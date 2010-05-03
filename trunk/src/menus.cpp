@@ -933,7 +933,7 @@ void menuProcDiagCalib(uint8_t event)
             sum += g_eeGeneral.calibSpan[i] = min(dv1,dv2);
           }
           g_eeGeneral.chkSum = sum;
-          eeWriteGeneral();
+          eeDirty(EE_GENERAL); //eeWriteGeneral();
           break;
       }
       break;
@@ -1127,6 +1127,12 @@ void menuProcSetup0(uint8_t event)
 }
 
 uint16_t s_timeCum16; //gewichtete laufzeit in 1/16 sec
+int16_t  s_timerVal;
+uint8_t  s_timerState;
+#define TMR_OFF     0
+#define TMR_RUNNING 1
+#define TMR_BEEPING 2
+#define TMR_STOPPED 3
 void timer(uint8_t val)
 {
   static uint16_t s_time;
@@ -1144,6 +1150,7 @@ void timer(uint8_t val)
   switch(g_model.tmrMode)
   {
     case TMRMODE_NONE:
+      s_timerState = TMR_OFF;
       return;
     case TMRMODE_THR_REL:
       s_timeCum16 += val/2;
@@ -1155,16 +1162,37 @@ void timer(uint8_t val)
       s_timeCum16 += 16;
       break;
   }
-  int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-  if(tmr<=0 && tmr >= -MAX_ALERT_TIME) {
+  s_timerVal = g_model.tmrVal - s_timeCum16/16;
+  switch(s_timerState)
+  {
+    case TMR_OFF:
+      if(g_model.tmrMode != TMRMODE_NONE) s_timerState=TMR_RUNNING;
+      break;
+    case TMR_RUNNING:
+      if(s_timerVal<=0 && g_model.tmrVal) s_timerState=TMR_BEEPING;
+      break;
+    case TMR_BEEPING:
+      if(s_timerVal <= -MAX_ALERT_TIME)   s_timerState=TMR_STOPPED;
+      if(g_model.tmrVal == 0)             s_timerState=TMR_RUNNING;
+      break;
+    case TMR_STOPPED:
+      break;
+  }
+
+  //if(s_timerVal<=0 && s_timerVal >= -MAX_ALERT_TIME) {
+  //if(s_timerVal<=0 && s_timerVal >= -MAX_ALERT_TIME) {
+  //  }
+
+  if(s_timerState==TMR_BEEPING){
     static int16_t last_tmr;
-    if(last_tmr != tmr){
-      last_tmr = tmr;
+    if(last_tmr != s_timerVal){
+      last_tmr = s_timerVal;
       beep();
     }
   }
-
 }
+
+
 #define MAXTRACE 120
 uint8_t s_traceBuf[MAXTRACE];
 uint16_t s_traceWr;
@@ -1210,10 +1238,10 @@ void menuProcStatistic2(uint8_t event)
       chainMenu(menuProc0); 
       break;
   }
-  lcd_puts_P( 0*FW,  1*FH, PSTR("tmr1Lat      /2 us"));
-  lcd_outdez(11*FW , 1*FH, g_tmr1Latency );
-  lcd_puts_P( 0*FW,  2*FH, PSTR("tmain        /16 ms"));
-  lcd_outdez(11*FW , 2*FH, g_timeMain );
+  lcd_puts_P( 0*FW,  1*FH, PSTR("tmr1Lat      us"));
+  lcd_outdez(11*FW , 1*FH, g_tmr1Latency/2 );
+  lcd_puts_P( 0*FW,  2*FH, PSTR("tmain        ms"));
+  lcd_outdez(11*FW , 2*FH, g_timeMain/16 );
 }
 
 void menuProcStatistic(uint8_t event)
@@ -1263,6 +1291,7 @@ void menuProc0(uint8_t event)
   sprintf(g_title,"M0");  
 #endif
   static uint8_t sub;
+  //static uint8_t view;
   //sub = checkSubGen(event, 2, sub, false);
   switch(event)
   {
@@ -1291,6 +1320,14 @@ void menuProc0(uint8_t event)
       pushMenu(menuProcSetup0);
       killEvents(event);
       break;
+#define MAX_VIEWS 2
+    case EVT_KEY_BREAK(KEY_UP):
+      g_eeGeneral.view += 2;
+    case EVT_KEY_BREAK(KEY_DOWN):
+      g_eeGeneral.view += MAX_VIEWS-1; 
+      g_eeGeneral.view %= MAX_VIEWS;
+      eeDirty(EE_GENERAL);
+      break;
     case EVT_KEY_LONG(KEY_UP):
       chainMenu(menuProcStatistic); 
       killEvents(event);
@@ -1299,7 +1336,11 @@ void menuProc0(uint8_t event)
       chainMenu(menuProcStatistic2); 
       killEvents(event);
       break;
+    case EVT_KEY_FIRST(KEY_EXIT):
+      if(s_timerState==TMR_BEEPING) s_timerState = TMR_STOPPED;
+      break;
     case EVT_KEY_LONG(KEY_EXIT):
+      s_timerState = TMR_OFF; //is changed to RUNNING dep from mode
       s_timeCum16=0;
       break;
     case EVT_ENTRY:
@@ -1316,9 +1357,10 @@ void menuProc0(uint8_t event)
   lcd_puts_P(  x+ 5*FW,   1*FH,    PSTR("BAT"));
   putsVBat(x+ 8*FW,1*FH,0);
 
-  if(g_model.tmrMode != TMRMODE_NONE){
+  //if(g_model.tmrMode != TMRMODE_NONE){
+  if(s_timerState != TMR_OFF){
     int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-    uint8_t att = DBLSIZE | (tmr < 0 ? BLINK : 0);
+    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? BLINK : 0);
     putsTime( x+8*FW, FH*2, tmr, att,att);
     lcd_putsnAtt(   x+ 4*FW, FH*2, PSTR(" TME THRTHR%")-4+4*g_model.tmrMode,4,0);
   }
@@ -1357,12 +1399,31 @@ void menuProc0(uint8_t event)
   }
   for(uint8_t i=0; i<NUM_CHNOUT; i++)
   {
-    uint8_t x = (i%4*9+3)*FW/2;
-    uint8_t y = i/4*FH+40;
-    // *1000/512 =   *2 - 24/512
-    lcd_outdezAtt( x+4*FW , y, chans512[i]*2-chans512[i]/21,PREC1 );
-    // lcd_outdezAtt( x+4*FW , y-2*FH, g_ppmIns[i]*2,PREC1 );
-    // lcd_outdezAtt( x+4*FW , y, captureRing[i],PREC1 );
+    uint8_t x0,y0;
+    switch(g_eeGeneral.view)
+    {
+      case 0:
+        x0 = (i%4*9+3)*FW/2;
+        y0 = i/4*FH+40;
+        // *1000/512 =   *2 - 24/512
+        lcd_outdezAtt( x0+4*FW , y0, chans512[i]*2-chans512[i]/21,PREC1 );
+        break;
+      case 1:
+#define WBAR2 (50/2)
+        x0       = i<4 ? 128/4+4 : 128*3/4-4;
+        y0       = 38+(i%4)*5;
+        int8_t l = (abs(chans512[i])+WBAR2/2) * WBAR2 / 512;
+        lcd_hlineStip(x0-WBAR2,y0,WBAR2*2+1,0x55);
+        lcd_vline(x0,y0-2,5);
+        if(chans512[i]>0){
+          x0+=1;
+        }else{
+          x0-=l;
+        }
+        lcd_hline(x0,y0+1,l);
+        lcd_hline(x0,y0-1,l);
+        break;
+    }
   }
 
 }
