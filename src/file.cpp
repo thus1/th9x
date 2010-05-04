@@ -327,7 +327,7 @@ uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len,
   }
   if(0){
     error:
-    i_len = i - cnt & 0x7f;
+    i_len = i - (cnt & 0x7f);
 #ifdef SIM
     switch(m_err){
       default:
