@@ -170,7 +170,7 @@ void eeCheck(bool immediately)
         alert("EEPROM overflow");
       }
     }
-    
+    return; //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
   if(msk & EE_MODEL){
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 

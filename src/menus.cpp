@@ -1345,7 +1345,9 @@ void menuProc0(uint8_t event)
       break;
     case EVT_ENTRY:
     case EVT_ENTRY_UP:
-      killEvents(EVT_KEY_LONG(KEY_EXIT));
+      killEvents(KEY_EXIT);
+      killEvents(KEY_UP);
+      killEvents(KEY_DOWN);
       break;
   }
 
