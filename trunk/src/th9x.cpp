@@ -159,7 +159,7 @@ void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)//, bool nc)
     case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
   }
   lcd_putcAtt(x,y, idx1<0 ? '!' : ' ',att);  
-  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*abs(idx1-1),3,att);  
+  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*(abs(idx1)-1),3,att);  
 }
 bool getSwitch(int8_t swtch, bool nc)
 {
