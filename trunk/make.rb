@@ -80,6 +80,7 @@ class Builder
         cmd += " -o #{felf}"
         cmd += " -Wl,-Map=#{@projectName}.map,--cref,-v"
         cmd += " -mmcu=#{@pars[:MCU]}"
+        cmd += " "+ @pars[:CFLAGS] 
         cmd += " "+ @pars[:LDFLAGS]
         cmd += " "+ objs.join(" ")
         #$(CC)     $(INCDIR) $(CFLAGS) $(LIB) $(LDFLAGS) -mmcu=$(MCU) -o #{obj} 
