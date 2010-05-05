@@ -21,7 +21,10 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- key-beep off
+- curves mit -100..100, cache
+- thr-warning
+- mode in general
+- key-beep off/ thr- switch- memory- warnings off
 - low memory alert
 - format eeprom
 - pcm 
