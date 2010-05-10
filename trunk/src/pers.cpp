@@ -31,6 +31,7 @@ void generalDefault()
   g_eeGeneral.currModel=  0;
   g_eeGeneral.contrast = 30;
   g_eeGeneral.vBatWarn = 90;
+  g_eeGeneral.stickMode=  1;
   int16_t sum=0;
   for (int i = 0; i < 4; ++i) {
     sum += g_eeGeneral.calibMid[i]  = 0x200;
@@ -55,7 +56,7 @@ void modelDefault(uint8_t id)
 {
   memset(&g_model,0,sizeof(g_model));
   strcpy_P(g_model.name,PSTR("MODEL     "));
-  g_model.stickMode=1;
+  //g_model.stickMode=1;
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
   g_model.mixData[0].destCh = 1;
@@ -102,7 +103,7 @@ bool eeDuplicateModel(uint8_t id)
   if(i==MAX_MODELS) return false; //no free space in directory left
 
   theFile.openRd(FILE_MODEL(id));
-  theFile2.create(FILE_MODEL(i),FILE_TYP_MODEL,20);
+  theFile2.create(FILE_MODEL(i),FILE_TYP_MODEL,200);
   uint8_t buf[15];
   uint8_t l;
   while((l=theFile.read(buf,15)))
@@ -167,7 +168,7 @@ void eeCheck(bool immediately)
         printf("writing aborted GENERAL\n");
 #endif
       }else{
-        alert("EEPROM overflow");
+        alert(PSTR("EEPROM overflow"));
       }
     }
     return; //first finish GENERAL, then MODEL !!avoid Toggle effect
@@ -185,7 +186,7 @@ void eeCheck(bool immediately)
         printf("writing aborted MODEL\n");
 #endif
       }else{
-        alert("EEPROM overflow");
+        alert(PSTR("EEPROM overflow"));
       }
     }
   }

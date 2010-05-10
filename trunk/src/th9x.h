@@ -248,6 +248,8 @@ bool    getSwitch(int8_t swtch, bool nc);
 ///
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att);
 
+void checkMem();
+void checkTHR();
 ///   Pr�ft beim Einschalten ob alle Switches 'off' sind.
 void    checkSwitches();
 
@@ -272,6 +274,8 @@ bool checkIncDecModVar(uint8_t event, void*p, uint8_t flags)
 int16_t checkIncDec_hm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
+///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
+int16_t checkIncDec_hg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int16_t checkIncDec_vg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max);
 
@@ -300,19 +304,6 @@ extern const PROGMEM char modi12x3[];
 extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
 
-/// Erzeugt einen beep der laenge b
-inline void _beep(uint8_t b) {
-  g_beepCnt=b;
-#ifdef SIM
-  printf("beep %d\n",b);
-#endif
-}
-/// Erzeugt einen kurzen beep
-#define beep()     _beep(1)
-/// Erzeugt einen langen beep
-#define beepWarn() _beep(30)
-/// Erzeugt einen sehr langen beep
-#define beepErr()  _beep(100)
 
 
 
@@ -377,6 +368,7 @@ void menuProcDiagKeys(uint8_t event);
 void menuProcDiagVers(uint8_t event);
 void menuProcTrainer(uint8_t event);
 void menuProcSetup0(uint8_t event);
+void menuProcSetup1(uint8_t event);
 void menuProcMain(uint8_t event);
 void menuProcModelSelect(uint8_t event);
 
@@ -400,6 +392,19 @@ extern const char stamp2[];
 extern const char stamp3[];
 #include "myeeprom.h"
 
+/// Erzeugt einen beep der laenge b
+inline void _beep(uint8_t b) {
+  g_beepCnt=b;
+#ifdef SIM
+  printf("beep %d\n",b);
+#endif
+}
+/// Erzeugt einen kurzen beep
+#define beep()     _beep(BEEP_VAL)
+/// Erzeugt einen langen beep
+#define beepWarn() _beep(30)
+/// Erzeugt einen sehr langen beep
+#define beepErr()  _beep(100)
 
 #endif
 /*eof*/

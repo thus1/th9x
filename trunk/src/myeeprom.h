@@ -65,23 +65,29 @@ typedef struct t_MixData {
 
 
 typedef struct t_EEGeneral {
-  uint8_t myVers;
-  int16_t calibMid[4];
-  int16_t calibSpan[4];
-  uint16_t chkSum;
-  uint8_t currModel; //0..15
-  uint8_t contrast;
-  uint8_t vBatWarn;
-  int8_t  vBatCalib;  
-  int8_t  lightSw;
+  uint8_t   myVers;
+  int16_t   calibMid[4];
+  int16_t   calibSpan[4];
+  uint16_t  chkSum;
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib;  
+  int8_t    lightSw;
   TrainerData trainer;
-  uint8_t view;
+  uint8_t   view;     //index of subview in main scrren
+#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
+#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
+#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
+#define BEEP_VAL (  g_eeGeneral.warnOpts & 0x08 ? 0 : 1)
+  uint8_t   warnOpts; //bitset for several warnings
+  uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral;
 
 
 typedef struct t_ModelData {
   char      name[10];    // 10 must be first for eeLoadModelName
-  uint8_t   stickMode;   // 1
+  uint8_t   stickModex;   // 1
   uint8_t   tmrMode;     // 1
   uint16_t  tmrVal;      // 2
   uint8_t   protocol;    // 1

@@ -170,7 +170,7 @@ class Builder
     #abgeleitete parameter
     @pars[:CFLAGS] ||= ""
     @pars[:LDFLAGS]||= ""
-    @pars[:CFLAGS]  += " -g2 -Os -Wall -pedantic --save-temps"
+    @pars[:CFLAGS]  += " -g2 -gdwarf-2 -Os -Wall -pedantic --save-temps"
     @pars[:INCLUDE]||= ""
     @pars[:INCLUDE] +=  "-I. -I#{@pars[:AVR_PATH]}/avr/include"
     @pars[:SOURCES]  =  @pars[:SOURCES].strip.split(/ +/)
