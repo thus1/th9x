@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
++ bug mixer end
 + watchdog in write-file
 + freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
 - dont use trim-keys when re-sorting models 
@@ -21,17 +22,19 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- curves mit -100..100, cache
-- thr-warning
-- mode in general
-- key-beep off/ thr- switch- memory- warnings off
-- low memory alert
+- prüfung des Schülersignals vor 
++ curves mit -100..100, cache
++ thr-warning
++ mode in general
++ key-beep off/ thr- switch- memory- warnings off
++ low memory alert
 - format eeprom
 - pcm 
 - light auto off
 - stat mit times
 - fast multiply 8*16 > 32
-- doku einschaltverhalten, trainermode, curves  light-pin B7 pin17
++ doku einschaltverhalten, trainermode, curves  
+- doku light-pin B7 pin17
 done
 + timer with 0, timer beep stop
 + fast vline/hline
@@ -139,7 +142,7 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
   if((idx1>=1) && (idx1 <=4)) 
   {
-    lcd_putsnAtt(x,y,modi12x3+g_model.stickMode*12+3*(idx1-1),3,att);  
+    lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att);  
   }else{
     lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAXFUL X1 X2 X3 X4")+3*(idx1-5),3,att);
   }
@@ -175,20 +178,33 @@ bool getSwitch(int8_t swtch, bool nc)
   return               keyState((EnumKeys)(SW_BASE+swtch-1));
 }
 
-// void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)
-// {
-//   lcd_putcAtt(x,y, idx1<0 ? '!' : ' ',att);  
-//   lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+4*abs(idx1),4,att);  
-// }
-// bool getSwitch(int8_t swtch, bool nc)
-// {
-//   if(swtch==0)return nc; 
-//   if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch));
-//   return keyState((EnumKeys)(SW_BASE+swtch));
-// }
+void checkMem()
+{
+  if(! WARN_MEM) return;
+  if(EeFsGetFree() < 200)  
+  {
+    alert(PSTR("EEPROM low mem"));
+  }
+  
+}
+void checkTHR()
+{
+  if(! WARN_THR) return;
+  for(uint8_t i=0; i<20; i++) per10ms(); //read anas
+  int thrchn=(2-(g_eeGeneral.stickMode&1));//stickMode=0123 -> thr=2121
+  int16_t v= g_anaIns[thrchn];
+  v -= g_eeGeneral.calibMid[thrchn];
+  v  = v * (512/8) / (max(40,g_eeGeneral.calibSpan[thrchn]/8));
+
+  if(v > -500)  
+  {
+    alert(PSTR("THR not idle"));
+  }
+}
 
 void checkSwitches()
 {
+  if(! WARN_SW) return;
   uint8_t i;
   for(i=SW_BASE_DIAG; i< SW_Trainer; i++)
   {
@@ -215,9 +231,9 @@ uint8_t  g_beepCnt;
 void alert(const prog_char * s)
 {
   lcd_clear();
-  lcd_puts_P(50,0*FH,PSTR("ALERT"));  
-  lcd_puts_P(0,3*FW,s);  
-  lcd_puts_P(0,7*FH,PSTR("PRESS ANY KEY"));  
+  lcd_putsAtt(64-5*FW,0*FH,PSTR("ALERT"),DBLSIZE);  
+  lcd_puts_P(0,4*FW,s);  
+  lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
   refreshDiplay();
   beepErr();
   while(1)
@@ -317,6 +333,11 @@ int16_t checkIncDec_hm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_ma
 int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
 {
   checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_MODEL);
+  return i_val;
+}
+int16_t checkIncDec_hg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+{
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|EE_GENERAL);
   return i_val;
 }
 int16_t checkIncDec_vg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
@@ -582,8 +603,9 @@ int main()
   g_menuStack[0] =  menuProc0;
   eeReadAll();
 
-  
   uint16_t old10ms;
+  checkMem();
+  checkTHR();
   checkSwitches();
   setupPulses();
   wdt_enable(WDTO_500MS);

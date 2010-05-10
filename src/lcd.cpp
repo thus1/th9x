@@ -112,6 +112,7 @@ uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
     if(!c) break;
     lcd_putcAtt(x,y,c,mode);
     x+=FW;
+    if(mode&DBLSIZE) x+=FW;
   }
   return x;
 }

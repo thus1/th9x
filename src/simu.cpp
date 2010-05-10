@@ -178,7 +178,7 @@ Th9xSim::Th9xSim(FXApp* a)
     }
     sliders[i]->setRange(0,1023);
     sliders[i]->setTickDelta(7);
-    sliders[i]->setValue(512);
+    sliders[i]->setValue(i==1 ? 200 : 512);
   }
   for(int i=4; i<8; i++){
     knobs[i]= new FXKnob(hf0,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
@@ -247,6 +247,8 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
   if(firstTime)
   {
     eeReadAll();
+    checkMem();
+    checkTHR();
     checkSwitches();
     firstTime=false;
   }

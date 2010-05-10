@@ -39,6 +39,7 @@ MenuFuncP_PROGMEM APM menuTabModel[] = {
 
 MenuFuncP_PROGMEM APM menuTabDiag[] = {
   menuProcSetup0,
+  menuProcSetup1,
   menuProcTrainer,
   menuProcDiagVers,
   menuProcDiagKeys, 
@@ -193,30 +194,35 @@ void menuProcCurveOne(uint8_t event) {
   lcd_putcAtt(x, 0, s_curveChan + '1', INVERS);
 
   mState.checkExit(event, 1);
-  int8_t sub = mState.checkVert(10);
-
   bool    cv9 = s_curveChan >= 2;
+  int8_t sub = mState.checkVert((cv9 ? 9 : 5)+1);
+
   int8_t *crv = cv9 ? g_model.curves9[s_curveChan-2] : g_model.curves5[s_curveChan];
 
     for (uint8_t i = 0; i < 5; i++) {
       uint8_t y = i * FH + 16;
       uint8_t attr = sub == i ? BLINK : 0;
-      lcd_outdezAtt(4 * FW, y, (crv[i] * 100) / 128, attr);
+      //lcd_outdezAtt(4 * FW, y, (crv[i] * 100) / 128, attr);
+      lcd_outdezAtt(4 * FW, y, crv[i], attr);
     }
   if(cv9)
     for (uint8_t i = 0; i < 4; i++) {
       uint8_t y = i * FH + 16;
       uint8_t attr = sub == i + 5 ? BLINK : 0;
-      lcd_outdezAtt(8 * FW, y, (crv[i + 5] * 100) / 128, attr);
+      //lcd_outdezAtt(8 * FW, y, (crv[i + 5] * 100) / 128, attr);
+      lcd_outdezAtt(8 * FW, y, crv[i + 5], attr);
     }
-  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == 9 ? BLINK : 0);
+  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == (cv9 ? 9 : 5) ? BLINK : 0);
 
   static int8_t dfltCrv;
-  if(sub<9)  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -128,127);
+  //if(sub<(cv9 ? 9 : 5))  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -128,127);
+  if(sub<(cv9 ? 9 : 5))  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -100,100);
   else {
     if( checkIncDecGen2(event, &dfltCrv, -4, 4, 0)){
-      if(cv9) for (uint8_t i = 0; i < 9; i++) crv[i] = min((i-4)*dfltCrv* 8,127);
-      else    for (uint8_t i = 0; i < 5; i++) crv[i] = min((i-2)*dfltCrv*16,127);
+      // if(cv9) for (uint8_t i = 0; i < 9; i++) crv[i] = min((i-4)*dfltCrv* 8,127);
+      // else    for (uint8_t i = 0; i < y5; i++) crv[i] = min((i-2)*dfltCrv*16,127);
+      if(cv9) for (uint8_t i = 0; i < 9; i++) crv[i] = (i-4)*dfltCrv* 100 / 16;
+      else    for (uint8_t i = 0; i < 5; i++) crv[i] = (i-2)*dfltCrv* 100 /  8;
       eeDirty(EE_MODEL);
     }
   }
@@ -224,11 +230,13 @@ void menuProcCurveOne(uint8_t event) {
 #define WCHART 32
 #define X0     (128-WCHART-2)
 #define Y0     32
-#define RESX  512ul
-#define RESK  100ul
+#define RESX    512
+#define RESXu   512u
+#define RESXul  512ul
+#define RESKul  100ul
 
   for (uint8_t xv = 0; xv < WCHART * 2; xv++) {
-    uint16_t yv = intpol(xv * (RESX / WCHART) - RESX, s_curveChan) / (RESX
+    uint16_t yv = intpol(xv * (RESXu / WCHART) - RESXu, s_curveChan) / (RESXu
                                                                       / WCHART);
     lcd_plot(X0 + xv - WCHART, Y0 - yv);
     if ((xv & 3) == 0) {
@@ -262,12 +270,12 @@ void menuProcCurve(uint8_t event) {
     bool    cv9 = i >= 2;
     int8_t *crv = cv9 ? g_model.curves9[i-2] : g_model.curves5[i];
     for (uint8_t j = 0; j < 5; j++) {
-      lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j] * 100 / 128, 0);
+      lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j], 0);
     }
     y += FH;
     if(cv9){
       for (uint8_t j = 0; j < 4; j++) {
-        lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j+5] * 100 / 128, 0);
+        lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j+5], 0);
       }
       y += FH;
     }
@@ -290,7 +298,7 @@ void menuProcMixOne(uint8_t event)
 #define CURV_STR "  -x>0x<0|x|cv1cv2cv3cv4"
   for(uint8_t i=0; i<=6; i++)
   {
-    uint8_t y=i*FH+8;
+    uint8_t y=i*FH+FH;
     uint8_t attr = sub==i ? BLINK : 0; 
     lcd_putsn_P( FW*8, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
     switch(i){
@@ -345,15 +353,14 @@ void menuProcMixOne(uint8_t event)
 
 
 struct MixTab{
-  bool   showCh:1;
-  bool   hasDat:1;
-  int8_t chId;    //:4  1..8             
-  int8_t selCh;   //:5  1..MAX_MIXERS+8
-  int8_t insIdx;  //:5  0..MAX_MIXERS-1
-
-  int8_t selDat;  //:5  1..MAX_MIXERS+8
-  int8_t editIdx;  //:5  0..MAX_MIXERS-1
-} s_mixTab[MAX_MIXERS+8+1];
+  bool   showCh:1;// show the dest chn
+  bool   hasDat:1;// show the data info
+  int8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
+  int8_t selCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+  int8_t selDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+  int8_t insIdx;  //:5  0..MAX_MIXERS-1        insert index into mix data tab
+  int8_t editIdx; //:5  0..MAX_MIXERS-1        edit   index into mix data tab
+} s_mixTab[MAX_MIXERS+NUM_XCHNOUT+1];
 int8_t s_mixMaxSel;
 
 void genMixTab()
@@ -382,7 +389,7 @@ void genMixTab()
       s_mixMaxSel =sel;
       sel--; //letzte zeile hat dat, falls nicht ist selCh schon belegt
     }
-    if(md[i].destCh==0) break;
+    if(md[i].destCh==0) break; //letzter eintrag in mix data tab
     s_mixTab[mtIdx].chId    = destCh; //mark channel header
     s_mixTab[mtIdx].editIdx = i;
     s_mixTab[mtIdx].hasDat  = true;
@@ -398,6 +405,12 @@ void genMixTab()
     s_mixMaxSel =sel;
     mtIdx++;
   }
+#ifdef SIM
+  for(uint8_t i=0; i<DIM(s_mixTab); i++){
+    //MixTab *mt=s_mixTab+i;
+    //printf("chId %2d selCh %2d selDat %2d insIdx %d editIdx %d\n",mt->chId,mt->selCh,mt->selDat,mt->insIdx,mt->editIdx);
+  }
+#endif
 }
 
 void menuProcMix(uint8_t event)
@@ -445,30 +458,26 @@ void menuProcMix(uint8_t event)
     uint8_t k = i + s_pgOfs;
     if(!s_mixTab[k].showCh && !s_mixTab[k].hasDat ) break;
 
-    if(s_mixTab[k].showCh){
-      putsChn(0,y,s_mixTab[k].chId,0);
+    if(s_mixTab[k].showCh){  
+      putsChn(0,y,s_mixTab[k].chId,0); // show CHx
     }
-    if(sub>0 && sub==s_mixTab[k].selCh) {
+    if(sub>0 && sub==s_mixTab[k].selCh) { //handle CHx is selected (other line)
       if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
       s_currMixIdx     = s_mixTab[k].insIdx;
       s_currDestCh     = s_mixTab[k].chId;
       s_currMixInsMode = true;
       markedIdx        = i;
-      minSel = min(minSel,s_mixTab[k].selCh);
-      maxSel = max(maxSel,s_mixTab[k].selCh);
     }
-    if(s_mixTab[k].hasDat){
+    if(s_mixTab[k].hasDat){ //show data 
       MixData *md2=&md[s_mixTab[k].editIdx];
       uint8_t attr = sub==s_mixTab[k].selDat ? BLINK : 0; 
-      minSel = min(minSel,s_mixTab[k].selDat);
-      maxSel = max(maxSel,s_mixTab[k].selDat);
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
       lcd_putcAtt(    7*FW+1, y, '%',0);
       putsChnRaw(     9*FW-2, y, md2->srcRaw,0);
       if(md2->swtch)putsDrSwitches( 13*FW-4, y, md2->swtch,0);
       if(md2->curve)lcd_putsnAtt(   17*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
       if(md2->speedDown || md2->speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
-      if(attr == BLINK){
+      if(attr == BLINK){ //handle dat is selected
         CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         s_currMixIdx     = s_mixTab[k].editIdx;
         s_currDestCh     = s_mixTab[k].chId;
@@ -476,11 +485,22 @@ void menuProcMix(uint8_t event)
         markedIdx        = i;
       }
     }
+    //welche sub-indize liegen im sichtbaren bereich?
+    if(s_mixTab[k].selCh){
+      minSel = min(minSel,s_mixTab[k].selCh);
+      maxSel = max(maxSel,s_mixTab[k].selCh);
+    }
+    if(s_mixTab[k].selDat){
+      minSel = min(minSel,s_mixTab[k].selDat);
+      maxSel = max(maxSel,s_mixTab[k].selDat);
+    }    
+
   } //for 7
-  if( sub!=0 &&  markedIdx==-1) {
+  if( sub!=0 &&  markedIdx==-1) { //versuche die Marke zu finden
 #ifdef SIM
-    printf("sub-1\n");
+    //printf("find mark sub %d markedIdx %d s_pgOfs %d minSel %d maxSel %d\n",sub,markedIdx,s_pgOfs,minSel,maxSel);
 #endif
+    //if(sub < minSel && minSel!=99) s_pgOfs = max(0,s_pgOfs-1);
     if(sub < minSel) s_pgOfs = max(0,s_pgOfs-1);
     if(sub > maxSel) s_pgOfs++;
   }
@@ -539,7 +559,7 @@ void menuProcTrim(uint8_t event)
 uint16_t expou(uint16_t x, uint16_t k)
 {
   // k*x*x*x + (1-k)*x
-  return ((unsigned long)x*x*x/0x10000*k/(RESX*RESX/0x10000) + (RESK-k)*x+RESK/2)/RESK;
+  return ((unsigned long)x*x*x/0x10000*k/(RESXul*RESXul/0x10000) + (RESKul-k)*x+RESKul/2)/RESKul;
 }
 // expo-funktion:
 // ---------------
@@ -556,7 +576,7 @@ int16_t expo(int16_t x, int16_t k)
   bool    neg =  x < 0;
   if(neg)   x = -x;
   if(k<0){
-    y = RESX-expou(RESX-x,-k);
+    y = RESXu-expou(RESXu-x,-k);
   }else{
     y = expou(x,k);
   }
@@ -579,7 +599,7 @@ void    Expo::init(uint8_t k, int8_t yo)
 {
   c = (uint16_t) k  * 256 / 100;
   d = (int16_t)  yo * 256 / 100;
-  drx = d * ((uint16_t)RESX/256);
+  drx = d * ((uint16_t)RESXu/256);
 }
 int16_t Expo::expou(uint16_t x,uint16_t c, int16_t d)
 {
@@ -587,7 +607,7 @@ int16_t Expo::expou(uint16_t x,uint16_t c, int16_t d)
   if( (int16_t)a < 0 ) a = 0;
   // a x^3 + c x + d
   //                         9  18  27        11  20   18
-  uint32_t res =  ((uint32_t)x * x * x / 0x10000 * a / (RESX*RESX/0x10000) +
+  uint32_t res =  ((uint32_t)x * x * x / 0x10000 * a / (RESXul*RESXul/0x10000) +
                    (uint32_t)x                   * c
   ) / 256;
   return (int16_t)res;
@@ -650,7 +670,7 @@ void menuProcExpoOne(uint8_t event)
 #define Y0     32
   for(uint8_t xv=0;xv<WCHART;xv++)
   {
-    uint16_t yv=expo(xv*(RESX/WCHART),kView) / (RESX/WCHART);
+    uint16_t yv=expo(xv*(RESXu/WCHART),kView) / (RESXu/WCHART);
     lcd_plot(X0+xv, Y0-yv);
     lcd_plot(X0-xv, Y0+yv);
     if((xv&3) == 0){
@@ -662,10 +682,10 @@ void menuProcExpoOne(uint8_t event)
   }
   int16_t x512  = anaCalib[s_expoChan];
   int16_t y512  = expo(x512,kView);
-  lcd_vline(X0+x512/(RESX/WCHART), Y0-WCHART,WCHART*2);
-  lcd_hline(X0-WCHART,             Y0-y512/(RESX/WCHART),WCHART*2);
-  lcd_outdezAtt( 19*FW, 6*FH,x512*25/((signed) RESX/4), 0 );
-  lcd_outdezAtt( 14*FW, 1*FH,y512*25/((signed) RESX/4), 0 );
+  lcd_vline(X0+x512/(RESXu/WCHART), Y0-WCHART,WCHART*2);
+  lcd_hline(X0-WCHART,             Y0-y512/(RESXu/WCHART),WCHART*2);
+  lcd_outdezAtt( 19*FW, 6*FH,x512*25/((signed) RESXu/4), 0 );
+  lcd_outdezAtt( 14*FW, 1*FH,y512*25/((signed) RESXu/4), 0 );
   //dy/dx
   
   int16_t dy  = x512>0 ? y512-expo(x512-20,kView) : expo(x512+20,kView)-y512;
@@ -741,7 +761,7 @@ void menuProcModel(uint8_t event)
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
   mState.checkExit(event);
   mState.checkChain(2,menuTabModel,DIM(menuTabModel));
-  int8_t  sub = mState.checkVert(5+1);
+  int8_t  sub = mState.checkVert(4+1);
   uint8_t subSub;
   subSub = mState.checkHorz(1,1+sizeof(g_model.name));
   subSub = mState.checkHorz(3,4);
@@ -762,14 +782,14 @@ void menuProcModel(uint8_t event)
                  (sub==3 && subSub==3 ? BLINK:0));
 
 
-  lcd_putsAtt( 0,    6*FH, PSTR("Mode"),sub==4?INVERS:0);
-  lcd_putcAtt( 4*FW, 6*FH, '1'+g_model.stickMode,sub==4?INVERS:0);
-  for(uint8_t i=0; i<4; i++)
-  {
-    lcd_img(    (6+4*i)*FW, (5)*FH, sticks,i,0);
-    putsChnRaw( (6+4*i)*FW, (6)*FH,i+1,sub==4?BLINK:0);
-  }
-  lcd_putsAtt(    0, (7)*FH, PSTR("RM"),sub==5?BLINK:0);
+  //   lcd_putsAtt( 0,    6*FH, PSTR("Mode"),sub==4?INVERS:0);
+  // lcd_putcAtt( 4*FW, 6*FH, '1'+g_model.stickMode,sub==4?INVERS:0);
+  // for(uint8_t i=0; i<4; i++)
+  // {
+  //   lcd_img(    (6+4*i)*FW, (5)*FH, sticks,i,0);
+  //   putsChnRaw( (6+4*i)*FW, (6)*FH,i+1,sub==4?BLINK:0);
+  // }
+  lcd_putsAtt(    0, (7)*FH, PSTR("RM"),sub==4?BLINK:0);
   lcd_puts_P(  FW*6, (7)*FH, PSTR("remove [MENU]"));
 
   switch(sub)
@@ -810,10 +830,10 @@ void menuProcModel(uint8_t event)
 
       }
       break;
+      // case 4:
+      // CHECK_INCDEC_H_MODELVAR(event,g_model.stickMode,0,3);
+      // break;
     case 4:
-      CHECK_INCDEC_H_MODELVAR(event,g_model.stickMode,0,3);
-      break;
-    case 5:
       if(event==EVT_KEY_LONG(KEY_MENU)){
         killEvents(event);
         EFile::rm(FILE_MODEL(g_eeGeneral.currModel)); //delete file
@@ -905,7 +925,7 @@ void menuProcDiagCalib(uint8_t event)
   static MState mState;
   TITLE("CALIB");
   mState.checkExit(event);
-  mState.checkChain(6,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(7,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(5);
   int8_t sub = mState.sVert;
   static int16_t midVals[4];
@@ -961,7 +981,7 @@ void menuProcDiagAna(uint8_t event)
   static MState mState;
   TITLE("ANA");  
   mState.checkExit(event);
-  mState.checkChain(5,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(6,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(2);
   int8_t sub = mState.sVert;
 
@@ -989,7 +1009,7 @@ void menuProcDiagKeys(uint8_t event)
   static MState mState;
   TITLE("DIAG");  
   mState.checkExit(event);
-  mState.checkChain(4,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(5,menuTabDiag,DIM(menuTabDiag));
 
   uint8_t x;
 
@@ -1031,7 +1051,7 @@ void menuProcDiagVers(uint8_t event)
   static MState mState;
   TITLE("VERSION");
   mState.checkExit(event);
-  mState.checkChain(3,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(4,menuTabDiag,DIM(menuTabDiag));
 
   lcd_puts_P(0, 2*FH,stamp1 ); 
   lcd_puts_P(0, 3*FH,stamp2 ); 
@@ -1043,7 +1063,7 @@ void menuProcTrainer(uint8_t event)
   static MState mState;
   TITLE("TRAINER");  
   mState.checkExit(event);
-  mState.checkChain(2,menuTabDiag,DIM(menuTabDiag));
+  mState.checkChain(3,menuTabDiag,DIM(menuTabDiag));
   int8_t  sub = mState.checkVert(1+4+1)-1;
   uint8_t y;
   bool    edit;
@@ -1052,9 +1072,9 @@ void menuProcTrainer(uint8_t event)
     y=(i+2)*FH;
     TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
     uint8_t subSub=0;
-    if(sub==i){
-      //subSub = mState.checkHorz(sub+1,5);
-    }
+    // if(sub==i){
+    //   //subSub = mState.checkHorz(sub+1,5);
+    // }
     subSub = mState.checkHorz(i+1,5);
     putsChnRaw( 0, y,i+1,
                 sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
@@ -1095,35 +1115,75 @@ void menuProcTrainer(uint8_t event)
   }
   
 }
+void menuProcSetup1(uint8_t event)
+{
+  static MState mState;
+  TITLE("SETUP OPTS");  
+  mState.checkExit(event);
+  mState.checkChain(2,menuTabDiag,DIM(menuTabDiag));
+  int8_t sub = mState.checkVert(1+4)-1;
+  for(uint8_t i=0; i<4; i++){
+    uint8_t y=i*FH+2*FH;
+    uint8_t attr = sub==i ? BLINK : 0; 
+    lcd_putsnAtt( FW*7,y,PSTR("THR Warn"
+                              "SW  Warn"
+                              "Mem Warn"
+                              "Key Beep")+i*8,8,0);
+    switch(i){
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+        uint8_t bit = 1<<i;
+        bool    val = !(g_eeGeneral.warnOpts & bit);
+        lcd_putsAtt( FW*3, y, val ? PSTR("ON"): PSTR("OFF"),attr);
+        if(attr)  val = checkIncDec_hg( event, val, 0, 1); //!! bitfield
+        g_eeGeneral.warnOpts |= bit;
+        if(val) g_eeGeneral.warnOpts &= ~bit;
+    }
+  }
+}
 void menuProcSetup0(uint8_t event)
 {
   static MState mState;
   TITLE("SETUP BASIC");  
   mState.checkExit(event);
   mState.checkChain(1,menuTabDiag,DIM(menuTabDiag));
-  int8_t sub = mState.checkVert(4)-1;
+  int8_t sub = mState.checkVert(1+4)-1;
   uint8_t y=2*FH;
-  lcd_outdezAtt(5*FW,y,g_eeGeneral.contrast,sub==0 ? BLINK : 0);
+  lcd_outdezAtt(4*FW,y,g_eeGeneral.contrast,sub==0 ? BLINK : 0);
   if(sub==0){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.contrast, 20, 45);
     lcdSetRefVolt(g_eeGeneral.contrast);
   }
-  lcd_puts_P( 5*FW, y,PSTR("  CONTRAST"));
+  lcd_puts_P( 6*FW, y,PSTR("CONTRAST"));
   y+=FH;
 
-  lcd_outdezAtt(5*FW,y,g_eeGeneral.vBatWarn,(sub==1 ? BLINK : 0)|PREC1);
+  lcd_outdezAtt(4*FW,y,g_eeGeneral.vBatWarn,(sub==1 ? BLINK : 0)|PREC1);
   if(sub==1){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 100); //5-10V
   }
-  lcd_puts_P( 5*FW, y,PSTR("V BAT WARNING"));
+  lcd_puts_P( 4*FW, y,PSTR("V BAT WARNING"));
   y+=FH;
 
-  putsDrSwitches(FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
-  
+  putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
   if(sub==2){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH); //5-10V
   }
-  lcd_puts_P( 7*FW, y,PSTR("LIGHT"));
+  lcd_puts_P( 6*FW, y,PSTR("LIGHT"));
+
+
+  y+=2*FH;
+  lcd_putsAtt( 1*FW, y, PSTR("Mode"),0);//sub==3?INVERS:0);
+  lcd_putcAtt( 3*FW, y+FH, '1'+g_eeGeneral.stickMode,sub==3?BLINK:0);
+  for(uint8_t i=0; i<4; i++)
+  {
+    lcd_img(    (6+4*i)*FW, y,   sticks,i,0);
+    putsChnRaw( (6+4*i)*FW, y+FH,i+1,0);//sub==3?BLINK:0);
+  }
+  if(sub==3){
+    CHECK_INCDEC_H_GENVAR(event,g_eeGeneral.stickMode,0,3);
+  }
 }
 
 uint16_t s_timeCum16; //gewichtete laufzeit in 1/16 sec
@@ -1447,37 +1507,34 @@ void calcLimitCache()
   }
 }
 
+
+
+
 int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 100
 {
-  int16_t erg;
+#define D9 (RESX * 2 / 8)
+#define D5 (RESX * 2 / 4)
   bool    cv9 = idx >= 2;
   int8_t *crv = cv9 ? g_model.curves9[idx-2] : g_model.curves5[idx];
+  int16_t erg;
 
-  int16_t    a;
-  int16_t modu;
-  x+=RESX;
-  if(cv9){
-    a    = x / (RESX * 2 / 8);
-    modu = x % (RESX * 2 / 8);
-  }else{
-    a    = x / (RESX * 2 / 4);
-    modu = x % (RESX * 2 / 4);
+  x+=RESXu;
+  if(x < 0) {
+    erg = crv[0]             * (RESX/2);
+  } else if(x >= (RESX*2)) {
+    erg = crv[(cv9 ? 8 : 4)] * (RESX/2);
+  } else {
+    int16_t a,dx;
+    if(cv9){
+      a   = (uint16_t)x / D9;
+      dx  =((uint16_t)x % D9) * 2;
+    } else {
+      a   = (uint16_t)x / D5;
+      dx  = (uint16_t)x % D5;
+    }
+    erg  = (int16_t)crv[a]*(D5-dx) + (int16_t)crv[a+1]*(dx);
   }
-  if (a < 0)
-    erg = crv[0] * 4;
-  else if (a >= (cv9 ? 8 : 4))
-    erg = crv[(cv9 ? 8 : 4)] * 4;
-  else{
-    if(cv9)
-      erg = (int16_t)crv[a] * 4 + 
-        (int32_t) ( crv[a + 1] - crv[a]) * modu / (RESX / 4 /4);
-    else               
-      erg = (int16_t)crv[a] * 4 + 
-        (int32_t) ( crv[a + 1] - crv[a]) * modu / (RESX / 2 /4);
-  }
-  if (erg == RESX - 4) // Leichtes gemurkse, sieht aber im Ergebnis einfach besser aus
-    erg = RESX;
-  return erg;
+  return erg / 50; // 100*D5/RESX;
 }
 
 uint16_t pulses2MHz[60];
@@ -1496,9 +1553,9 @@ void perOut()
     int16_t v= g_anaIns[i];
     sei();
     v -= g_eeGeneral.calibMid[i];
-    v  = v * ((signed)RESX/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
-    if(v <= -(signed)RESX) v = -(signed)RESX;
-    if(v >= (signed) RESX) v =  (signed)RESX;
+    v  = v * ((signed)RESXu/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
+    if(v <= -(signed)RESXu) v = -(signed)RESXu;
+    if(v >= (signed) RESXu) v =  (signed)RESXu;
     anaCalib[i] = v; //for show in expo
 
     //expo  [-512..512]  9+1 Bit
@@ -1522,7 +1579,7 @@ void perOut()
     }
 
     //trace throttle
-    if((2-(g_model.stickMode&1)) == i)  //stickMode=0123 -> thr=2121
+    if((2-(g_eeGeneral.stickMode&1)) == i)  //stickMode=0123 -> thr=2121
       trace((v+512)/32); //trace thr 0..32
 
     anaNoTrim[i]  = v;
