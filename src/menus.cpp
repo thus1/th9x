@@ -76,11 +76,15 @@ void MState::checkExit(uint8_t i_event,int8_t exitMode)
   if(event == EVT_ENTRY)  init();
   if(exitMode<0) return;
   if(event == EVT_KEY_LONG(KEY_EXIT)){
-    popMenu(true); //return to uppermost
+    popMenu(true); //return to uppermost, beeps itself
   }
   if(event == EVT_KEY_FIRST(KEY_EXIT)){
-    if(sVert==0 || exitMode)   popMenu();  
-    else                       init();
+    if(sVert==0 || exitMode) {
+      popMenu();  //beeps itself
+    } else {
+      beepKey();  
+      init();
+    }
   }
 }
 
@@ -532,6 +536,7 @@ void menuProcTrim(uint8_t event)
       {
         g_model.trimData[sub].trimDef = 0;
         STORE_MODELVARS;
+        beepKey();
       }
       break;
     case  EVT_KEY_FIRST(KEY_RIGHT): 
@@ -541,6 +546,7 @@ void menuProcTrim(uint8_t event)
         g_model.trimData[sub].trimDef += trimVal(sub);
         g_model.trimData[sub].trim     = 0;
         STORE_MODELVARS;
+        beepKey();
       }
       break;
   }
@@ -868,6 +874,7 @@ void menuProcModelSelect(uint8_t event)
     case  EVT_KEY_FIRST(KEY_EXIT):
       if(s_editMode){
         s_editMode = false;
+        beepKey();
         break;
       }
       //fallthrough
@@ -877,17 +884,19 @@ void menuProcModelSelect(uint8_t event)
         eeLoadModel(g_eeGeneral.currModel = mState.sVert);
         eeDirty(EE_GENERAL);
         LIMITS_DIRTY;
+        beepKey();
       }
       //case EXIT handled in checkExit
       if(event==EVT_KEY_FIRST(KEY_RIGHT))  chainMenu(menuProcModel);
       break;
     case  EVT_KEY_FIRST(KEY_MENU):
       s_editMode = true;
+      beepKey();
       break;
     case  EVT_KEY_LONG(KEY_MENU):
       if(s_editMode){
         if(eeDuplicateModel(sub)) {
-          beep();
+          beepKey();
           s_editMode = false;
         }
         else                      beepWarn();
@@ -937,9 +946,11 @@ void menuProcDiagCalib(uint8_t event)
       {
         case 2: //get mid
           for(uint8_t i=0; i<4; i++)midVals[i] = g_anaIns[i];
+          beepKey();
           break;
         case 3: 
           for(uint8_t i=0; i<4; i++)lowVals[i] = g_anaIns[i];
+          beepKey();
           break;
         case 4: 
 #ifdef SIM
@@ -954,6 +965,7 @@ void menuProcDiagCalib(uint8_t event)
           }
           g_eeGeneral.chkSum = sum;
           eeDirty(EE_GENERAL); //eeWriteGeneral();
+          beepKey();
           break;
       }
       break;
@@ -1111,6 +1123,7 @@ void menuProcTrainer(uint8_t event)
     if(event==EVT_KEY_FIRST(KEY_MENU)){
       memcpy(g_eeGeneral.trainer.calib,g_ppmIns,sizeof(g_eeGeneral.trainer.calib));
       eeDirty(EE_GENERAL);
+      beepKey();
     }
   }
   
@@ -1247,7 +1260,7 @@ void timer(uint8_t val)
     static int16_t last_tmr;
     if(last_tmr != s_timerVal){
       last_tmr = s_timerVal;
-      beep();
+      beepWarn1();
     }
   }
 }
@@ -1289,6 +1302,7 @@ void menuProcStatistic2(uint8_t event)
     case EVT_KEY_FIRST(KEY_MENU):
       g_tmr1Latency = 0;
       g_timeMain    = 0;
+      beepKey();
       break;
     case EVT_KEY_FIRST(KEY_DOWN):
       chainMenu(menuProcStatistic); 
@@ -1367,14 +1381,20 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_RIGHT):
-      if(sub<1) sub=sub+1;
+      if(sub<1) {
+        sub=sub+1;
+        beepKey();
+      }
       break;
     case EVT_KEY_LONG(KEY_RIGHT):
       pushMenu(menuProcModelSelect);//menuProcExpoAll); 
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_LEFT):
-      if(sub>0) sub=sub-1;
+      if(sub>0) {
+        sub=sub-1;
+        beepKey();
+      }
       break;
     case EVT_KEY_LONG(KEY_LEFT):
       pushMenu(menuProcSetup0);
@@ -1387,6 +1407,7 @@ void menuProc0(uint8_t event)
       g_eeGeneral.view += MAX_VIEWS-1; 
       g_eeGeneral.view %= MAX_VIEWS;
       eeDirty(EE_GENERAL);
+      beepKey();
       break;
     case EVT_KEY_LONG(KEY_UP):
       chainMenu(menuProcStatistic); 
@@ -1397,11 +1418,15 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_EXIT):
-      if(s_timerState==TMR_BEEPING) s_timerState = TMR_STOPPED;
+      if(s_timerState==TMR_BEEPING) {
+        s_timerState = TMR_STOPPED;
+        beepKey();
+      }
       break;
     case EVT_KEY_LONG(KEY_EXIT):
       s_timerState = TMR_OFF; //is changed to RUNNING dep from mode
       s_timeCum16=0;
+      beepKey();
       break;
     case EVT_ENTRY:
     case EVT_ENTRY_UP:
