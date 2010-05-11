@@ -190,5 +190,5 @@ void eeCheck(bool immediately)
       }
     }
   }
-  beep();
+  beepWarn1();
 }

@@ -234,6 +234,6 @@ void per10ms()
   static uint8_t s_batCheck;
   s_batCheck++;
   if(s_batCheck==0 && g_vbat100mV < g_eeGeneral.vBatWarn){
-    beep();
+    beepWarn1();
   }
 }

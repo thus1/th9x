@@ -176,6 +176,7 @@ enum EnumKeys {
 #define _MSK_KEY_REPT    0x40
 #define _MSK_KEY_FIRST (_MSK_KEY_REPT|0x20)
 #define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
+#define IS_KEY_BREAK(key)  (((key)&0xf0)==0x20)
 #define EVT_KEY_BREAK(key) ((key)|0x20)
 #define EVT_KEY_FIRST(key) ((key)|_MSK_KEY_FIRST)
 #define EVT_KEY_REPT(key)  ((key)|_MSK_KEY_REPT)
@@ -400,7 +401,8 @@ inline void _beep(uint8_t b) {
 #endif
 }
 /// Erzeugt einen kurzen beep
-#define beep()     _beep(BEEP_VAL)
+#define beepWarn1() _beep(1)
+#define beepKey()   _beep(BEEP_VAL)
 /// Erzeugt einen langen beep
 #define beepWarn() _beep(30)
 /// Erzeugt einen sehr langen beep

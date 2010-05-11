@@ -120,6 +120,7 @@ public:
   void makeSnapshot(const FXDrawable* drawable);
   void doEvents();
   void refreshDiplay();
+  void init2();
 private:
 
 
@@ -242,16 +243,17 @@ long Th9xSim::onKeypress(FXObject*,FXSelector,void*v)
   }
   return 0;
 }
+
+
+void Th9xSim::init2()
+{
+  eeReadAll();
+  checkMem();
+  checkTHR();
+  checkSwitches();
+}
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
-  if(firstTime)
-  {
-    eeReadAll();
-    checkMem();
-    checkTHR();
-    checkSwitches();
-    firstTime=false;
-  }
   per10ms();
   getApp()->addChore(this,1);
   getApp()->addTimeout(this,2,10);
@@ -351,7 +353,7 @@ void doFxEvents()
 int main(int argc,char **argv)
 {
   pine = 0xff & ~(1<<INP_E_ID2);// & ~(1<<INP_E_ElevDR);
-  ping = 0xff;
+  ping = 0xff ^ ( 1<<INP_G_RuddDR);
   // Each FOX GUI program needs one, and only one, application object.
   // The application objects coordinates some common stuff shared between
   // all the widgets; for example, it dispatches events, keeps track of
@@ -379,6 +381,7 @@ int main(int argc,char **argv)
   // Pretty self-explanatory:- this shows the window, and places it in the
   // middle of the screen.
   th9xSim->show(PLACEMENT_SCREEN);
+  th9xSim->init2();
 
   return application.run();
 }

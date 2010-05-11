@@ -236,10 +236,15 @@ void alert(const prog_char * s)
   lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
   refreshDiplay();
   beepErr();
+  //bool keyPressed=false;
   while(1)
   {
-    if(~PINB & 0x7e) //(1<<INP_B_KEY_MEN | 1<<INP_B_KEY_EXT))
-      return;
+    if(IS_KEY_BREAK(getEvent()))   return;  //wait for key release
+    //if(keyPressed){
+    //  if((~PINB & 0x7e) == 0)   return;  //wait for key release
+    //}else{
+    //  if(~PINB & 0x7e)          keyPressed=true;
+    //}
 #ifdef SIM
 void doFxEvents();
 //printf("pinb %x\n",PINB);
@@ -260,13 +265,13 @@ uint8_t checkTrim(uint8_t event)
       if(g_model.trimData[idx].trim > -31){
         g_model.trimData[idx].trim--;
         STORE_MODELVARS;
-        beep();
+        beepKey();
       }
     }else{
       if(g_model.trimData[idx].trim < 31){
         g_model.trimData[idx].trim++;
         STORE_MODELVARS;
-        beep();
+        beepKey();
       }
     }
     if(g_model.trimData[idx].trim==0) {
@@ -287,17 +292,17 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     switch(event)
     {
       case  EVT_KEY_FIRST(KEY_UP):
-      case  EVT_KEY_REPT(KEY_UP):    newval++; beep();     break;
+      case  EVT_KEY_REPT(KEY_UP):    newval++; beepKey();     break;
       case  EVT_KEY_FIRST(KEY_DOWN):
-      case  EVT_KEY_REPT(KEY_DOWN):  newval--; beep();     break;
+      case  EVT_KEY_REPT(KEY_DOWN):  newval--; beepKey();     break;
     }
   else  
     switch(event)
     {
       case  EVT_KEY_FIRST(KEY_RIGHT):
-      case  EVT_KEY_REPT(KEY_RIGHT): newval++; beep();     break;
+      case  EVT_KEY_REPT(KEY_RIGHT): newval++; beepKey();     break;
       case  EVT_KEY_FIRST(KEY_LEFT):
-      case  EVT_KEY_REPT(KEY_LEFT):  newval--; beep();     break;
+      case  EVT_KEY_REPT(KEY_LEFT):  newval--; beepKey();     break;
     }
 
   if(newval>i_max)
@@ -354,7 +359,7 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
   
   if(event==EVT_KEY_REPT(inc) || event==EVT_KEY_FIRST(inc))
   {
-    beep();
+    beepKey();
     if(sub < (num-1)) {
       (sub)++;
     }else{
@@ -369,7 +374,7 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
   }
   else if(event==EVT_KEY_REPT(dec) || event==EVT_KEY_FIRST(dec))
   {
-    beep();
+    beepKey();
     if(sub > 0) {
       (sub)--;
     }else{
@@ -393,7 +398,7 @@ void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){
     g_menuStackPtr = uppermost ? 0 : g_menuStackPtr-1;
-    beep();  
+    beepKey();  
     (*g_menuStack[g_menuStackPtr])(EVT_ENTRY_UP);
   }else{
     alert(PSTR("menuStack underflow"));
@@ -403,7 +408,7 @@ void chainMenu(MenuFuncP newMenu)
 {
   g_menuStack[g_menuStackPtr] = newMenu;
   (*newMenu)(EVT_ENTRY);
-  beep();
+  beepKey();
 }
 void pushMenu(MenuFuncP newMenu)
 {
@@ -414,7 +419,7 @@ void pushMenu(MenuFuncP newMenu)
     alert(PSTR("menuStack overflow"));
     return;
   }
-  beep();
+  beepKey();
   g_menuStack[g_menuStackPtr] = newMenu;
   (*newMenu)(EVT_ENTRY);
 }
