@@ -500,7 +500,7 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 
 uint16_t s_ana[8];
 
-ISR(ADC_vect)
+ISR(ADC_vect, ISR_NOBLOCK)
 {
   static uint8_t chan;
 
@@ -530,11 +530,12 @@ uint16_t getTmr16KHz()
   }
 }
 
-ISR(TIMER0_COMP_vect) //10ms timer
+ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
 {
+  cli();
   TIMSK &= ~(1<<OCIE0); //stop reentrance 
-  OCR0 = OCR0 + 156;
   sei();
+  OCR0 = OCR0 + 156;
   if(g_beepCnt){
     g_beepCnt--;
     PORTE |=  (1<<OUT_E_BUZZER);
@@ -542,16 +543,18 @@ ISR(TIMER0_COMP_vect) //10ms timer
     PORTE &= ~(1<<OUT_E_BUZZER);
   }
   per10ms();
+  heartbeat |= HEART_TIMER10ms;
   cli();
   TIMSK |= (1<<OCIE0);
-  heartbeat |= HEART_TIMER10ms;
+  sei();
 }
 
 
 
-ISR(TIMER3_CAPT_vect) //capture ppm in 16MHz / 8 = 2MHz
+ISR(TIMER3_CAPT_vect, ISR_NOBLOCK) //capture ppm in 16MHz / 8 = 2MHz
 {
   uint16_t capture=ICR3;
+  cli();
   ETIMSK &= ~(1<<TICIE3); //stop reentrance 
   sei();
   
@@ -569,6 +572,7 @@ ISR(TIMER3_CAPT_vect) //capture ppm in 16MHz / 8 = 2MHz
 
   cli();
   ETIMSK |= (1<<TICIE3);
+  sei();
 }
 
 void evalCaptures()
@@ -598,9 +602,10 @@ void setupAdc(void)
   STARTADCONV;
 }
 
-
 extern uint16_t g_timeMain;
-int main()
+//void main(void) __attribute__((noreturn));
+
+int main(void)
 {
   DDRA = 0xff;  PORTA = 0x00;
   DDRB = 0x81;  PORTB = 0x7e; //pullups keys+nc
