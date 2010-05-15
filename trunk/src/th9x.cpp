@@ -22,7 +22,7 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- prüfung des Schülersignals vor 
+- prï¿½fung des Schï¿½lersignals vor 
 + curves mit -100..100, cache
 + thr-warning
 + mode in general
@@ -498,12 +498,29 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
   heartbeat |= HEART_TIMER2Mhz;
 }
 
+uint16_t s_ana[8];
+
+ISR(ADC_vect)
+{
+  static uint8_t chan;
+
+  ADMUX = chan | (1<<REFS0);      // Multiplexer frÃ¼h stellen kann nie schaden
+  s_ana[chan]   += ADC - s_ana[chan] / 4; // Index ist immer 1 weniger als Kanal
+  ++chan;
+  if(chan & 0x8)
+    chan = 0;       // letzter Kanal war 6
+  else
+    STARTADCONV;
+}
+
+
 volatile uint8_t g_tmr16KHz;
 
 ISR(TIMER0_OVF_vect) //continuous timer 16ms (16MHz/1024)
 {
   g_tmr16KHz++;
 }
+
 uint16_t getTmr16KHz()
 {
   while(1){
@@ -512,6 +529,7 @@ uint16_t getTmr16KHz()
     if(hb-g_tmr16KHz==0) return (hb<<8)|lb;
   }
 }
+
 ISR(TIMER0_COMP_vect) //10ms timer
 {
   TIMSK &= ~(1<<OCIE0); //stop reentrance 
@@ -574,6 +592,12 @@ void evalCaptures()
   }
 }
 
+void setupAdc(void)
+{
+  ADMUX = (1<<REFS0);      //
+  STARTADCONV;
+}
+
 
 extern uint16_t g_timeMain;
 int main()
@@ -613,6 +637,7 @@ int main()
   checkTHR();
   checkSwitches();
   setupPulses();
+  setupAdc();
   wdt_enable(WDTO_500MS);
   while(1){
     old10ms=g_tmr10ms;

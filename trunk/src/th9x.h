@@ -384,6 +384,10 @@ void setupPulsesTracerCtp1009();
 
 extern int16_t intpol(int16_t, uint8_t);
 
+extern uint16_t s_ana[8];
+
+
+
 
 //extern TrainerData g_trainer;
 
@@ -409,4 +413,8 @@ inline void _beep(uint8_t b) {
 #define beepErr()  _beep(100)
 
 #endif
+
+#define STARTADCONV (ADCSRA  = (1<<ADEN) | (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADSC) | (1 << ADIE))
+
+
 /*eof*/

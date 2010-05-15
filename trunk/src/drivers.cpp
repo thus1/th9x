@@ -53,17 +53,11 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t s
   }
 }
 
-uint16_t anaIn(uint8_t chan)
+inline uint16_t anaIn(uint8_t chan)
 {
-  ADMUX   = chan | (1<<REFS0);//0x40; 
-  ADCSRA  = (1<<ADEN) | (4<<ADPS0); //0x80;
-  //ADCSRA |= 1<<ADPS1; // /4
-  ADCSRA |= 1<<ADSC;
-  while(ADCSRA & (1<<ADSC));
-  //return ADCL + (ADCH<<8);
-  return ADC;
+  static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
+  return s_ana[pgm_read_byte(crossAna+chan)] / 4;
 }
-
 #endif
 
 
@@ -178,8 +172,6 @@ void killEvents(uint8_t event)
 }
 
 
-
-
 uint16_t g_anaIns[8];
 uint8_t  g_vbat100mV;
 volatile uint16_t g_tmr10ms;
@@ -214,15 +206,9 @@ void per10ms()
     keys[enuk].input(in & pgm_read_byte(crossTrim+i),(EnumKeys)enuk);
     ++enuk;
   }
-  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7};
-  static uint16_t s_ana[8];
   for(int i=0; i<8; i++)
   {
-    //chan=pgm_read_byte(cross+chan);
-    //g_anaIns[i] = (g_anaIns[i]*7+anaIn(pgm_read_byte(crossAna+i))+4)/8;
-    g_anaIns[i] = s_ana[i]/4;
-    s_ana[i]   += anaIn(pgm_read_byte(crossAna+i)) - g_anaIns[i];
-
+    g_anaIns[i] = anaIn(i);
   }
   //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
   //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
@@ -236,4 +222,7 @@ void per10ms()
   if(s_batCheck==0 && g_vbat100mV < g_eeGeneral.vBatWarn){
     beepWarn1();
   }
+#ifndef SIM
+  STARTADCONV;            // Analogkanäle lesen
+#endif
 }
