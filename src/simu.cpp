@@ -163,7 +163,7 @@ Th9xSim::Th9xSim(FXApp* a)
     switch(i)
     {
       case 0:
-        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
         break;
       case 1:
         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
@@ -173,7 +173,7 @@ Th9xSim::Th9xSim(FXApp* a)
         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
         break;
       case 3:
-        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
         break;
       default:;
     }
