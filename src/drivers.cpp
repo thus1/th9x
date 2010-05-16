@@ -28,8 +28,6 @@ eeprom_write_byte_cmp (uint8_t dat, uint16_t pointer_eeprom)
   //see /home/thus/work/avr/avrsdk4/avr-libc-1.4.4/libc/misc/eeprom.S:98 143
   while(EECR & (1<<EEWE)) /* make sure EEPROM is ready */
     ;
-  //EEARH = (uint8_t)(pointer_eeprom>>8);
-  //EEARL = (uint8_t) pointer_eeprom;
   EEAR  = pointer_eeprom;
 
   EECR |= 1<<EERE;
@@ -55,6 +53,7 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t s
 
 inline uint16_t anaIn(uint8_t chan)
 {
+  //                     ana-in:   3 1 2 0 4 5 6 7          
   static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
   return s_ana[pgm_read_byte(crossAna+chan)] / 4;
 }
@@ -80,14 +79,21 @@ uint8_t getEvent()
 
 class Key
 {
-#define FFVAL 0x0f
+#define FFVAL        0x0f
+#define KSTATE_OFF      0
+#define KSTATE_START   97
+#define KSTATE_PAUSE   98
+#define KSTATE_KILLED  99
   uint8_t m_vals:4;
   uint8_t m_cnt;
+  uint8_t m_state;
 public:
   void input(bool val, EnumKeys enuk);
-  bool state();
-  void killEvents();
+  bool state()       { return m_vals==FFVAL;                }
+  void pauseEvents() { m_state = KSTATE_PAUSE;  m_cnt   = 0;}
+  void killEvents()  { m_state = KSTATE_KILLED;             }
 };
+
 
 Key keys[NUM_KEYS];
 void Key::input(bool val, EnumKeys enuk)
@@ -95,62 +101,59 @@ void Key::input(bool val, EnumKeys enuk)
   //#ifdef SIM
   //  if(val) printf("Key::input = %d %d m_vals %d m_cnt%d\n",val,enuk,m_vals,m_cnt);
   //#endif
-  uint8_t old=m_vals;
-  m_vals <<= 1;
-  if(val) m_vals |= 1;
-  if(old!=m_vals){
-    if(m_vals==0){  //break
-      if(m_cnt<250) {
-        //#ifdef SIM
-        //        printf("m_cnt = %d\n",m_cnt);
-        //#endif
-        putEvent(EVT_KEY_GEN_BREAK(enuk));
-      }
-    }else if(m_vals==FFVAL){
-      m_cnt=0;
-    }     
-  }
-  if(m_vals==FFVAL)
-  {
-    m_cnt++;
-    if(m_cnt>=250){
-      m_cnt=250;
-    }else if(m_cnt==1){ //1
-      putEvent(EVT_KEY_FIRST(enuk));
-    }else if(m_cnt==30){
-      putEvent(EVT_KEY_LONG(enuk));
-    }else if(m_cnt<=48){ //3
-      if((m_cnt % 16) == 0)  putEvent(EVT_KEY_REPT(enuk));
-    }else if(m_cnt<= 128){ //10
-      if(((m_cnt-48) % 8) == 0)  putEvent(EVT_KEY_REPT(enuk));
-    }else if(m_cnt<=208){ //20
-      if(((m_cnt-128) % 4) == 0)  putEvent(EVT_KEY_REPT(enuk));
-      if(m_cnt==208) m_cnt-=2;
+  //  uint8_t old=m_vals;
+  m_vals <<= 1;  if(val) m_vals |= 1; //portbit einschieben
+
+  if(m_state && m_vals==0){  //gerade eben sprung auf 0
+    if(m_state!=KSTATE_KILLED) {
+      putEvent(EVT_KEY_GEN_BREAK(enuk));
     }
+    m_state = KSTATE_OFF;
   }
-  // #ifdef SIM
-  //  printf("key %d=%x\n",enuk,m_vals);
-  //#endif
-}
-void Key::killEvents()
-{
-  // #ifdef SIM
-  //   printf("killEvents %d\n",m_cnt);
-  // #endif
-  m_cnt=250;
-}
-bool Key::state()
-{
-  return m_vals==FFVAL;
+  m_cnt++;
+  switch(m_state){
+    case KSTATE_OFF: 
+      if(m_vals==FFVAL){ //gerade eben sprung auf ff
+        m_state = KSTATE_START;
+        m_cnt=0;
+      }
+      break;
+    case KSTATE_START: 
+      putEvent(EVT_KEY_FIRST(enuk));
+      m_state = 16;
+      m_cnt   = 0;
+      break;
+    case 16: 
+      if(m_cnt == 30)        putEvent(EVT_KEY_LONG(enuk));
+      //fallthrough
+    case 8: 
+    case 4: 
+    case 2: 
+      if(m_cnt >= 48)  { //3 6 12 24 48 pulses in every 480ms
+        m_state >>= 1;
+        m_cnt     = 0;
+      }
+      //fallthrough
+    case 1: 
+      if( (m_cnt & (m_state-1)) == 0)  putEvent(EVT_KEY_REPT(enuk));
+      break;
+
+    case KSTATE_PAUSE: //pause 
+      if(m_cnt >= 64)      {
+        m_state = 8;
+        m_cnt   = 0;
+      }
+      break;
+
+    case KSTATE_KILLED: //killed
+      break;
+  }
 }
 
 bool keyState(EnumKeys enuk)
 {
   if(enuk < (int)DIM(keys))  return keys[enuk].state() ? 1 : 0;
   switch(enuk){
-    //case SW_ID     : return PING & (1<<INP_G_ID1)    ? ( PINE & (1<<INP_E_ID2) ? 1 : 2) : 0;
-    //case SW_NC     : return true;
-    //case SW_ON     : return true;
     case SW_ElevDR : return PINE & (1<<INP_E_ElevDR);
     case SW_AileDR : return PINE & (1<<INP_E_AileDR);
     case SW_RuddDR : return PING & (1<<INP_G_RuddDR);
@@ -165,6 +168,11 @@ bool keyState(EnumKeys enuk)
   return 0;
 }
 
+void pauseEvents(uint8_t event)
+{
+  event=event & EVT_KEY_MASK;
+  if(event < (int)DIM(keys))  keys[event].pauseEvents();
+}
 void killEvents(uint8_t event)
 {
   event=event & EVT_KEY_MASK;

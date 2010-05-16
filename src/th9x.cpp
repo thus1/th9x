@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
++ cv4 geht nicht
 + bug mixer end
 + watchdog in write-file
 + freelist-bug   consequent chain-out,chain-in EeFsSetLink EeFsFree EeFsAlloc
@@ -22,20 +23,27 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- prï¿½fung des Schï¿½lersignals vor 
-+ curves mit -100..100, cache
-+ thr-warning
-+ mode in general
-+ key-beep off/ thr- switch- memory- warnings off
-+ low memory alert
++ standard curves after delay
++ special curve x<0 and x>0 when FUL
++ switch delay curve sequence?
++ sinnvoller default 4ch
+- select zero beep/store beep
+- select zero stop/ 2-stage mixer?
+- doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
+- pruefung des Schülersignals
 - format eeprom
 - pcm 
 - light auto off
 - stat mit times
 - fast multiply 8*16 > 32
-+ doku einschaltverhalten, trainermode, curves  
 - doku light-pin B7 pin17
 done
++ curves mit -100..100, cache
++ thr-warning
++ mode in general
++ key-beep off/ thr- switch- memory- warnings off
++ low memory alert
++ doku einschaltverhalten, trainermode, curves  
 + timer with 0, timer beep stop
 + fast vline/hline
 + display modes graf/numeric.. in general
@@ -117,7 +125,11 @@ ModelData g_model;
 
 
 
-const prog_char APM modi12x3[]="RUDELETHRAILRUDTHRELEAILAILELETHRRUDAILTHRELERUD";
+const prog_char APM modi12x3[]=
+  "RUD""ELE""THR""AIL"
+  "RUD""THR""ELE""AIL"
+  "AIL""ELE""THR""RUD"
+  "AIL""THR""ELE""RUD";
 
 
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
@@ -144,13 +156,13 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
   {
     lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att);  
   }else{
-    lcd_putsnAtt(x,y,PSTR(" P1 P2 P3MAXFUL X1 X2 X3 X4")+3*(idx1-5),3,att);
+    lcd_putsnAtt(x,y,PSTR(" P1"" P2"" P3""MAX""FUL"" X1"" X2"" X3"" X4")+3*(idx1-5),3,att);
   }
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
   // !! todo NUM_CHN !!
-  lcd_putsnAtt(x,y,PSTR("   CH1CH2CH3CH4CH5CH6CH7CH8 X1 X2 X3 X4")+3*idx1,3,att);  
+  lcd_putsnAtt(x,y,PSTR("   ""CH1""CH2""CH3""CH4""CH5""CH6""CH7""CH8"" X1"" X2"" X3"" X4")+3*idx1,3,att);  
 }
 
 
@@ -319,7 +331,8 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   }
   if(newval != val){
     if(newval==0) {
-      killEvents(event);
+      pauseEvents(event);
+      //killEvents(event);
       beepWarn();
     }
     if(i_flags & _FL_SIZE2 ) *(int16_t*)i_pval = newval;
@@ -507,11 +520,18 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 
 uint16_t s_ana[8];
 
-ISR(ADC_vect, ISR_NOBLOCK)
+#if __GNUC_MINOR__ > 2
+#  define ISR_NB(vec) ISR(vec, ISR_NOBLOCK)
+#else
+#  define ISR_NB(vec) ISR(vec)
+#endif
+
+
+ISR_NB(ADC_vect) //, ISR_NOBLOCK)
 {
   static uint8_t chan;
 
-  ADMUX = chan | (1<<REFS0);      // Multiplexer frÃ¼h stellen kann nie schaden
+  ADMUX = chan | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
   s_ana[chan]   += ADC - s_ana[chan] / 4; // Index ist immer 1 weniger als Kanal
   ++chan;
   if(chan & 0x8)
@@ -537,7 +557,7 @@ uint16_t getTmr16KHz()
   }
 }
 
-ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
+ISR_NB(TIMER0_COMP_vect)//, ISR_NOBLOCK) //10ms timer
 {
   cli();
   TIMSK &= ~(1<<OCIE0); //stop reentrance 
@@ -558,7 +578,7 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
 
 
 
-ISR(TIMER3_CAPT_vect, ISR_NOBLOCK) //capture ppm in 16MHz / 8 = 2MHz
+ISR_NB(TIMER3_CAPT_vect)//, ISR_NOBLOCK) //capture ppm in 16MHz / 8 = 2MHz
 {
   uint16_t capture=ICR3;
   cli();

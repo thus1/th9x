@@ -204,6 +204,7 @@ enum EnumKeys {
 
 typedef void (*MenuFuncP)(uint8_t event);
 
+void pauseEvents(uint8_t enuk);
 
 void    killEvents(uint8_t enuk);
 /// liefert den Wert einer beliebigen Taste KEY_MENU..SW_Trainer

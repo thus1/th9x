@@ -59,9 +59,24 @@ void modelDefault(uint8_t id)
   //g_model.stickMode=1;
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
-  g_model.mixData[0].destCh = 1;
-  g_model.mixData[0].srcRaw = 1;
-  g_model.mixData[0].weight = 100;
+  for(uint8_t i= 0; i<4; i++){
+    //     0   1   2   3
+    //0 1 rud ele thr ail
+    //1 2 rud thr ele ail
+    //2 3 ail ele thr rud
+    //3 4 ail thr ele rud
+    g_model.mixData[i].destCh = i+1;
+    g_model.mixData[i].srcRaw = i+1;
+    g_model.mixData[i].weight = 100;
+  }
+  if(g_eeGeneral.stickMode & 1){
+    g_model.mixData[1].srcRaw = 3;
+    g_model.mixData[2].srcRaw = 2;
+  }
+  if(g_eeGeneral.stickMode & 2){
+    g_model.mixData[0].srcRaw = 4;
+    g_model.mixData[3].srcRaw = 1;
+  }
 }
 void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
 {
