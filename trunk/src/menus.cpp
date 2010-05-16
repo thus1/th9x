@@ -1654,17 +1654,23 @@ void perOut()
       if(md.destCh==0) break;
 
       //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
-      //if(!md.swtch) continue;     // 0 Zeile nicht verwendet
+
+      if( !getSwitch(md.swtch,1) &&
+          md.srcRaw != 8         && //MAX
+          md.srcRaw != 9            //FUL
+      )
+        continue;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
+
       int16_t v;
       if(md.curve){
         v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anaNoTrim[md.srcRaw-1];
-        switch(md.curve){
-          case 1: if( v<0 ) v=0;   break;//x|x>0
-          case 2: if( v>0 ) v=0;   break;//x|x<0
-          case 3: v = abs(v);      break; //ABS
-            //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
-            // Kurve soll erst nach Speed gerechnet werden
-        }
+        //switch(md.curve){
+        //          case 1: if( v<0 ) v=0;   break;//x|x>0
+        //          case 2: if( v>0 ) v=0;   break;//x|x<0
+        //          case 3: v = abs(v);      break; //ABS
+        //            //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
+        //            // Kurve soll erst nach Speed gerechnet werden
+        //        }
       }
       else
         v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
@@ -1698,9 +1704,30 @@ void perOut()
         }
         v = act[i];
       }
-      if((md.curve > 3) && (md.curve < 7))
-        v = intpol(v, md.curve - 4);
-
+      switch(md.curve){ 
+        case 1: 
+          if(md.srcRaw == 9) //FUL
+          {
+            if( v<0 ) v=-512;   //x|x>0
+            else      v=-512+2*v;
+          }else{
+            if( v<0 ) v=0;   //x|x>0
+          }
+          break;
+        case 2: 
+          if(md.srcRaw == 9) //FUL
+          {
+            if( v>0 ) v=512;   //x|x<0
+            else      v=512+2*v;
+          }else{
+            if( v>0 ) v=0;   //x|x<0
+          }
+          break;
+        case 3: v = abs(v);      break; //ABS
+        default:
+          //if((md.curve >= 4) && (md.curve < 8))
+          v = intpol(v, md.curve - 4);
+      }
 
       int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
       chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
