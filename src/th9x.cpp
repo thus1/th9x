@@ -464,14 +464,19 @@ uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
 uint8_t heartbeat;
 
-extern uint16_t g_tmr1Latency;
+extern uint16_t g_tmr1Latency_max;
+extern uint16_t g_tmr1Latency_min;
+
 //ISR(TIMER1_OVF_vect)
 ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 {
   static uint8_t   pulsePol;
   static uint16_t *pulsePtr = pulses2MHz;
+
+  uint8_t i = 0;
+  while((TCNT1L < 10) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
+    ;
   uint16_t dt=TCNT1;//-OCR1A;
-  g_tmr1Latency = max(dt,g_tmr1Latency);
 
   if(pulsePol)
   {
@@ -481,6 +486,8 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     PORTB &= ~(1<<OUT_B_PPM);
     pulsePol = 1;
   }
+  g_tmr1Latency_max = max(dt,g_tmr1Latency_max);    // max hat Sprung, deshalb unterschiedlich lang
+  g_tmr1Latency_min = min(dt,g_tmr1Latency_min);    // min hat Sprung, deshalb unterschiedlich lang
 
   OCR1A  = *pulsePtr++;
 
