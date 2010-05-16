@@ -1292,7 +1292,8 @@ void trace(uint8_t val)
 }
 
 
-uint16_t g_tmr1Latency;
+uint16_t g_tmr1Latency_max;
+uint16_t g_tmr1Latency_min = 0x7ff;
 uint16_t g_timeMain;
 void menuProcStatistic2(uint8_t event)
 {
@@ -1300,7 +1301,8 @@ void menuProcStatistic2(uint8_t event)
   switch(event)
   {
     case EVT_KEY_FIRST(KEY_MENU):
-      g_tmr1Latency = 0;
+      g_tmr1Latency_min = 0x7ff;
+      g_tmr1Latency_max = 0;
       g_timeMain    = 0;
       beepKey();
       break;
@@ -1312,10 +1314,14 @@ void menuProcStatistic2(uint8_t event)
       chainMenu(menuProc0); 
       break;
   }
-  lcd_puts_P( 0*FW,  1*FH, PSTR("tmr1Lat      us"));
-  lcd_outdez(11*FW , 1*FH, g_tmr1Latency/2 );
-  lcd_puts_P( 0*FW,  2*FH, PSTR("tmain        ms"));
-  lcd_outdez(11*FW , 2*FH, g_timeMain/16 );
+  lcd_puts_P( 0*FW,  1*FH, PSTR("tmr1Lat max    us"));
+  lcd_outdez(14*FW , 1*FH, g_tmr1Latency_max/2 );
+  lcd_puts_P( 0*FW,  2*FH, PSTR("tmr1Lat min    us"));
+  lcd_outdez(14*FW , 2*FH, g_tmr1Latency_min/2 );
+  lcd_puts_P( 0*FW,  3*FH, PSTR("tmr1 Jitter    us"));
+  lcd_outdez(14*FW , 3*FH, (g_tmr1Latency_max - g_tmr1Latency_min) /2 );
+  lcd_puts_P( 0*FW,  4*FH, PSTR("tmain          ms"));
+  lcd_outdez(14*FW , 4*FH, g_timeMain/16 );
 }
 
 void menuProcStatistic(uint8_t event)
