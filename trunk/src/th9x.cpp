@@ -333,7 +333,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     if(newval==0) {
       pauseEvents(event);
       //killEvents(event);
-      beepWarn();
+      beepKey(); //beepWarn();
     }
     if(i_flags & _FL_SIZE2 ) *(int16_t*)i_pval = newval;
     else                     *( int8_t*)i_pval = newval;
@@ -520,14 +520,8 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 
 uint16_t s_ana[8];
 
-#if __GNUC_MINOR__ > 2
-#  define ISR_NB(vec) ISR(vec, ISR_NOBLOCK)
-#else
-#  define ISR_NB(vec) ISR(vec)
-#endif
 
-
-ISR_NB(ADC_vect) //, ISR_NOBLOCK)
+ISR(ADC_vect, ISR_NOBLOCK)
 {
   static uint8_t chan;
 
@@ -557,7 +551,7 @@ uint16_t getTmr16KHz()
   }
 }
 
-ISR_NB(TIMER0_COMP_vect)//, ISR_NOBLOCK) //10ms timer
+ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
 {
   cli();
   TIMSK &= ~(1<<OCIE0); //stop reentrance 
@@ -578,7 +572,7 @@ ISR_NB(TIMER0_COMP_vect)//, ISR_NOBLOCK) //10ms timer
 
 
 
-ISR_NB(TIMER3_CAPT_vect)//, ISR_NOBLOCK) //capture ppm in 16MHz / 8 = 2MHz
+ISR(TIMER3_CAPT_vect, ISR_NOBLOCK) //capture ppm in 16MHz / 8 = 2MHz
 {
   uint16_t capture=ICR3;
   cli();
