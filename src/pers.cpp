@@ -186,9 +186,9 @@ void eeCheck(bool immediately)
         alert(PSTR("EEPROM overflow"));
       }
     }
-    return; //first finish GENERAL, then MODEL !!avoid Toggle effect
+    //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
-  if(msk & EE_MODEL){
+  else if(msk & EE_MODEL){
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
     {

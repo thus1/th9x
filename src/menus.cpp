@@ -1705,6 +1705,8 @@ void perOut()
         v = act[i];
       }
       switch(md.curve){ 
+        case 0: 
+          break;
         case 1: 
           if(md.srcRaw == 9) //FUL
           {
