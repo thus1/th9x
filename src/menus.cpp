@@ -1584,9 +1584,11 @@ void perOut()
     int16_t v= g_anaIns[i];
     sei();
     v -= g_eeGeneral.calibMid[i];
-    v  = v * ((signed)RESXu/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
-    if(v <= -(signed)RESXu) v = -(signed)RESXu;
-    if(v >= (signed) RESXu) v =  (signed)RESXu;
+    //v  = v * ((signed)RESXu/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
+    v  = v * (int32_t)RESX / (max((int16_t)100,g_eeGeneral.calibSpan[i]));
+
+    if(v <= -RESX) v = -RESX;
+    if(v >=  RESX) v =  RESX;
     anaCalib[i] = v; //for show in expo
 
     //expo  [-512..512]  9+1 Bit

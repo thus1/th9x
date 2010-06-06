@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
+- thr-error overflow
 + cv4 geht nicht
 + bug mixer end
 + watchdog in write-file
@@ -23,6 +24,11 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- more mixer
+- limit + offset
+- trim -> limitoffset
+- dualrate expo+weight+differentialweight
+- negativ student weight
 + standard curves after delay
 + special curve x<0 and x>0 when FUL
 + switch delay curve sequence?
@@ -202,13 +208,18 @@ void checkMem()
 void checkTHR()
 {
   if(! WARN_THR) return;
+#ifdef SIM
   for(uint8_t i=0; i<20; i++) per10ms(); //read anas
+#else
+  while(g_tmr10ms<20){} //wait for some ana in
+#endif
   int thrchn=(2-(g_eeGeneral.stickMode&1));//stickMode=0123 -> thr=2121
-  int16_t v= g_anaIns[thrchn];
-  v -= g_eeGeneral.calibMid[thrchn];
-  v  = v * (512/8) / (max(40,g_eeGeneral.calibSpan[thrchn]/8));
-
-  if(v > -500)  
+  int16_t v      = g_anaIns[thrchn];
+  int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpan[thrchn] +
+    g_eeGeneral.calibSpan[thrchn]/8;
+  //  v -= g_eeGeneral.calibMid[thrchn];
+  //v  = v * (512/8) / (max(40,g_eeGeneral.calibSpan[thrchn]/8));
+  if(v > lowLim)  
   {
     alert(PSTR("THR not idle"));
   }
@@ -237,8 +248,8 @@ MenuFuncP g_menuStack[5]
 #endif
 ;
 uint8_t  g_menuStackPtr = 0;
-// uint8_t  g_menuStackSub[5];
 uint8_t  g_beepCnt;
+uint8_t  g_beepVal;
 
 void alert(const prog_char * s)
 {
@@ -248,18 +259,11 @@ void alert(const prog_char * s)
   lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
   refreshDiplay();
   beepErr();
-  //bool keyPressed=false;
   while(1)
   {
     if(IS_KEY_BREAK(getEvent()))   return;  //wait for key release
-    //if(keyPressed){
-    //  if((~PINB & 0x7e) == 0)   return;  //wait for key release
-    //}else{
-    //  if(~PINB & 0x7e)          keyPressed=true;
-    //}
 #ifdef SIM
 void doFxEvents();
-//printf("pinb %x\n",PINB);
     doFxEvents();
 #endif    
   }
@@ -447,7 +451,7 @@ void perMain()
 {
   perOut();
   eeCheck();
-  //if(! g_menuStack[0]) g_menuStack[0] =  menuProc0;
+  g_beepVal = BEEP_VAL;
 
   lcd_clear();
   uint8_t evt=getEvent();
@@ -657,8 +661,6 @@ int main(void)
   sei(); //damit alert in eeReadGeneral() nicht haengt
   g_menuStack[0] =  menuProc0;
   eeReadAll();
-
-  uint16_t old10ms;
   checkMem();
   checkTHR();
   checkSwitches();
@@ -666,13 +668,12 @@ int main(void)
   setupAdc();
   wdt_enable(WDTO_500MS);
   while(1){
-    old10ms=g_tmr10ms;
+    uint16_t old10ms=g_tmr10ms;
     uint16_t t0 = getTmr16KHz();
     perMain();
     t0 = getTmr16KHz() - t0;
     g_timeMain = max(g_timeMain,t0);
     while(g_tmr10ms==old10ms) sleep_mode();
-    //while(g_tmr10ms==old10ms) sleep_mode();
     if(heartbeat == 0x3)
     {
       wdt_reset();
