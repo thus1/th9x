@@ -24,7 +24,7 @@
 typedef struct t_TrainerData1 {
   uint8_t srcChn:3; //0-7 = ch1-8
   int8_t  swtch:5;
-  uint8_t weight:6;
+  int8_t  studWeight:6;
   uint8_t mode:2;   //off,add-mode,subst-mode
 } __attribute__((packed)) TrainerData1; //
 

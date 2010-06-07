@@ -1096,9 +1096,9 @@ void menuProcTrainer(uint8_t event)
     if(edit) td->mode = checkIncDec_vg( event, td->mode, 0,2); //!! bitfield
 
     edit = (sub==i && subSub==2);
-    lcd_outdezAtt( 11*FW, y, td->weight*25/16,
+    lcd_outdezAtt( 11*FW, y, td->studWeight*13/4,
                    edit ? BLINK : 0);
-    if(edit) td->weight = checkIncDec_vg( event, td->weight, 0,63); //!! bitfield
+    if(edit) td->studWeight = checkIncDec_vg( event, td->studWeight, -31,31); //!! bitfield
 
     edit = (sub==i && subSub==3);
     lcd_putsnAtt(  12*FW, y, PSTR("ch1ch2ch3ch4")+3*td->srcChn,3, edit ? BLINK : 0);
@@ -1602,7 +1602,7 @@ void perOut()
     if(td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
-        td->weight/64;
+        td->studWeight/31;
 
       switch(td->mode)
       {
