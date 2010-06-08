@@ -650,9 +650,7 @@ int main(void)
   // TCNT1 2MHz
   TCCR1A = (0<<WGM10);
   TCCR1B = (1 << WGM12) | (2<<CS10); // CTC OCR1A, 16MHz / 8
-  TIMSK |= (1<<OCIE1A);
-  //OCR1AH = (300*2-1)>>8;
-  //OCR1AL = (300*2-1);
+  //TIMSK |= (1<<OCIE1A); enable immediately before mainloop
 
   TCCR3A  = 0;
   TCCR3B  = (1<<ICNC3) | (2<<CS30);      //ICNC3 16MHz / 8
@@ -660,6 +658,7 @@ int main(void)
 
   sei(); //damit alert in eeReadGeneral() nicht haengt
   g_menuStack[0] =  menuProc0;
+
   eeReadAll();
   checkMem();
   checkTHR();
@@ -667,6 +666,9 @@ int main(void)
   setupPulses();
   setupAdc();
   wdt_enable(WDTO_500MS);
+
+  lcdSetRefVolt(g_eeGeneral.contrast);
+  TIMSK |= (1<<OCIE1A); //enable immediately before mainloop
   while(1){
     uint16_t old10ms=g_tmr10ms;
     uint16_t t0 = getTmr16KHz();

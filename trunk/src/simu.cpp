@@ -316,8 +316,8 @@ void Th9xSim::refreshDiplay()
       KEY_1, (FXuint)&pine,  INP_E_ThrCt,    0,
       KEY_2, (FXuint)&ping,  INP_G_RuddDR,   0,
       KEY_3, (FXuint)&pine,  INP_E_ElevDR,   0,
-      KEY_4, (FXuint)&ping,  INP_G_ID1,      0,
-      KEY_5, (FXuint)&pine,  INP_E_ID2,      0,
+      //KEY_4, (FXuint)&ping,  INP_G_ID1,      0,
+      //KEY_5, (FXuint)&pine,  INP_E_ID2,      0,
       KEY_6, (FXuint)&pine,  INP_E_AileDR,   0,
       KEY_7, (FXuint)&pine,  INP_E_Gear,     0,
       KEY_8, (FXuint)&pine,  INP_E_Trainer,  0
@@ -331,6 +331,24 @@ void Th9xSim::refreshDiplay()
         keys3[j+3] = ks;
       }
     }
+      //     INP_G_ID1 INP_E_ID2
+      // id0    0        1
+      // id1    1        1
+      // id2    1        0
+    static FXuint id=0,k4st=0;
+    bool ks=getApp()->getKeyState(KEY_4);
+    if(ks != k4st){
+      if(ks){
+        id=(id+1)%3;
+        switch(id){
+          case 0: ping |=  (1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
+          case 1: ping &= ~(1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
+          case 2: ping &= ~(1<<INP_G_ID1);  pine |=  (1<<INP_E_ID2); break;
+        }
+      }
+      k4st = ks;
+    }
+
   }
 
 
