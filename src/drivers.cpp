@@ -157,6 +157,10 @@ bool keyState(EnumKeys enuk)
     case SW_ElevDR : return PINE & (1<<INP_E_ElevDR);
     case SW_AileDR : return PINE & (1<<INP_E_AileDR);
     case SW_RuddDR : return PING & (1<<INP_G_RuddDR);
+      //     INP_G_ID1 INP_E_ID2
+      // id0    0        1
+      // id1    1        1
+      // id2    1        0
     case SW_ID0    : return !(PING & (1<<INP_G_ID1));
     case SW_ID1    : return (PING & (1<<INP_G_ID1))&& (PINE & (1<<INP_E_ID2));
     case SW_ID2    : return !(PINE & (1<<INP_E_ID2));
