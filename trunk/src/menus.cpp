@@ -1640,6 +1640,8 @@ void perOut()
         if(chans[i])
           anaNoTrim[j]= anas[j]=
             (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+        else
+          anaNoTrim[j]= anas[j]=0;
       }
     }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
