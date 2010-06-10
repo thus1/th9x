@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
-- thr-error overflow
++ thr-error overflow
 + cv4 geht nicht
 + bug mixer end
 + watchdog in write-file
@@ -24,11 +24,12 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- timer mit thr-switch
 - more mixer
 - limit + offset
 - trim -> limitoffset
 - dualrate expo+weight+differentialweight
-- negativ student weight
++ negativ student weight
 + standard curves after delay
 + special curve x<0 and x>0 when FUL
 + switch delay curve sequence?
@@ -304,39 +305,42 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
 {
   int16_t val = i_flags & _FL_SIZE2 ? *(int16_t*)i_pval : *(int8_t*)i_pval ;
   int16_t newval = val;
-  if(i_flags&_FL_VERT)
-    switch(event)
-    {
-      case  EVT_KEY_FIRST(KEY_UP):
-      case  EVT_KEY_REPT(KEY_UP):    newval++; beepKey();     break;
-      case  EVT_KEY_FIRST(KEY_DOWN):
-      case  EVT_KEY_REPT(KEY_DOWN):  newval--; beepKey();     break;
-    }
-  else  
-    switch(event)
-    {
-      case  EVT_KEY_FIRST(KEY_RIGHT):
-      case  EVT_KEY_REPT(KEY_RIGHT): newval++; beepKey();     break;
-      case  EVT_KEY_FIRST(KEY_LEFT):
-      case  EVT_KEY_REPT(KEY_LEFT):  newval--; beepKey();     break;
-    }
+  uint8_t kpl=KEY_RIGHT, kmi=KEY_LEFT, kother=-1;
+
+  if(i_flags&_FL_VERT){
+    kpl=KEY_UP; kmi=KEY_DOWN;
+  }
+  if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
+    newval++; 
+    beepKey();     
+    kother=kmi;
+  }else if(event==EVT_KEY_FIRST(kmi) || event== EVT_KEY_REPT(kmi)) {
+    newval--; 
+    beepKey();     
+    kother=kpl;
+  }
+  if(kother!=-1 && keyState((EnumKeys)kother)){
+    newval=-val;
+    killEvents(kmi);
+    killEvents(kpl);
+  }
+
 
   if(newval>i_max)
   {
-     newval = i_max;
-     killEvents(event);
-     beepWarn();
+    newval = i_max;
+    killEvents(event);
+    beepWarn();
   }
   if(newval < i_min)
   {
-     newval = i_min;
-     killEvents(event);
-     beepWarn();
+    newval = i_min;
+    killEvents(event);
+    beepWarn();
   }
   if(newval != val){
     if(newval==0) {
       pauseEvents(event);
-      //killEvents(event);
       beepKey(); //beepWarn();
     }
     if(i_flags & _FL_SIZE2 ) *(int16_t*)i_pval = newval;
