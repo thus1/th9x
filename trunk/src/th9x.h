@@ -397,6 +397,7 @@ extern uint16_t s_ana[8];
 extern const char stamp1[];
 extern const char stamp2[];
 extern const char stamp3[];
+extern const char stamp4[];
 #include "myeeprom.h"
 
 /// Erzeugt einen beep der laenge b

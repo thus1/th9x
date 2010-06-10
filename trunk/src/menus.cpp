@@ -1065,9 +1065,10 @@ void menuProcDiagVers(uint8_t event)
   mState.checkExit(event);
   mState.checkChain(4,menuTabDiag,DIM(menuTabDiag));
 
-  lcd_puts_P(0, 2*FH,stamp1 ); 
-  lcd_puts_P(0, 3*FH,stamp2 ); 
-  lcd_puts_P(0, 4*FH,stamp3 ); 
+  lcd_puts_P(0, 2*FH,stamp4 ); 
+  lcd_puts_P(0, 3*FH,stamp1 ); 
+  lcd_puts_P(0, 4*FH,stamp2 ); 
+  lcd_puts_P(0, 5*FH,stamp3 ); 
 }
 
 void menuProcTrainer(uint8_t event)

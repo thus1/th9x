@@ -7,8 +7,13 @@ SRC:=$(foreach f,$(SRC),src/$(f))
 all:  tgt_bin simu
 
 
-INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6
-LIB=-L/usr/local/lib -lFOX-1.6
+INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6 \
+    -I$(FOXPATH)/include
+
+LIB=-L/usr/local/lib \
+    -L$(FOXPATH)/src/.libs \
+    -lFOX-1.6 \
+    -Wl,-rpath,$(FOXPATH)/src/.libs
 
 
 

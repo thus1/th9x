@@ -20,52 +20,48 @@ h=iconMsk.height
 
 iconSw0 = []
 iconSw1 = []
+iconSw2 = []
 #8.times{|i| iconSw[i]=FXIcon.new(application,nil,IMAGE_ALPHACOLOR|IMAGE_OWNED|IMAGE_KEEP,w,h)}
-8.times{|i| 
+
+data="\xff"*4*w*h
+#iconSw0[1]=FXPNGIcon.new(application, data,0xffffffff,IMAGE_ALPHACOLOR)
+iconSw0[1]=FXPNGIcon.new(application, File.read("PNG/fernkompl_empty.png"))
+iconSw0[1].create
+iconSw0[1].restore
+0.times{|i| 
   iconSw0[i]=FXPNGIcon.new(application, File.read("PNG/fernkompl_empty.png"),0xffffffff,IMAGE_ALPHACOLOR)
   iconSw0[i].create
   iconSw0[i].restore
   iconSw1[i]=FXPNGIcon.new(application, File.read("PNG/fernkompl_empty.png"),0xffffffff,IMAGE_ALPHACOLOR)
   iconSw1[i].create
   iconSw1[i].restore
+  iconSw2[i]=FXPNGIcon.new(application, File.read("PNG/fernkompl_empty.png"),0xffffffff,IMAGE_ALPHACOLOR)
+  iconSw2[i].create
+  iconSw2[i].restore
 }
-#pp iconSw[1].getPixel(0,0)
+pp "%x"%iconSw0[1].getPixel(0,0)
 #FXDCWindow.new(iconSw[1]){|dc|
 #  dc.foreground = 0x0ffffff
 #  dc.fillRectangle(0, 0, w, h)
 #}
-
+exit
 h.times{|y|
   w.times{|x|
     col=iconMsk.getPixel(x,y)
     #8.times{|i| iconSw[i].setPixel(x,y,0)}
     case col
     when 0xffffffff
-#    when 0xff1000f0
-#    when 0xff10f0f0
-#
-#    when 0xff2000f0
-#    when 0xff20f0f0
-#
-#    when 0xff3000f0
-#    when 0xff30f0f0
-#
-#    when 0xff4000f0
-#    when 0xff40a0f0
-#
-#    when 0xff5000f0
-#    when 0xff6000f0
-#
-#    when 0xff7000f0
-#
-#    when 0xff40f0f0
-#    when 0xff50f0f0
-#    when 0xff60f0f0
-#    when 0xff70f0f0
-#      iconMsk.setPixel(x,y,0x0ffffff)
     else
+#    when 0xff1000f0    when 0xff10f0f0
+#    when 0xff2000f0    when 0xff20f0f0
+#    when 0xff3000f0    when 0xff30f0f0
+#    when 0xff4000f0    when 0xff40f0f0   when 0xff40a0f0
+#    when 0xff5000f0    when 0xff50f0f0
+#    when 0xff6000f0    when 0xff60f0f0
+#    when 0xff7000f0    when 0xff70f0f0
       iconSw0[col>>20 & 0xf].setPixel(x,y,icon0.getPixel(x,y)^1)
       iconSw1[col>>20 & 0xf].setPixel(x,y,icon1.getPixel(x,y)^1)
+      iconSw2[col>>20 & 0xf].setPixel(x,y,icon2.getPixel(x,y)^1)
       #iconSw1[col>>20 & 0xf].setPixel(x,y,icon2.getPixel(x,y)&0xffff5555)
       #iconSw1[col>>20 & 0xf].setPixel(x,y,col)
 #      raise "unknown col 0x%x"%col

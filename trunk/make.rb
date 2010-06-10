@@ -233,16 +233,28 @@ class Builder
   end
   def mkStamp(stf)
     vers=0
+    svnvers=""
     begin
       File.read(stf)=~/VERS\s+(\d+)/
       vers=$1.to_i + 1
+#<url>https://th9x.googlecode.com/svn/trunk</url>
+      info=`svn info --xml ..`
+      if info=~/\.com\/svn\/(.*)<\/url>/
+        svnvers += $1
+      end
+#   revision="77">
+      if info=~/revision="(\d+)"/
+        svnvers += "-r"+($1.to_i+1).to_s
+      end
     rescue
     end
+
     File.open(stf,"w"){|f|
       t=Time.new
       f.puts t.strftime("#define DATE_STR \"%d.%m.%Y\"")
       f.puts t.strftime("#define TIME_STR \"%H:%M:%S\"")
       f.puts "#define SUB_VERS #{vers}-#{ENV['USER']}"
+      f.puts "#define SVN_VERS \"#{svnvers}\""
     }
   end
 end #Builder
