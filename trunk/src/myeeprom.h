@@ -40,7 +40,9 @@ typedef struct t_TrainerData {
 //eeprom modelspec
 typedef struct t_ExpoData {
   int8_t  expNorm;
+  int8_t  expNormWeight;
   int8_t  expDr;
+  int8_t  expSwWeight;
   int8_t  drSw;
 } __attribute__((packed)) ExpoData;
 typedef struct t_TrimData {
@@ -48,6 +50,7 @@ typedef struct t_TrimData {
   int16_t trimDef;
 } __attribute__((packed)) TrimData;
 typedef struct t_LimitData {
+  int8_t  offset;
   int8_t  min;
   int8_t  max;
   bool    revert;
