@@ -634,9 +634,10 @@ void menuProcExpoOne(uint8_t event)
   uint8_t x=TITLE("EXPO/DR ");  
   putsChnRaw(x,0,s_expoChan+1,0);
   mState.checkExit(event,1);
-  int8_t sub = mState.checkVert(3);
+  int8_t sub = mState.checkVert(5);
 
   int8_t   kView  = 0;
+  int8_t   wView  = 0;
   uint8_t  invBlk = 0;
   uint8_t  y = 16;
 
@@ -645,23 +646,50 @@ void menuProcExpoOne(uint8_t event)
 
     invBlk = BLINK;
     kView =g_model.expoData[s_expoChan].expNorm;
+    wView =g_model.expoData[s_expoChan].expNormWeight;
   }
-  lcd_puts_P(0,y,PSTR("Expo"));  
+  lcd_puts_P(0,y,PSTR("Expo"));
   lcd_outdezAtt(9*FW, y, g_model.expoData[s_expoChan].expNorm, invBlk);
   y+=FH;
 
   invBlk = 0;
   if(sub==1){
+    CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[s_expoChan].expNormWeight, 0, 100);
+
+    invBlk = BLINK;
+    kView =g_model.expoData[s_expoChan].expNorm;
+    wView =g_model.expoData[s_expoChan].expNormWeight;
+  }
+  lcd_puts_P(0,y,PSTR("Weight"));
+  lcd_outdezAtt(9*FW, y, g_model.expoData[s_expoChan].expNormWeight, invBlk);
+  y+=FH;
+  y+=FH;
+
+  invBlk = 0;
+  if(sub==2){
     CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[s_expoChan].expDr,-100, 100);
     invBlk = BLINK;
     kView  = g_model.expoData[s_expoChan].expDr;
+    wView =g_model.expoData[s_expoChan].expSwWeight;
   }
   lcd_puts_P(0,y,PSTR("DrExp"));  
   lcd_outdezAtt(9*FW, y, g_model.expoData[s_expoChan].expDr, invBlk);
   y+=FH;
 
   invBlk = 0;
-  if(sub==2){
+  if(sub==3){
+    CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[s_expoChan].expSwWeight, 0, 100);
+
+    invBlk = BLINK;
+    kView =g_model.expoData[s_expoChan].expDr;
+    wView =g_model.expoData[s_expoChan].expSwWeight;
+  }
+  lcd_puts_P(0,y,PSTR("Weight"));
+  lcd_outdezAtt(9*FW, y, g_model.expoData[s_expoChan].expSwWeight, invBlk);
+  y+=FH;
+
+  invBlk = 0;
+  if(sub==4){
     CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[s_expoChan].drSw,0,MAX_DRSWITCH);
     invBlk = BLINK;
   }
@@ -677,6 +705,7 @@ void menuProcExpoOne(uint8_t event)
   for(uint8_t xv=0;xv<WCHART;xv++)
   {
     uint16_t yv=expo(xv*(RESXu/WCHART),kView) / (RESXu/WCHART);
+    yv = (yv * wView)/100;
     lcd_plot(X0+xv, Y0-yv);
     lcd_plot(X0-xv, Y0+yv);
     if((xv&3) == 0){
@@ -688,6 +717,8 @@ void menuProcExpoOne(uint8_t event)
   }
   int16_t x512  = anaCalib[s_expoChan];
   int16_t y512  = expo(x512,kView);
+  y512 = y512 * (wView / 4)/(100 / 4);
+
   lcd_vline(X0+x512/(RESXu/WCHART), Y0-WCHART,WCHART*2);
   lcd_hline(X0-WCHART,             Y0-y512/(RESXu/WCHART),WCHART*2);
   lcd_outdezAtt( 19*FW, 6*FH,x512*25/((signed) RESXu/4), 0 );
@@ -714,7 +745,7 @@ void menuProcExpoAll(uint8_t event)
       break;
   }
 
-  lcd_puts_P( 6*FW, 1*FH,PSTR("Exp  DrSw DrExp"));
+  lcd_puts_P( 3*FW, 1*FH,PSTR("Wei Exp Sw Wei Exp"));
   for(uint8_t i=0; i<4; i++)
   {
     uint8_t y=(i+2)*FH;
@@ -724,18 +755,20 @@ void menuProcExpoAll(uint8_t event)
     if(sub==i){
       //if(g_model.expoData[i].drSw && keyState((EnumKeys)(SW_BASE+g_model.expoData[i].drSw))){
       if( getSwitch(g_model.expoData[i].drSw,0)){
-        CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expDr,-100, 100);
+        CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expSwWeight, 0, 100);
         invDr = BLINK;
       }else{
-        CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expNorm,-100, 100);
+        CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expNormWeight,0, 100);
         invNorm = BLINK;
       }
     }
 
-    lcd_outdezAtt( 8*FW, y, g_model.expoData[i].expNorm,invNorm);
+    lcd_outdezAtt( 6*FW, y, g_model.expoData[i].expNormWeight,invNorm);
+    lcd_outdezAtt( 10*FW, y, g_model.expoData[i].expNorm,0);
     if(g_model.expoData[i].drSw){
-      putsDrSwitches( 11*FW, y, g_model.expoData[i].drSw,0);
-      lcd_outdezAtt( 19*FW, y, g_model.expoData[i].expDr,invDr);
+      putsDrSwitches( 10*FW, y, g_model.expoData[i].drSw,0);
+      lcd_outdezAtt( 17*FW, y, g_model.expoData[i].expSwWeight,invDr);
+      lcd_outdezAtt( 21*FW, y, g_model.expoData[i].expDr,0);
     }
     //else{
     //  lcd_putc( 13*FW, y,'-');
@@ -1598,7 +1631,9 @@ void perOut()
               g_model.expoData[i].expDr           :
               g_model.expoData[i].expNorm
     );
-
+    int32_t x = (int32_t)v * (getSwitch(g_model.expoData[i].drSw,0) ? g_model.expoData[i].expSwWeight :
+                                                              g_model.expoData[i].expNormWeight) / 100;
+    v = (int16_t)x;
     TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
     if(td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
