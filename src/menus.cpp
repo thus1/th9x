@@ -150,25 +150,28 @@ void menuProcLimits(uint8_t event)
   uint8_t subSub=0;
   if(sub>=0){
     LimitData *ld = &g_model.limitData[sub];
-    subSub=mState.checkHorz(sub+1,4);
+    subSub=mState.checkHorz(sub+1,5);
     switch(subSub)
     {
       case 1:
+        if(CHECK_INCDEC_V_MODELVAR( event, ld->offset, -125,125))  LIMITS_DIRTY;
+        break;
+      case 2:
         ld->min -=  100;
         if(CHECK_INCDEC_V_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
         ld->min +=  100;
         break;
-      case 2: 
+      case 3:
         ld->max +=  100;
         if(CHECK_INCDEC_V_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
         ld->max -=  100;
         break;
-      case 3: CHECK_INCDEC_V_MODELVAR( event, ld->revert,    0,1); 
+      case 4: CHECK_INCDEC_V_MODELVAR( event, ld->revert,    0,1);
         break;
     }
   }
-  if(sub>4) s_pgOfs = 2;
-  if(sub<3) s_pgOfs = 0;
+  if(sub>5) s_pgOfs = 2;
+  if(sub<4) s_pgOfs = 0;
 
   switch(event)
   {
@@ -177,15 +180,16 @@ void menuProcLimits(uint8_t event)
       // subSub  = 0;
       break;
   }
-  lcd_puts_P( 6*FW, 1*FH,PSTR("min  max  inv"));
+  lcd_puts_P( 4*FW, 1*FH,PSTR("off  min  max inv"));
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
     LimitData *ld = &g_model.limitData[k];
     putsChn(0,y,k+1,(sub==k && subSub==0) ? INVERS : 0);
-    lcd_outdezAtt(  9*FW, y, (int8_t)(ld->min-100),   (sub==k && subSub==1) ? BLINK : 0);
-    lcd_outdezAtt( 14*FW, y, (int8_t)(ld->max+100),   (sub==k && subSub==2) ? BLINK : 0);
-    lcd_putsnAtt(   15*FW, y, PSTR(" - INV")+ld->revert*3,3,(sub==k && subSub==3) ? BLINK : 0);
+    lcd_outdezAtt(  7*FW, y, (ld->offset) * 4 - ld->offset / 8,   ((sub==k && subSub==1) ? BLINK : 0) | PREC1 );
+    lcd_outdezAtt(  12*FW, y, (int8_t)(ld->min-100),   (sub==k && subSub==2) ? BLINK : 0);
+    lcd_outdezAtt( 17*FW, y, (int8_t)(ld->max+100),   (sub==k && subSub==3) ? BLINK : 0);
+    lcd_putsnAtt(   18*FW, y, PSTR(" - INV")+ld->revert*3,3,(sub==k && subSub==4) ? BLINK : 0);
   }
 }
 
@@ -1781,6 +1785,8 @@ void perOut()
   for(uint8_t i=0;i<NUM_CHNOUT;i++){
     int16_t v = 0;
     if(chans[i]) v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+
+    v+=g_model.limitData[i].offset*2;
 
     v = max(s_cacheLimitsMin[i],v);
     v = min(s_cacheLimitsMax[i],v);
