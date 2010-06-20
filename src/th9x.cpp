@@ -26,9 +26,7 @@ bugs:
 todo
 - timer mit thr-switch
 - more mixer
-- limit + offset
 - trim -> limitoffset
-- dualrate expo+weight+differentialweight
 + negativ student weight
 + standard curves after delay
 + special curve x<0 and x>0 when FUL
@@ -37,7 +35,7 @@ todo
 - select zero beep/store beep
 - select zero stop/ 2-stage mixer?
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
-- pruefung des Schülersignals
+- pruefung des Schï¿½lersignals
 - format eeprom
 - pcm 
 - light auto off
@@ -45,6 +43,8 @@ todo
 - fast multiply 8*16 > 32
 - doku light-pin B7 pin17
 done
++ dualrate expo+weight+differentialweight
++ limit + offset
 + curves mit -100..100, cache
 + thr-warning
 + mode in general
@@ -533,11 +533,15 @@ ISR(ADC_vect, ISR_NOBLOCK)
 {
   static uint8_t chan;
 
-  ADMUX = chan | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
-  s_ana[chan]   += ADC - s_ana[chan] / 4; // Index ist immer 1 weniger als Kanal
+  uint8_t k = chan & 0x7;
+  ADMUX = k | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
+  s_ana[k]   += ADC - s_ana[k] / 4; // Index ist immer 1 weniger als Kanal
   ++chan;
-  if(chan & 0x8)
+  if(chan & 0x20)
+  {
     chan = 0;       // letzter Kanal war 6
+    ADCSRA &= ~(1 << ADIE);
+  }
   else
     STARTADCONV;
 }
