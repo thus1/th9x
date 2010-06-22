@@ -1,0 +1,161 @@
+#summary Instructions on modifying the Turnigy/Eurgle/Imax/FlySky 9ch Tx to flash new Software
+
+= Introduction =
+
+<wiki:toc max_depth="1" />
+
+= You need =
+
+ * Transmitter (Turnigy/Eurgle/Imax/FlySky)
+ * Soldering iron
+ * AVR Programmer
+ * Computer with Linux/Mac Os/Windows
+
+
+
+= Which programmer? =
+
+Basically every AVR compatible ISP (AVR ISP, In-System Programmer) is suitable. Personally I only can recommend ones that are compatible with AVRdude! Why?
+
+AVRdude is Open Source, available for Windows, Linux&Mac, supports COM/LPT&USB, is widely supported and being actively developed.
+
+There are programmers for the serial, parallel and USB interface.
+The advantage of serial and parallel port programmer are the lack necessary drivers. Disadvantages are the availability of those interfaces on new computers and the sometimes necessary external power supply of the ISP’s.
+
+USB ISP’s are fed by the USB port and can even power the target (i.e. the Tx). However, it has to be obeyed that for windows necessary drivers are provided .
+
+A list of programmers supported by AVRdude can be found here. You can purchase those on eBay or electronic retailers, costs vary between $5 and $30.
+Users on rclineforum.de have tested a couple of ISP’s:
+
+ * successfully 
+|| USB || LPT ||
+|| AVR ISP MKII || AVR Atmel ISP parallel Programmer ||
+|| AVRProgUSB || ||
+|| USBtinyISP || ||
+|| Pocket AVR Programmer || ||
+|| MySmartUSB MK2 || ||
+	
+ * problematic
+|| USB || LPT ||
+|| USB-AVRlab || Primitiv Parallelport programmer ||
+
+Since you probably want to use a USB programmer, the instructions are focused on those. However, apart from the power supply of the Tx and the interface selection in AVRdude everything else should be equal.
+
+= Connecting the Th9x with the Programmer =
+
+The pins of the programmer have to be connected to the microcontroller in the Tx (ATmega64). Atmel has two standard connectors, a 6- or 10pin connector. The standard  pin assignment of the 6pin connector looks as follows:
+
+[http://th9x.googlecode.com/svn/wiki/atmel_6pin.png]
+
+these have to be connected to the Tx as in the following picture. The Turnigy 9ch Tx is available
+ in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for
+ easier soldering (red circle).
+
+[http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png]
+
+It is recommended to use a thin, flexible cable (e.g. braid from a Cat5 cable). Otherwise
+ the leads could come of the PCB. It is further recommended to use a hot glue gun to secure
+ the soldered spots. Hot glue can easily be applied and also removed!
+
+
+Usually most programmers already come with a 6pin connector and plug. After soldering, 
+check if there is a connection from the plug of the programmer up to the pins of the micro processor
+ (see arrows pin assignment processor). If not, see troubleshooting.
+
+With removed back of the Tx and disconnected 12pin connector you can now check the connection
+ from programmer to the Tx. If Vcc is connected and target power supply jumper is closed (on),
+ the Tx should now turn itself on and return a SwitchError. This is normal since most switches
+ are disconnected by the 12 pin connector.
+
+Note that most parallel port programmer require the Vcc pin to be connected to power the programmer
+ itself, hence the batterie must be connected. USB programmer on the other hand are fed by the
+ USB port and can power the Tx with the Vcc pin such that no battery is required for flashing the
+ firmware.
+
+
+= Setting up the Software =
+
+All words written in `small letters` are console commands, meaning in windows enter them in Start -> run -> `cmd`, in Mac OS open applications/utilities/Terminal.
+
+ * If you are using windows: install the provided driver for the ISP, on Mac OS und Linux you usually don’t need an extra driver. 
+Install AVRdude: 
+windows user download WinAVR, which includes AVRdude. 
+Mac OS user install MacPorts (requires Xcode, found on the Mac OS installer DVD). Open a Terminal windows and enter the following: `sudo port install avrdude` now have a coffee and wait until MacPorts finishes the installation of AVRdude and everything else it requires to run it.
+Linux users probably know how to get a current version of AVRdude :)
+The current version of AVRdude ist 5.10
+ * Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. AVR Burn-O-Mat, AVRFuses) as well as for Windows & Linux (e.g. AVRBurner)
+ * Required parameter for avrdude:
+`-c xxxx` -> xxxx states the programmer used, see list
+`-p m64` -> states the target processor (ATmega64)
+`-P xxx` -> xxx states the port, e.g. com1,lpt1,usb not required for most USB ISP
+`-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency  
+ * Checking the connection with AVRdude:
+run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:     
+		
+			`avrdude: Device signature = 0x1e9602`
+
+ * download binary (th9x.bin): http://code.google.com/p/th9x/
+
+
+= Backup old and flash new Software =
+
+Prior flashing the new software you probably want to backup the original one. In case you forgot that, the original images can be found in the internet, check [5,6]
+
+ATTENTION: If the EEPROM is flashed, all model data will be lost! This is inevitable, thus note all your settings.
+
+Following commands back up the current flash and eeprom content in *.bin:
+
+`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
+
+`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
+
+To upload the new software, i.e. the image th9x.bin from [1] enter the following:
+
+`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
+
+(memory typ = flash/eeprom, 
+operation = r/w (read/write),
+format = a/r (autodetect/raw binary)
+
+Well, thats it. You could optionally use a GUI, however the only thing these do is just starting AVRdude with your selected parameters. Mostly, GUI’s are only more convenient in selecting files and folders.
+
+ATTENTION: If a GUI is used, DO NOT touch fuses settings!
+
+= Troubleshooting =
+
+Many things can go wrong. However up to date there is no known issue of total Tx failure due to the modification.
+Common problems and solution can be found in the table below. In case you run into other troubles, check the forum [5,6] and describe you problem! Usually you’ll be helped quickly!
+Have fun!
+
+
+|| message || problem -> solution || picture ||
+Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!	possible destroyed PCB track  -> bridge with braid from pad to pin on processor
+(yeap, has been done before :) ) 	
+AVRdude message: 
+
+avrdude: Error: Could not find xxxx device	unplug and plug the ISP into the USB port
+
+power supply of the USB port is insufficient on some notebooks -> try different port or use desktop pc	
+AVRdude message: 
+
+initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02	some cables are mixed up -> check them and get them in order
+
+Ail D/R switch has to be off
+
+decrease programming frequency by: -P xx, increase xx, e.g. 20)
+
+if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of ISP (e.g. start at 1kOhm, if not sufficient lower until 200Ohm)
+
+remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad	
+
+
+
+= Links =
+
+[1] Th9x on Google Code: http://code.google.com/p/th9x/
+[2] docu for AVRdude: www.nongnu.org/avrdude/user-manual/
+[3] info for AVR: http://www.mikrocontroller.net/articles/AVR-Tutorial
+[4] good electronics tutorial: http://www.mikrocontroller.net/articles/Elektronik_Allgemein
+[5] thread on rclineforum.de: Link
+[6] thread on rcgroups.com: Link
+[7] alternative software: http://radioclone.org/, http://sourceforge.net/projects/radioclone/
