@@ -1,0 +1,161 @@
+#summary Anleitung zum Umbau und flashen der neuen Firmware
+
+= Introduction =
+
+= Ihr braucht =
+
+Den Sender (Turnigy/Eurgle/Imax/FlySky)
+Lötkolben
+AVR Programmer
+Computer mit Linux/Mac OS/Windows
+
+
+
+= Welchen Programmer? =
+
+Prinzipiell eignet sich jeder AVR kompatible ISP (AVR ISP, In-System Programmer).
+Persöhnlich kann ich nur AVRdude kompatible programmer empfehlen! Warum?
+
+AVRdude ist Open Source, verfügbar für Windows, Linux&Mac, unterstützt COM/LPT&USB,
+ist breit unterstützt und wird aktiv weiterentwickelt.
+
+Programmer gibt es für die serielle, parallele und USB Schnittstelle. 
+Vorteile der Seriell- und Parallelport-Programmer sind nicht notwendige Treiber,
+Nachteile sind die Verfügbarkeit dieser Schnittstellen an neuen Rechnern und die
+manchmal notwendige externe Stromversorgung der ISP’s.
+
+USB ISP’s versorgen sich aus der USB Schnittstelle und können das Target (i.e. den Sender)
+gleich mit Strom mitversorgen, es muss aber darauf geachtet werden das für Windows
+notwendige Treiber bereitgestellt sind.
+
+Eine Liste der von AVRdude unterstützen Programmer findet sich hier. Diese können von eBay oder den gängigen Elektronikversandhäusern zwischen 5 und 30Euro erworben werden.
+Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
+
+
+Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehend ausgerichtet. Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings gleich.
+
+
+
+
+
+= Verbinden der Th9x mit dem Programmer =
+
+Die Anschlüsse des Programmers müssen mit dem Mikrocontroller im Sender (ATmega64) verbunden werden. 
+Atmel hat als Standard einen 6 oder 10 poligen Anschluss. Die Standardbelegung des 6 Pin Anschlusses 
+sieht wie folgt aus:
+
+[http://th9x.googlecode.com/svn/wiki/atmel_6pin.png]
+
+
+diese müssen wie nachfolgend abgebildet mit dem Sender verbunden werden. Den Turnigy Sender gibt es
+ in 2 Versionen, abgebildet ist die v1, bei der v2 ist an SCK ein Lötpad (roter Kreis).
+
+[http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png]
+
+Es wird empfohlen dünnes und flexibles Kabel zu benutzen (z.B. die Litze aus einem Netzwerkkabel),
+da sich ansonsten bei starker Belastung u.U. Leiterbahnen von der Platine lösen könnten. Es ist
+auch empfehlenswert die Lötstellen mit einer Heißklebepistole zu sichern. Heißkleber ist einfach
+anwendbar und auch einfach wieder zu entfernen!
+
+
+
+Bei den meisten Programmern ist ein Stecker mit Kabel für den 6 Pin Anschluss dabei. Nach erfolgtem
+Löten überprüfen ob die Verbindung vom Programmerstecker bis hin zu den Pins des Mikrocontroller
+besteht (siehe Pfeile Pinbelegung Prozessor). Falls nicht, siehe Fehlerquellen.
+
+Parallelport programmer benötigen oftmals die Stromversorgung durch die Batterie im Sender, daher
+muss der Vcc pin angeschlossen sein. USB programmer können üblicherweise den Sender mit Strom versorgen
+(meist muss ein Jumper geschlossen werden). Deshalb muss dabei keine Batterie angeschlossen sein.
+
+Im Fall der Stromversorgung über den USB programmer kann mit abgenommener Rückseite und nicht angeschlossenem
+12pin connector der Sender nun zum Test mit dem Programmer verbunden werden. Bei angeschlossenem Vcc
+sollte sich der Sender nun anschalten und mit SwitchError melden, da die meisten Schalter über den
+12Pin connector ja abgeklemmt sind.
+
+
+
+
+
+= Einrichten der Software =
+
+Alle klein geschriebenen Wörter sind Konsolenbefehle, d.h. in Windows gibt man sie in
+Start -> ausführen -> cmd ein, in Mac OS öffnet man Anwendungen/Dienstprogramme/Terminal.
+
+1. Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux
+Benutzer benötigen meist keinen Treiber.
+
+2. AVRdude installieren: 
+Windows Benutzer laden sich am besten WinAVR, welches AVRdude beinhaltet. 
+Mac OS Nutzer installieren MacPorts (setzt Xcode von der Mac OS installer DVD vorraus).
+Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: sudo port install
+avrdude jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles
+was es dazu benötigt installiert.
+Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
+Die aktuelle Version von AVRdude ist 5.10
+Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows
+& Mac OS (z.B. AVR Burn-O-Mat, AVRFuses) oder Windows & Linux (z.B. AVRBurner)
+
+3. Benötigte Parameter für avrdude:
+
+-c xxxx -> xxxx steht für den verwendeten Programmer, siehe Liste
+-p m64 -> gibt den Target Prozessor an (ATmega64)
+-P xxx -> xxx gibt den Port an, z.B. com1,lpt1,usb für USB meist unnötig
+-B  xx -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz  
+
+4. Überprüfen der Verbindung mit AVRdude:
+mit avrdude -c xxxx -p m64 sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:     
+		
+			avrdude: Device signature = 0x1e9602
+
+5. Aktuelles binary (th9x.bin) herunderladen: http://th9x.googlecode.com/svn/trunk/th9x.bin
+
+
+= Sichern und Flashen der Software =
+
+Bevor die neue Software aufgespielt wird empfiehlt es sich die alte zu sichern.
+Wer das vergisst findet die Originalsoftware aber auch wieder im Internet [5,6].
+
+ACHTUNG: Beim Flashen des EEPROM gehen alle Modelleinstellungen verloren! Das ist
+unumgänglich, deshalb alle Einstellungen notieren.
+
+Folgender Befehle sichern den aktuellen Flash  und eeprom Inhalt in *.bin:
+
+avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a
+
+avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a
+
+Zum aufpielen des neuen Images th9x.bin gibt man folgendes ein:
+
+avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a
+
+(speichertyp = flash/eeprom, 
+operation = r/w (read/write),
+format = a/r (autodetect/raw binary)
+
+Das wars auch schon. Wenn man eine GUI benutzt tut diese auch nichts anderes als
+AVRdude mit diesen Parametern zu starten. Meist sind GUI’s nur bequemer um Ordner
+bzw. Dateien auszuwählen.
+
+ACHTUNG: Bei Benutzung von GUI’s auf keinen Fall die Fuses verändern!
+
+
+
+= Fehlersuche =
+
+So einiges kann schiefgehen, bis jetzt ist aber noch kein Fall bekannt bei dem eine Th9x
+dauerhaften Schaden genommen hat. Bekannte und gelöste Fehler sind der nachfolgenden Tabelle
+zu entnehmen. Bei allen anderen unbekannten Fehlern einfach im Forum [5] melden. Da wird sehr
+schnell und gut geholfen! Viel Spaß!
+
+
+
+= Links =
+
+[1] Th9x auf Google Code: http://code.google.com/p/th9x/
+[2] Alles zu AVRdude: www.nongnu.org/avrdude/user-manual/
+[3] Alles zu AVR: http://www.mikrocontroller.net/articles/AVR-Tutorial
+[4] Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein
+[5] Thread auf rclineforum.de: Link
+[6] Thread auf rcgroups.com Link
+[7] Alternative Firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/
+
