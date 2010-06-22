@@ -1,7 +1,6 @@
   * [Installation ]
-    * [flashen_hpwto Installationsanleitung]
+    * [flashen_howto Installationsanleitung]
     * [installation_de Installationsanleitung]
-    * [installation_en Installation Instructions]
   * [test Test Page]
     * [embedded_test embedded test page]
  
