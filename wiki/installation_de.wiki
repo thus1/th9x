@@ -1,7 +1,5 @@
 #summary Anleitung zum Umbau und flashen der neuen Firmware
 
-= Introduction =
-
 = Ihr braucht =
 
 Den Sender (Turnigy/Eurgle/Imax/FlySky)
@@ -151,11 +149,11 @@ schnell und gut geholfen! Viel Spaß!
 
 = Links =
 
-[1] Th9x auf Google Code: http://code.google.com/p/th9x/
-[2] Alles zu AVRdude: www.nongnu.org/avrdude/user-manual/
-[3] Alles zu AVR: http://www.mikrocontroller.net/articles/AVR-Tutorial
-[4] Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein
-[5] Thread auf rclineforum.de: Link
-[6] Thread auf rcgroups.com Link
-[7] Alternative Firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/
-
+ # Th9x auf Google Code: http://code.google.com/p/th9x/
+ # Alles zu AVRdude: www.nongnu.org/avrdude/user-manual/
+ # Alles zu AVR: http://www.mikrocontroller.net/articles/AVR-Tutorial
+ # Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein
+ # Thread auf rclineforum.de: Link
+ # Thread auf rcgroups.com Link
+ # Alternative Firmware: http://radioclone.org/;  
+ # http://sourceforge.net/projects/radioclone/
