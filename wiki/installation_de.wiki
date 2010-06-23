@@ -1,6 +1,6 @@
 #summary Anleitung zum Umbau und flashen der neuen Firmware
 
-= Introduction =
+= Inhalt =
 
 <wiki:toc max_depth="1" />
 
@@ -15,8 +15,7 @@
 
 = Welchen Programmer? =
 
-Prinzipiell eignet sich jeder AVR kompatible ISP (AVR ISP, In-System Programmer).
-Persöhnlich kann ich nur AVRdude kompatible programmer empfehlen! Warum?
+Prinzipiell eignet sich jeder AVR kompatible ISP (AVR ISP, In-System Programmer). Persöhnlich kann ich nur AVRdude kompatible programmer empfehlen! Warum?
 
 AVRdude ist Open Source, verfügbar für Windows, Linux&Mac, unterstützt COM/LPT&USB,
 ist breit unterstützt und wird aktiv weiterentwickelt.
@@ -30,13 +29,14 @@ USB ISP’s versorgen sich aus der USB Schnittstelle und können das Target (i.e
 gleich mit Strom mitversorgen, es muss aber darauf geachtet werden das für Windows
 notwendige Treiber bereitgestellt sind.
 
-Eine Liste der von AVRdude unterstützen Programmer findet sich hier. Diese können von eBay 
-oder den gängigen Elektronikversandhäusern zwischen 5 und 30Euro erworben werden.
+Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html hier]. Diese können von eBay oder den gängigen Elektronikversandhäusern zwischen 5 und 30Euro erworben werden.
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
-Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehend ausgerichtet.
-Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings 
-gleich.
+|| || USB || LPT ||
+|| erfolgreich || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP]||
+|| problematisch || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer], Pocket AVR Programmer ||
+
+Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehend ausgerichtet. Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings gleich.
 
 
 
@@ -80,67 +80,57 @@ Schalter über den 12Pin connector ja abgeklemmt sind.
 Alle `klein` geschriebenen Wörter sind Konsolenbefehle, d.h. in Windows gibt man sie in
 Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogramme/Terminal.
 
- * Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux
-Benutzer benötigen meist keinen Treiber.
+ # Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux Benutzer benötigen meist keinen Treiber.
 
- * AVRdude installieren: 
-Windows Benutzer laden sich am besten WinAVR, welches AVRdude beinhaltet. 
-Mac OS Nutzer installieren MacPorts (setzt Xcode von der Mac OS installer DVD vorraus).
-Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install
-avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles
-was es dazu benötigt installiert. 
-Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
-Die aktuelle Version von AVRdude ist 5.10
-Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows
-& Mac OS (z.B. AVR Burn-O-Mat, AVRFuses) oder Windows & Linux (z.B. AVRBurner)
+ # AVRdude installieren:
+  * Windows Benutzer laden sich am besten WinAVR, welches AVRdude beinhaltet. 
+  * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode von der Mac OS installer DVD vorraus). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles
+was es dazu benötigt installiert.
+  * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
+  * Die aktuelle Version von AVRdude ist 5.10
+  * Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. AVR Burn-O-Mat, AVRFuses) oder Windows & Linux (z.B. AVRBurner)
 
- * Benötigte Parameter für avrdude:
+ # Benötigte Parameter für avrdude: 
+ `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
+ `-p m64` -> gibt den Target Prozessor an (ATmega64)
+ `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
+ `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
 
-`-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe Liste
-`-p m64` -> gibt den Target Prozessor an (ATmega64)
-`-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
-`-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz  
+ # Überprüfen der Verbindung mit AVRdude: mit `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:    
+		`avrdude: Device signature = 0x1e9602`
 
-* Überprüfen der Verbindung mit AVRdude:
-mit `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:     
-		
-			`avrdude: Device signature = 0x1e9602`
-
- * Aktuelles binary (th9x.bin) herunderladen: http://th9x.googlecode.com/svn/trunk/th9x.bin
+ # Aktuelles binary (th9x.bin) herunderladen: http://th9x.googlecode.com/svn/trunk/th9x.bin
 
 
 = Sichern und Flashen der Software =
 
 Bevor die neue Software aufgespielt wird empfiehlt es sich die alte zu sichern.
-Wer das vergisst findet die Originalsoftware aber auch wieder im Internet [5,6].
+Wer das vergisst findet die Originalsoftware aber auch wieder im Internet .
 
 *ACHTUNG: Beim Flashen des EEPROM gehen alle Modelleinstellungen verloren! Das ist
 unumgänglich, deshalb alle Einstellungen notieren.*
 
-Folgender Befehle sichern den aktuellen Flash  und eeprom Inhalt in *.bin:
+Folgender Befehle sichern den aktuellen Flash  und eeprom Inhalt in !*.bin:
 
-`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
+	`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
 
-`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
+	`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
 
 Zum aufpielen des neuen Images th9x.bin gibt man folgendes ein:
 
-`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
+	`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
 
-(speichertyp = flash/eeprom, 
-operation = r/w (read/write),
-format = a/r (autodetect/raw binary)
+Parameter Werte:
+ * speichertyp = flash/eeprom
+ * operation = r/w (read/write)
+ * format = a/r (autodetect/raw binary)
 
-Das wars auch schon. Wenn man eine GUI benutzt tut diese auch nichts anderes als
-AVRdude mit diesen Parametern zu starten. Meist sind GUI’s nur bequemer um Ordner
-bzw. Dateien auszuwählen. 
+Das wars auch schon. Wenn man eine GUI benutzt tut diese auch nichts anderes als AVRdude mit diesen Parametern zu starten. Meist sind GUI’s nur bequemer um Ordner bzw. Dateien auszuwählen.
 
-_ACHTUNG: Bei Benutzung von GUI’s auf keinen Fall die Fuses verändern!_
+*ACHTUNG: Bei Benutzung von GUI’s auf keinen Fall die Fuses verändern!*
 
 Beim ersten Starten mit der neuen Firmware sollten noch die Knüppel
 neu kalibriert werden.
-
-
 
 
 
@@ -153,20 +143,9 @@ schnell und gut geholfen! Viel Spaß!
 
 
 || Meldung || Problem -> Lösung || Bild ||
-|| `Setting mode and device parameters.. OK!
- Entering programming mode.. FAILED!
- Leaving programming mode.. OK!` || evtl. zerstörte Leiterbahnen auf der Platine (nachmessen) -> Leiterbahn vom Lötpad zum Prozessorpin überbrücken || ||
-
-|| AVRdude Meldung: 
-
-`avrdude: Error: Could not find xxxx device` || ISP am USB Port aus und wieder einstecken || ||
-Stromversorgung des USB Ports reicht bei manchen Laptops nicht aus  -> anderen Port ausprobieren oder an Desktop PC versuchen	
-
-|| AVRdude Meldung: 
-`initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen 
-Ail D/R Schalter auf AUS stellen
-Programmierfrequenz absenken: -P xx, xx erhöhen, z.b. 20)
-Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm
+|| `Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!` || evtl. zerstörte Leiterbahnen auf der Platine (nachmessen) -> Leiterbahn vom Lötpad zum Prozessorpin überbrücken || ||
+|| AVRdude Meldung: `avrdude: Error: Could not find xxxx device` || ISP am USB Port aus und wieder einstecken; Stromversorgung des USB Ports reicht bei manchen Laptops nicht aus  -> anderen Port ausprobieren oder an Desktop PC versuchen || ||
+|| AVRdude Meldung: `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen; Ail D/R Schalter auf AUS stellen; Programmierfrequenz absenken: -P xx, xx erhöhen, z.b. 20) ; Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm
 gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || ||
 
 
@@ -175,7 +154,7 @@ gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || ||
 = Links =
 
  * Review der Turnigy 9ch v2 auf [http://rcmodelreviews.com/turnigy9xv2review.shtml RCModelReviews]    
- * Alles zu AVRdude: www.nongnu.org/avrdude/user-manual/    
+ * Alles zu AVRdude: http://www.nongnu.org/avrdude/user-manual/    
  * Einführung zu AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial zu AVR allgemein: http://www.mikrocontroller.net/articles/AVR-Tutorial    
  * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
