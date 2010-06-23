@@ -86,12 +86,14 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
   * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode von der Mac OS installer DVD vorraus). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
   * Die aktuelle Version von AVRdude ist 5.10
-  * Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. AVR Burn-O-Mat, AVRFuses) oder Windows & Linux (z.B. AVRBurner)
+  * Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) oder Windows & Linux (z.B. [http://www.soft-land.de/ AVRBurner])
  # Benötigte Parameter für avrdude: 
  `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
 
- `-p m64` -> gibt den Target Prozessor an (ATmega64)    
- `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig    
+ `-p m64` -> gibt den Target Prozessor an (ATmega64)
+
+ `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
+
  `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
  # Überprüfen der Verbindung mit AVRdude: mit `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:    
 		`avrdude: Device signature = 0x1e9602`
@@ -149,6 +151,6 @@ So einiges kann schiefgehen, bis jetzt ist aber noch kein Fall bekannt bei dem e
  * Einführung zu AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial zu AVR allgemein: http://www.mikrocontroller.net/articles/AVR-Tutorial    
  * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
- * Thread auf rclineforum.de: [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 Link]    
- * Thread auf rcgroups.com [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 Link]    
+ * Thread auf [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
+ * Thread auf [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
  * Alternative Firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/

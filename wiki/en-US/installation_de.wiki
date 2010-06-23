@@ -1,6 +1,6 @@
 #summary Instructions on modifying the Turnigy/Eurgle/Imax/FlySky 9ch Tx to flash new Software
 
-= Introduction =
+= Contents =
 
 <wiki:toc max_depth="1" />
 
@@ -9,7 +9,7 @@
  * Transmitter (Turnigy/Eurgle/Imax/FlySky)
  * Soldering iron
  * AVR Programmer
- * Computer with Linux/Mac Os/Windows
+ * Computer with Linux/Mac OS/Windows
 
 
 = Which programmer? =
@@ -74,11 +74,14 @@ All words written in `small letters` are console commands, meaning in windows en
   * Mac OS user install [http://www.macports.org/install.php MacPorts] (requires Xcode, found on the Mac OS installer DVD). Open a Terminal windows and enter the following: `sudo port install avrdude` now have a coffee and wait until MacPorts finishes the installation of AVRdude and everything else it requires to run it.
   * Linux users probably know how to get a current version of AVRdude :)
   * The current version of AVRdude ist 5.10
- # Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. AVR Burn-O-Mat, AVRFuses) as well as for Windows & Linux (e.g. AVRBurner)
+ # Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) as well as for Windows & Linux (e.g. [http://www.soft-land.de/ AVRBurner])
  # Required parameter for avrdude:
  `-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
+
  `-p m64` -> states the target processor (ATmega64)
+
  `-P xxx` -> xxx states the port, e.g. com1,lpt1,usb not required for most USB ISP
+
  `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency  
  # Checking the connection with AVRdude:
 run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:     
@@ -132,6 +135,6 @@ Have fun!
  * Tutorial on AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial on AVR in general: http://www.mikrocontroller.net/articles/AVR-Tutorial    
  * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
- * Thread on rclineforum.de: [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 Link]    
- * Thread on rcgroups.com [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 Link]    
+ * Thread on [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
+ * Thread on [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
  * Alternative firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/
