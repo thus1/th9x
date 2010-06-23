@@ -11,17 +11,3 @@ Despite the mechanical compatibility of the charging port with JR transmitters, 
 = Installation FM modul =
 
 Instruction with pictures can be found in this [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=43 thread]
-
-= Geikel =
-
-Add your content here.  Format your content with:
-  * Text in *bold* or _italic_
-  * Headings, paragraphs, and lists
-  * Automatic links to other wiki pages
-
-
-[http://code.google.com/ http://code.google.com/images/code_sm.png]
-
-[http://th9x.googlecode.com/svn/wiki/snapshotM0.png]
-
-[http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf th9x.pdf]
