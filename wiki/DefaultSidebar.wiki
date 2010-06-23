@@ -1,5 +1,4 @@
-  * [Installation ]
-    * [flashen_howto Installationsanleitung]
+  * [Installation]
     * [installation_de Installationsanleitung]
   * [test Test Page]
     * [embedded_test embedded test page]

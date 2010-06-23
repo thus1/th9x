@@ -12,7 +12,6 @@
  * Computer with Linux/Mac Os/Windows
 
 
-
 = Which programmer? =
 
 Basically every AVR compatible ISP (AVR ISP, In-System Programmer) is suitable. Personally I only can recommend ones that are compatible with AVRdude! Why?
@@ -101,7 +100,7 @@ run `avrdude -c xxxx -p m64`. If everything has been set up properly the output 
 
 Prior flashing the new software you probably want to backup the original one. In case you forgot that, the original images can be found in the internet, check [5,6]
 
-ATTENTION: If the EEPROM is flashed, all model data will be lost! This is inevitable, thus note all your settings.
+*ATTENTION: If the EEPROM is flashed, all model data will be lost! This is inevitable, thus note all your settings.*
 
 Following commands back up the current flash and eeprom content in *.bin:
 
@@ -119,7 +118,7 @@ format = a/r (autodetect/raw binary)
 
 Well, thats it. You could optionally use a GUI, however the only thing these do is just starting AVRdude with your selected parameters. Mostly, GUI’s are only more convenient in selecting files and folders.
 
-ATTENTION: If a GUI is used, DO NOT touch fuses settings!
+_ATTENTION: If a GUI is used, DO NOT touch fuses settings!_
 
 = Troubleshooting =
 
@@ -152,10 +151,13 @@ remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad
 
 = Links =
 
-[1] Th9x on Google Code: http://code.google.com/p/th9x/
-[2] docu for AVRdude: www.nongnu.org/avrdude/user-manual/
-[3] info for AVR: http://www.mikrocontroller.net/articles/AVR-Tutorial
-[4] good electronics tutorial: http://www.mikrocontroller.net/articles/Elektronik_Allgemein
-[5] thread on rclineforum.de: Link
-[6] thread on rcgroups.com: Link
-[7] alternative software: http://radioclone.org/, http://sourceforge.net/projects/radioclone/
+= Links =
+
+ * Review Turnigy 9ch v2 by [http://rcmodelreviews.com/turnigy9xv2review.shtml RCModelReviews]    
+ * Infos on AVRdude: www.nongnu.org/avrdude/user-manual/    
+ * Tutorial on AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
+ * Tutorial on AVR in general: http://www.mikrocontroller.net/articles/AVR-Tutorial    
+ * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
+ * Thread on rclineforum.de: [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 Link]    
+ * Thread on rcgroups.com [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 Link]    
+ * Alternative firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/
