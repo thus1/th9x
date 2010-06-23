@@ -112,18 +112,18 @@ unumgänglich, deshalb alle Einstellungen notieren.*
 
 Folgender Befehle sichern den aktuellen Flash  und eeprom Inhalt in **.bin:
 
-	`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
+	`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:r`
 
-	`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
+	`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":r`
 
 Zum aufpielen des neuen Images th9x.bin gibt man folgendes ein:
 
-	`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
+	`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:r`
 
 Parameter Werte:
  * speichertyp = flash/eeprom
  * operation = r/w (read/write)
- * format = a/r (autodetect/raw binary)
+ * format = r (raw binary, a=autodetect geht nicht bei read) 
 
 Das wars auch schon. Wenn man eine GUI benutzt tut diese auch nichts anderes als AVRdude mit diesen Parametern zu starten. Meist sind GUI’s nur bequemer um Ordner bzw. Dateien auszuwählen.
 
