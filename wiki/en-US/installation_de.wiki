@@ -68,24 +68,22 @@ Note that most parallel port programmer require the Vcc pin to be connected to p
 
 All words written in `small letters` are console commands, meaning in windows enter them in Start -> run -> `cmd`, in Mac OS open applications/utilities/Terminal.
 
- * If you are using windows: install the provided driver for the ISP, on Mac OS und Linux you usually don’t need an extra driver. 
-Install AVRdude: 
-windows user download WinAVR, which includes AVRdude. 
-Mac OS user install [http://www.macports.org/install.php MacPorts] (requires Xcode, found on the Mac OS installer DVD). Open a Terminal windows and enter the following: `sudo port install avrdude` now have a coffee and wait until MacPorts finishes the installation of AVRdude and everything else it requires to run it.
-Linux users probably know how to get a current version of AVRdude :)
-The current version of AVRdude ist 5.10
- * Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. AVR Burn-O-Mat, AVRFuses) as well as for Windows & Linux (e.g. AVRBurner)
- * Required parameter for avrdude:
-`-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
-`-p m64` -> states the target processor (ATmega64)
-`-P xxx` -> xxx states the port, e.g. com1,lpt1,usb not required for most USB ISP
-`-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency  
- * Checking the connection with AVRdude:
+ # If you are using windows: install the provided driver for the ISP, on Mac OS und Linux you usually don’t need an extra driver.
+ # Install AVRdude: 
+  * Windows user download WinAVR, which includes AVRdude.
+  * Mac OS user install [http://www.macports.org/install.php MacPorts] (requires Xcode, found on the Mac OS installer DVD). Open a Terminal windows and enter the following: `sudo port install avrdude` now have a coffee and wait until MacPorts finishes the installation of AVRdude and everything else it requires to run it.
+  * Linux users probably know how to get a current version of AVRdude :)
+  * The current version of AVRdude ist 5.10
+ # Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. AVR Burn-O-Mat, AVRFuses) as well as for Windows & Linux (e.g. AVRBurner)
+ # Required parameter for avrdude:
+ `-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
+ `-p m64` -> states the target processor (ATmega64)
+ `-P xxx` -> xxx states the port, e.g. com1,lpt1,usb not required for most USB ISP
+ `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency  
+ # Checking the connection with AVRdude:
 run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:     
-		
 			`avrdude: Device signature = 0x1e9602`
-
- * download binary (th9x.bin): http://code.google.com/p/th9x/
+ # download binary [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 
 = Backup old and flash new Software =
@@ -94,19 +92,20 @@ Prior flashing the new software you probably want to backup the original one. In
 
 *ATTENTION: If the EEPROM is flashed, all model data will be lost! This is inevitable, thus note all your settings.*
 
-Following commands back up the current flash and eeprom content in *.bin:
+Following commands back up the current flash and eeprom content in **.bin:
 
-`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
+`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
 
 `avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
 
-To upload the new software, i.e. the image th9x.bin from [1] enter the following:
+To upload the new software, i.e. the image th9x.bin enter the following:
 
-`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
+`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
 
-(memory typ = flash/eeprom, 
-operation = r/w (read/write),
-format = a/r (autodetect/raw binary)
+parameter values:
+ * memory typ = flash/eeprom, 
+ * operation = r/w (read/write),
+ * format = a/r (autodetect/raw binary)
 
 Well, thats it. You could optionally use a GUI, however the only thing these do is just starting AVRdude with your selected parameters. Mostly, GUI’s are only more convenient in selecting files and folders.
 After your first start with the new firmware, remember to calibrate your sticks.
@@ -121,9 +120,9 @@ Have fun!
 
 
 || message || problem -> solution || picture ||
-|| Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK! || possible destroyed PCB track  -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) ||
-|| AVRdude message: `avrdude: Error: Could not find xxxx device` || unplug and plug the ISP into the USB port; power supply of the USB port is insufficient on some notebooks -> try different port or use desktop pc || ||
-|| AVRdude message: `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || some cables are mixed up -> check them and get them in order; Ail D/R switch has to be off; decrease programming frequency by: -P xx, increase xx, e.g. 20); if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of ISP (e.g. start at 1kOhm, if not sufficient lower until 200Ohm) ; remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad || ||
+|| Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK! || possible destroyed PCB track  -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) || [http://th9x.googlecode.com/svn/wiki/rst_bridge.png] ||
+|| `avrdude: Error: Could not find xxxx device` || unplug and plug the ISP into the USB port; power supply of the USB port is insufficient on some notebooks -> try different port or use desktop pc || ||
+|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || some cables are mixed up -> check them and get them in order; Ail D/R switch has to be off; decrease programming frequency by: -P xx, increase xx, e.g. 20); if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of ISP (e.g. start at 1kOhm, if not sufficient lower until 200Ohm) ; remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad || [http://th9x.googlecode.com/svn/wiki/rst_elko.png] ||
 
 
 = Links =
