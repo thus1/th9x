@@ -44,24 +44,14 @@ these have to be connected to the Tx as in the following picture. The Turnigy 9c
 
 [http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png]
 
-It is recommended to use a thin, flexible cable (e.g. braid from a Cat5 cable). Otherwise
- the leads could come of the PCB. It is further recommended to use a hot glue gun to secure
- the soldered spots. Hot glue can easily be applied and also removed!
+It is recommended to use a thin, flexible cable (e.g. braid from a Cat5 cable). Otherwise the leads could come of the PCB. It is further recommended to use a hot glue gun to secure the soldered spots. Hot glue can easily be applied and also removed!
 
 
-Usually most programmers already come with a 6pin connector and plug. After soldering, 
-check if there is a connection from the plug of the programmer up to the pins of the micro processor
- (see arrows pin assignment processor). If not, see troubleshooting.
+Usually most programmers already come with a 6pin connector and plug. After soldering, check if there is a connection from the plug of the programmer up to the pins of the micro processor (see arrows pin assignment processor). If not, see troubleshooting.
 
-With removed back of the Tx and disconnected 12pin connector you can now check the connection
- from programmer to the Tx. If Vcc is connected and target power supply jumper is closed (on),
- the Tx should now turn itself on and return a SwitchError. This is normal since most switches
- are disconnected by the 12 pin connector.
+With removed back of the Tx and disconnected 12pin connector you can now check the connection from programmer to the Tx. If Vcc is connected and target power supply jumper is closed (on), the Tx should now turn itself on and return a SwitchError. This is normal since most switches are disconnected by the 12 pin connector.
 
-Note that most parallel port programmer require the Vcc pin to be connected to power the programmer
- itself, hence the batterie must be connected. USB programmer on the other hand are fed by the
- USB port and can power the Tx with the Vcc pin such that no battery is required for flashing the
- firmware.
+Note that most parallel port programmer require the Vcc pin to be connected to power the programmer itself, hence the batterie must be connected. USB programmer on the other hand are fed by the USB port and can power the Tx with the Vcc pin such that no battery is required for flashing the firmware.
 
 
 = Setting up the Software =
@@ -76,16 +66,13 @@ All words written in `small letters` are console commands, meaning in windows en
   * The current version of AVRdude ist 5.10
  # Optional GUI’s (graphical user interfaces) are available for AVRdude for Windows & Mac OS (e.g. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) as well as for Windows & Linux (e.g. [http://www.soft-land.de/ AVRBurner])
  # Required parameter for avrdude:
- `-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
-
- `-p m64` -> states the target processor (ATmega64)
-
- `-P xxx` -> xxx states the port, e.g. com1,lpt1,usb not required for most USB ISP
-
- `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency  
+  * `-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
+  * `-p m64` -> states the target processor (ATmega64)
+  * `-P xxx` -> xxx states the port, e.g. com1, lpt1, usb not required for most USB ISP
+  * `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency
  # Checking the connection with AVRdude:
 run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:     
-			`avrdude: Device signature = 0x1e9602`
+ `avrdude: Device signature = 0x1e9602`
  # download binary [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 

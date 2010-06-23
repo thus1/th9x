@@ -89,16 +89,13 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
   * Die aktuelle Version von AVRdude ist 5.10
   * Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) oder Windows & Linux (z.B. [http://www.soft-land.de/ AVRBurner])
- # Benötigte Parameter für avrdude: 
- `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
-
- `-p m64` -> gibt den Target Prozessor an (ATmega64)
-
- `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
-
- `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
+ # Benötigte Parameter für avrdude:
+  * `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
+  * `-p m64` -> gibt den Target Prozessor an (ATmega64)
+  * `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
+  * `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
  # Überprüfen der Verbindung mit AVRdude: mit `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:    
-		`avrdude: Device signature = 0x1e9602`
+ `avrdude: Device signature = 0x1e9602`
  # Aktuelles binary herunderladen: [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 

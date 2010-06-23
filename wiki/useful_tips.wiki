@@ -1,0 +1,27 @@
+#summary Nützliche Tipps
+
+= Inhalt =
+
+<wiki:toc max_depth="1" />
+
+= Ladebuchse =
+
+Obwohl die Ladebuchse des Senders mechanisch mit der von Graupner kompatibel ist, die Polarität ist entgegengesetzt - bei der Th9x ist minus aussen und plus innen. Die Ladebuchse ist bei geöffneten Sender herausnehmbar, also einfach die internen Kabel umlöten und Graupner Stecker benutzen.
+
+= Einbau 35Mhz Modul =
+
+Beschreibung mit Bildern im [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=43 Thread]
+
+= Geikel =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
+
+
+[http://code.google.com/ http://code.google.com/images/code_sm.png]
+
+[http://th9x.googlecode.com/svn/wiki/snapshotM0.png]
+
+[http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf th9x.pdf]

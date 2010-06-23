@@ -1,5 +1,3 @@
-  * [Installation]
-    * [installation_de Installationsanleitung]
-  * [test Test Page]
-    * [embedded_test embedded test page]
+  * [installation_de Installationsanleitung]
+  * [useful_tips Nützliche Tipps]
  
