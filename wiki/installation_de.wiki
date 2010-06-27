@@ -33,7 +33,7 @@ Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nong
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 || || USB || LPT ||
-|| erfolgreich || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP]||
+|| erfolgreich || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
 || problematisch || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer], Pocket AVR Programmer ||
 
 Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehend ausgerichtet. Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings gleich.
@@ -44,8 +44,7 @@ Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehe
 = Verbinden der Th9x mit dem Programmer =
 
 Die Anschlüsse des Programmers müssen mit dem Mikrocontroller im Sender (ATmega64) verbunden werden. 
-Atmel hat als Standard einen 6 oder 10 poligen Anschluss. Die Standardbelegung des 6 Pin Anschlusses 
-sieht wie folgt aus:
+Atmel hat als Standard einen 6 oder 10 poligen Anschluss. Die Standardbelegung des 6 Pin Anschlusses sieht wie folgt aus:
 
 <img src="http://th9x.googlecode.com/svn/wiki/atmel_6pin.png" width=600>
 
@@ -66,11 +65,11 @@ Bei den meisten Programmern ist ein Stecker mit Kabel für den 6 Pin Anschluss d
 Löten überprüfen ob die Verbindung vom Programmerstecker bis hin zu den Pins des Mikrocontroller
 besteht (siehe Pfeile Pinbelegung Prozessor). Falls nicht, siehe Fehlerquellen.
 
-Parallelport programmer benötigen oftmals die Stromversorgung durch die Batterie im Sender, daher
+Parallelport Programmer benötigen oftmals die Stromversorgung durch die Batterie im Sender, daher
 muss der Vcc pin angeschlossen sein. USB programmer können üblicherweise den Sender mit Strom versorgen
 (meist muss ein Jumper geschlossen werden). Deshalb muss dabei keine Batterie angeschlossen sein.
 
-Im Fall der Stromversorgung über den USB programmer kann mit abgenommener Rückseite und nicht 
+Im Fall der Stromversorgung über den USB Programmer kann mit abgenommener Rückseite und nicht 
 angeschlossenem 12pin connector der Sender nun zum Test mit dem Programmer verbunden werden. Bei 
 angeschlossenem Vcc sollte sich der Sender nun anschalten und mit SwitchError melden, da die meisten
 Schalter über den 12Pin connector ja abgeklemmt sind.
@@ -84,7 +83,7 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
 
  # Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux Benutzer benötigen meist keinen Treiber.
  # AVRdude installieren:
-  * Windows Benutzer laden sich am besten WinAVR, welches AVRdude beinhaltet.
+  * Windows Benutzer laden sich am besten [http://sourceforge.net/projects/winavr/files/ WinAVR], welches AVRdude beinhaltet.
   * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode von der Mac OS installer DVD vorraus). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
   * Die aktuelle Version von AVRdude ist 5.10
@@ -92,10 +91,9 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
  # Benötigte Parameter für avrdude:
   * `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
   * `-p m64` -> gibt den Target Prozessor an (ATmega64)
-  * `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` für USB meist unnötig
+  * `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` bei USB meist unnötig
   * `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
- # Überprüfen der Verbindung mit AVRdude: mit `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:
- `avrdude: Device signature = 0x1e9602`
+ # Überprüfen der Verbindung mit AVRdude: bei Eingabe von `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:     `avrdude: Device signature = 0x1e9602`
  # Aktuelles binary herunderladen: [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 
@@ -104,10 +102,9 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
 Bevor die neue Software aufgespielt wird empfiehlt es sich die alte zu sichern.
 Wer das vergisst findet die Originalsoftware aber auch wieder im Internet .
 
-*ACHTUNG: Beim Flashen des EEPROM gehen alle Modelleinstellungen verloren! Das ist
-unumgänglich, deshalb alle Einstellungen notieren.*
+*ACHTUNG: Beim Flashen des EEPROM gehen alle Modelleinstellungen verloren! Das ist unumgänglich, deshalb alle Einstellungen notieren.*
 
-Folgender Befehle sichern den aktuellen Flash  und eeprom Inhalt in **.bin:
+Folgende Befehle sichern den aktuellen Flash  und eeprom Inhalt in **.bin:
 
 	`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:r`
 
@@ -137,9 +134,9 @@ So einiges kann schiefgehen, bis jetzt ist aber noch kein Fall bekannt bei dem e
 
 
 || Meldung || Problem -> Lösung || Bild ||
-|| `Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!` || evtl. zerstörte Leiterbahnen auf der Platine (nachmessen) -> Leiterbahn vom Lötpad zum Prozessorpin überbrücken || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
+|| `Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!` || nicht angeschlossenes RST, evtl. durch zerstörte Leiterbahn auf der Platine (nachmessen) -> Leiterbahn vom Lötpad zum Prozessorpin überbrücken || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
 || `avrdude: Error: Could not find xxxx device` || ISP am USB Port aus und wieder einstecken; Stromversorgung des USB Ports reicht bei manchen Laptops nicht aus  -> anderen Port ausprobieren oder an Desktop PC versuchen || ||
-|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen; Ail D/R Schalter auf AUS stellen; Programmierfrequenz absenken: -P xx, xx erhöhen, z.b. 20) ; Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
+|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen; Ail D/R Schalter auf AUS stellen; Programmierfrequenz absenken: `-P xx`, xx erhöhen, z.b. 20) ; Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
 
 
 
@@ -149,7 +146,7 @@ So einiges kann schiefgehen, bis jetzt ist aber noch kein Fall bekannt bei dem e
  * Alles zu AVRdude: http://www.nongnu.org/avrdude/user-manual/    
  * Einführung zu AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial zu AVR allgemein: http://www.mikrocontroller.net/articles/AVR-Tutorial    
- * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
+ * Elektronik Einführung (auch SMD löten): http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
  * Thread auf [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
  * Thread auf [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
  * Alternative Firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/

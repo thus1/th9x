@@ -27,7 +27,7 @@ A list of programmers supported by AVRdude can be found [http://www.nongnu.org/a
 Users on rclineforum.de have tested a couple of ISP’s:
 
 || || USB || LPT ||
-|| successfully || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP]||
+|| successfully || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
 || problematic || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer], Pocket AVR Programmer ||
 
 Since you probably want to use a USB programmer, the instructions are focused on those. However, apart from the power supply of the Tx and the interface selection in AVRdude everything else should be equal.
@@ -60,7 +60,7 @@ All words written in `small letters` are console commands, meaning in windows en
 
  # If you are using windows: install the provided driver for the ISP, on Mac OS und Linux you usually don’t need an extra driver.
  # Install AVRdude: 
-  * Windows user download WinAVR, which includes AVRdude.
+  * Windows user download [http://sourceforge.net/projects/winavr/files/ WinAVR], which includes AVRdude.
   * Mac OS user install [http://www.macports.org/install.php MacPorts] (requires Xcode, found on the Mac OS installer DVD). Open a Terminal windows and enter the following: `sudo port install avrdude` now have a coffee and wait until MacPorts finishes the installation of AVRdude and everything else it requires to run it.
   * Linux users probably know how to get a current version of AVRdude :)
   * The current version of AVRdude ist 5.10
@@ -71,8 +71,7 @@ All words written in `small letters` are console commands, meaning in windows en
   * `-P xxx` -> xxx states the port, e.g. com1, lpt1, usb not required for most USB ISP
   * `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency
  # Checking the connection with AVRdude:
-run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:
- `avrdude: Device signature = 0x1e9602`
+run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:    `avrdude: Device signature = 0x1e9602`
  # download binary [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 
@@ -110,9 +109,9 @@ Have fun!
 
 
 || message || problem -> solution || picture ||
-|| Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK! || possible destroyed PCB track  -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
+|| Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK! || RST not connected, perhabs due to destroyed PCB track (double check) -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
 || `avrdude: Error: Could not find xxxx device` || unplug and plug the ISP into the USB port; power supply of the USB port is insufficient on some notebooks -> try different port or use desktop pc || ||
-|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || some cables are mixed up -> check them and get them in order; Ail D/R switch has to be off; decrease programming frequency by: -P xx, increase xx, e.g. 20); if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of ISP (e.g. start at 1kOhm, if not sufficient lower until 200Ohm) ; remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
+|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || some cables are mixed up -> check them and get them in order; Ail D/R switch has to be off; decrease programming frequency by: `-P xx`, increase xx, e.g. 20); if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of programmer (e.g. start at 1kOhm, if not sufficient lower until 200Ohm) ; remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
 
 
 = Links =
@@ -121,7 +120,7 @@ Have fun!
  * Infos on AVRdude: http://www.nongnu.org/avrdude/user-manual/    
  * Tutorial on AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial on AVR in general: http://www.mikrocontroller.net/articles/AVR-Tutorial    
- * Elektronik Einführung: http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
+ * Electronics intro (e.g. SMD soldering): http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
  * Thread on [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
  * Thread on [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
  * Alternative firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/

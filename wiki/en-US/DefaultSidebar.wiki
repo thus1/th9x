@@ -1,0 +1,3 @@
+  * [installation_de Installation instructions]
+  * [useful_tips Useful Hints]
+ 
