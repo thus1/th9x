@@ -119,14 +119,31 @@ int8_t EeFsck()
   uint8_t blk ;
   int8_t ret=0;
   for(uint8_t i = 0; i <= MAXFILES; i++){
-    if(i == MAXFILES) blk = eeFs.freeList;
-    else              blk = eeFs.files[i].startBlk;
+    uint8_t *startP = i==MAXFILES ? &eeFs.freeList : &eeFs.files[i].startBlk;
+    uint8_t lastBlk = 0;
+    blk = *startP;
+      //if(i == MAXFILES) blk = eeFs.freeList;
+      //    else              blk = eeFs.files[i].startBlk;
     while(blk){
-      if(blk <  FIRSTBLK ) goto err_1; //bad blk index
-      if(blk >= BLOCKS   ) goto err_2; //bad blk index
-      if(bufp[blk])        goto err_3; //blk double usage
-      bufp[blk] = i+1;
-      blk = EeFsGetLink(blk);
+      //      if(blk <  FIRSTBLK ) goto err_1; //bad blk index
+      //      if(blk >= BLOCKS   ) goto err_2; //bad blk index
+      //      if(bufp[blk])        goto err_3; //blk double usage
+      if( (   blk <  FIRSTBLK ) //goto err_1; //bad blk index
+          || (blk >= BLOCKS   ) //goto err_2; //bad blk index
+          || (bufp[blk]       ))//goto err_3; //blk double usage
+      {
+        if(lastBlk){
+          EeFsSetLink(lastBlk,0);
+        }else{
+          *startP = 0; //interrupt chain at startpos
+          EeFsFlush();
+        }
+        blk=0; //abort
+      }else{
+        bufp[blk] = i+1;
+        lastBlk   = blk;
+        blk       = EeFsGetLink(blk);
+      }
     }
   }
   for(blk = FIRSTBLK; blk < BLOCKS; blk++){
@@ -140,15 +157,15 @@ int8_t EeFsck()
       EeFsFlushFreelist();
     }
   }
-  if(0){
+  //  if(0){
     //err_4: ret--;
-    err_3: ret--;
-    err_2: ret--;
-    err_1: ret--;
-#ifdef SIM
-    printf("ERROR fsck %d blk=%d\n",ret,blk);
-#endif
-  }
+    //err_3: ret--;
+    //    err_2: ret--;
+    //    err_1: ret--;
+    //#ifdef SIM
+    //    printf("ERROR fsck %d blk=%d\n",ret,blk);
+    //#endif
+  //  }
   return ret;
 }
 void EeFsFormat()
