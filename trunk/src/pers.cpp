@@ -98,13 +98,44 @@ void eeLoadModel(uint8_t id)
   if(id<MAX_MODELS)
   {
     theFile.openRd(FILE_MODEL(id));
-    if(theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)) != sizeof(g_model) )
-    {
+    uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
+    if( sz == sizeof(g_model) ) return;
+
+#if 0
+    if( sz == sizeof(ModelData_lt84) ){
 #ifdef SIM
-      printf("bad model%d data using default\n",id+1);
+      printf("converting model data from < 84\n");
 #endif
-      modelDefault(id);
+#define model_lt84 ((char*)&g_model)
+#define OFS(memb)    (int)(((ModelData*)0)->memb)
+#define OFS84(memb)  (int)(((ModelData_lt84*)0)->memb)
+      int dbot;
+      int stop  = sizeof(ModelData_lt84);
+      int sbot; 
+      sbot   = OFS84(mixData);      dbot  = OFS(mixData);
+      memmove(((char*)&g_model)+dbot, model_lt84+sbot, stop-sbot); stop=sbot;
+
+      sbot  = OFS84(expoData); 
+      while(stop > sbot){
+        dbot -= sizeof(ExpoData);
+        stop -= sizeof(ExpoData_lt84);
+        memset (((char*)&g_model)+dbot, 0, sizeof(ExpoData) );
+        memmove(((char*)&g_model)+dbot, model_lt84+stop,sizeof(ExpoData_lt84));
+      }
+      sbot  = OFS84(limitData); 
+      while(stop > sbot){
+        dbot -= sizeof(LimitData);
+        stop  -= sizeof(LimitData_lt84);
+        memset (((char*)&g_model)+dbot, 0, sizeof(LimitData) );
+        memmove(((char*)&g_model)+dbot, model_lt84+stop,sizeof(LimitData_lt84));
+      }
     }
+#endif
+
+#ifdef SIM
+    printf("bad model%d data using default\n",id+1);
+#endif
+    modelDefault(id);
   }
 }
 
