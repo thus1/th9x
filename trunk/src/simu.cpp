@@ -308,7 +308,7 @@ void Th9xSim::refreshDiplay()
 
     static FXuint keys2[]={KEY_F8, KEY_F7, KEY_F4, KEY_F3, KEY_F6, KEY_F5, KEY_F1, KEY_F2  };
     pind  = 0;
-    for(int i=0; i<8;i++){
+    for(unsigned i=0; i<DIM(keys2);i++){
       if(getApp()->getKeyState(keys2[i])) pind |= (1<<i);
     }
     // /usr/local/include/fox-1.6/fxkeys.h
@@ -322,7 +322,7 @@ void Th9xSim::refreshDiplay()
       KEY_7, (FXuint)&pine,  INP_E_Gear,     0,
       KEY_8, (FXuint)&pine,  INP_E_Trainer,  0
     };
-    for(int i=0; i<8;i+=1){ int j=i*4;
+    for(unsigned i=0; i<DIM(keys3)/4;i+=1){ int j=i*4;
       bool ks=getApp()->getKeyState(keys3[j]);
       if(ks != keys3[j+3]){
         if(ks){
