@@ -193,7 +193,7 @@ bool getSwitch(int8_t swtch, bool nc)
     case  MAX_DRSWITCH: return true; 
     case -MAX_DRSWITCH: return false; 
   }
-  if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch+1));
+  if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch-1));
   return               keyState((EnumKeys)(SW_BASE+swtch-1));
 }
 
