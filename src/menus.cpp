@@ -151,10 +151,11 @@ void menuProcLimits(uint8_t event)
   if(sub>=0){
     LimitData *ld = &g_model.limitData[sub];
     subSub=mState.checkHorz(sub+1,5);
+
     switch(subSub)
     {
       case 1:
-        if(CHECK_INCDEC_V_MODELVAR( event, ld->offset, -125,125))  LIMITS_DIRTY;
+        if(CHECK_INCDEC_V_MODELVAR_BF( event, ld->offset, -63,63))  LIMITS_DIRTY;
         break;
       case 2:
         ld->min -=  100;
@@ -166,7 +167,7 @@ void menuProcLimits(uint8_t event)
         if(CHECK_INCDEC_V_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
         ld->max -=  100;
         break;
-      case 4: CHECK_INCDEC_V_MODELVAR( event, ld->revert,    0,1);
+      case 4: CHECK_INCDEC_V_MODELVAR_BF( event, ld->revert,    0,1);
         break;
     }
   }
@@ -186,9 +187,9 @@ void menuProcLimits(uint8_t event)
     uint8_t k=i+s_pgOfs;
     LimitData *ld = &g_model.limitData[k];
     putsChn(0,y,k+1,(sub==k && subSub==0) ? INVERS : 0);
-    lcd_outdezAtt(  7*FW, y, (ld->offset) * 4 - ld->offset / 8,   ((sub==k && subSub==1) ? BLINK : 0) | PREC1 );
+    lcd_outdezAtt(  7*FW, y,  ld->offset,              ((sub==k && subSub==1) ? BLINK : 0) );
     lcd_outdezAtt(  12*FW, y, (int8_t)(ld->min-100),   (sub==k && subSub==2) ? BLINK : 0);
-    lcd_outdezAtt( 17*FW, y, (int8_t)(ld->max+100),   (sub==k && subSub==3) ? BLINK : 0);
+    lcd_outdezAtt( 17*FW, y, (int8_t)(ld->max+100),    (sub==k && subSub==3) ? BLINK : 0);
     lcd_putsnAtt(   18*FW, y, PSTR(" - INV")+ld->revert*3,3,(sub==k && subSub==4) ? BLINK : 0);
   }
 }
@@ -308,31 +309,32 @@ void menuProcMixOne(uint8_t event)
   {
     uint8_t y=i*FH+FH;
     uint8_t attr = sub==i ? BLINK : 0; 
-    lcd_putsn_P( FW*8, y,PSTR("SRC  PRC  CURVESWTCHSPEED          ")+5*i,5);
+    lcd_putsn_P( FW*8, y,PSTR("SRC  PRC  CURVESWTCHFADE           ")+5*i,5);
     switch(i){
       case 0:   putsChnRaw(   FW*4,y,md2->srcRaw,attr);
-        if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_XCHNRAW); //!! bitfield
+        //if(attr) md2->srcRaw = checkIncDec_hm( event, md2->srcRaw, 1,NUM_XCHNRAW); //!! bitfield
+        if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2->srcRaw, 1,NUM_XCHNRAW); //!! bitfield
         break;
       case 1:   lcd_outdezAtt(FW*7,y,md2->weight,attr);
         if(attr) CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         break;
       case 2:   lcd_putsnAtt( FW*4,y,PSTR(CURV_STR)+md2->curve*3,3,attr);
-        if(attr) md2->curve=checkIncDec_hm( event, md2->curve, 0,7); //!! bitfield
+        if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2->curve, 0,7); //!! bitfield
         if(attr && md2->curve>=4 && event==EVT_KEY_FIRST(KEY_MENU)){
           s_curveChan = md2->curve-4;
           pushMenu(menuProcCurveOne);
         }
         break;
       case 3:   putsDrSwitches(3*FW,  y,md2->swtch,attr);
-        if(attr) md2->swtch=checkIncDec_hm( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+        if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
         break;
       case 4:   lcd_putcAtt(0*FW+1, y, '<',0);
         lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
-        if(attr)  md2->speedDown=checkIncDec_hm( event, md2->speedDown, 0,15); //!! bitfield
+        if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedDown, 0,15); //!! bitfield
         break;
       case 5:   lcd_putcAtt(4*FW+1, y-FH, '>',0);
         lcd_outdezAtt(FW*7,y-FH,md2->speedUp,attr);
-        if(attr)  md2->speedUp=checkIncDec_hm( event, md2->speedUp, 0,15); //!! bitfield
+        if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedUp, 0,15); //!! bitfield
         break;
       case 6:   lcd_putsAtt(  FW*3,y,PSTR("RM"),attr);
                 lcd_puts_P(  FW*6,y,PSTR("remove [Menu]"));
@@ -749,7 +751,7 @@ void menuProcExpoAll(uint8_t event)
       break;
   }
 
-  lcd_puts_P( 3*FW, 1*FH,PSTR("Wei Exp Sw Wei Exp"));
+  lcd_puts_P( 3*FW, 1*FH,PSTR("Exp  %  Sw Exp  % "));
   for(uint8_t i=0; i<4; i++)
   {
     uint8_t y=(i+2)*FH;
@@ -767,12 +769,12 @@ void menuProcExpoAll(uint8_t event)
       }
     }
 
-    lcd_outdezAtt( 6*FW, y, g_model.expoData[i].expNormWeight+100,invNorm);
-    lcd_outdezAtt( 10*FW, y, g_model.expoData[i].expNorm,0);
+    lcd_outdezAtt( 10*FW, y, g_model.expoData[i].expNormWeight+100,invNorm);
+    lcd_outdezAtt(  6*FW, y, g_model.expoData[i].expNorm,0);
     if(g_model.expoData[i].drSw){
       putsDrSwitches( 10*FW, y, g_model.expoData[i].drSw,0);
-      lcd_outdezAtt( 17*FW, y, g_model.expoData[i].expSwWeight+100,invDr);
-      lcd_outdezAtt( 21*FW, y, g_model.expoData[i].expDr,0);
+      lcd_outdezAtt( 21*FW, y, g_model.expoData[i].expSwWeight+100,invDr);
+      lcd_outdezAtt( 17*FW, y, g_model.expoData[i].expDr,0);
     }
     //else{
     //  lcd_putc( 13*FW, y,'-');
@@ -840,7 +842,7 @@ void menuProcModel(uint8_t event)
     case 1:
       if(subSub) {
         char v = char2idx(g_model.name[subSub-1]);
-        v = checkIncDec_vm( event,v ,0,NUMCHARS-1);
+        CHECK_INCDEC_V_MODELVAR_BF( event,v ,0,NUMCHARS-1);
         v = idx2char(v);
         g_model.name[subSub-1]=v;
         lcd_putcAtt((6+subSub-1)*FW, 2*FH, v,BLINK);
@@ -855,7 +857,7 @@ void menuProcModel(uint8_t event)
         case 1:
           {
           int8_t min=g_model.tmrVal/60;
-          min = checkIncDec_vm( event,min ,0,59);
+          CHECK_INCDEC_V_MODELVAR_BF( event,min ,0,59);
           g_model.tmrVal = g_model.tmrVal%60 + min*60;
          break;
           }
@@ -868,7 +870,7 @@ void menuProcModel(uint8_t event)
           break;
           }
         case 3:
-          g_model.tmrMode = checkIncDec_vm( event,g_model.tmrMode ,0,3);
+          CHECK_INCDEC_V_MODELVAR_BF( event,g_model.tmrMode ,0,3);
           break;
 
       }
@@ -1720,8 +1722,10 @@ void perOut()
 
       if (md.speedUp || md.speedDown)
       {
-        static prog_uint8_t APM tmr_t[] = {0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11};
-        static prog_uint8_t APM dlt_t[] = {0,5,3,2,1 }; 
+      //static prog_uint8_t APM dlt_t[] = {0, 5, 3,2,1 }; 
+      //static prog_uint8_t APM tmr_t[] = {0, 0, 0,0,0,1,2,3,4,5,6,7,8,9,10,11};
+        static prog_uint8_t APM tmr_t[] = {0, 0, 0,0,0,0,0,0,1,2,3,4,5,6, 7, 8};
+        static prog_uint8_t APM dlt_t[] = {0,18,12,8,5,3,2,1 }; 
         int16_t     diff     = v - act[i];
         if(diff){
           uint8_t   speed    = (diff > 0) ? md.speedUp : md.speedDown;
@@ -1785,7 +1789,7 @@ void perOut()
     int16_t v = 0;
     if(chans[i]) v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
 
-    v+=g_model.limitData[i].offset*2;
+    v+=g_model.limitData[i].offset*5; // 512/100
 
     v = max(s_cacheLimitsMin[i],v);
     v = min(s_cacheLimitsMax[i],v);

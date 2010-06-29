@@ -56,9 +56,9 @@ void modelDefault(uint8_t id)
 {
   memset(&g_model,0,sizeof(g_model));
   strcpy_P(g_model.name,PSTR("MODEL     "));
-  //g_model.stickMode=1;
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
+  g_model.mdVers = MDVERS;
   for(uint8_t i= 0; i<4; i++){
     //     0   1   2   3
     //0 1 rud ele thr ail
@@ -99,38 +99,35 @@ void eeLoadModel(uint8_t id)
   {
     theFile.openRd(FILE_MODEL(id));
     uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
-    if( sz == sizeof(g_model) ) return;
+    if( sz == sizeof(g_model) && g_model.mdVers == MDVERS) return;
 
-#if 0
     if( sz == sizeof(ModelData_lt84) ){
 #ifdef SIM
       printf("converting model data from < 84\n");
 #endif
-#define model_lt84 ((char*)&g_model)
-#define OFS(memb)    (int)(((ModelData*)0)->memb)
-#define OFS84(memb)  (int)(((ModelData_lt84*)0)->memb)
-      int dbot;
-      int stop  = sizeof(ModelData_lt84);
-      int sbot; 
-      sbot   = OFS84(mixData);      dbot  = OFS(mixData);
-      memmove(((char*)&g_model)+dbot, model_lt84+sbot, stop-sbot); stop=sbot;
+      char* pSrc = ((char*)&g_model) + sizeof(ModelData_lt84); //Pointers behind the end
+      char* pDst = ((char*)&g_model) + sizeof(ModelData);
 
-      sbot  = OFS84(expoData); 
-      while(stop > sbot){
-        dbot -= sizeof(ExpoData);
-        stop -= sizeof(ExpoData_lt84);
-        memset (((char*)&g_model)+dbot, 0, sizeof(ExpoData) );
-        memmove(((char*)&g_model)+dbot, model_lt84+stop,sizeof(ExpoData_lt84));
+#define partCopy(sizeDst,sizeSrc)                         \
+      pSrc -= (sizeSrc);                                  \
+      pDst -= (sizeDst);                                  \
+      memmove(pDst, pSrc, (sizeSrc));                     \
+      memset (pDst+(sizeSrc), 0,  (sizeDst)-(sizeSrc));
+#define fullCopy(size) partCopy(size,size)
+
+      fullCopy(sizeof(g_model.trimData)+sizeof(g_model.curves9)+sizeof(g_model.curves5));
+
+      partCopy(sizeof(g_model.mixData), sizeof(MixData)*20);
+
+      for(uint8_t i=0; i<DIM(g_model.expoData); i++){
+        partCopy(sizeof(ExpoData), sizeof(ExpoData_lt84));
       }
-      sbot  = OFS84(limitData); 
-      while(stop > sbot){
-        dbot -= sizeof(LimitData);
-        stop  -= sizeof(LimitData_lt84);
-        memset (((char*)&g_model)+dbot, 0, sizeof(LimitData) );
-        memmove(((char*)&g_model)+dbot, model_lt84+stop,sizeof(LimitData_lt84));
-      }
+      //for(uint8_t i=0; i<DIM(g_model.limitData); i++){
+      //        partCopy(sizeof(LimitData), sizeof(LimitData_lt84));
+      //      }
+      g_model.mdVers = MDVERS;
+      return;
     }
-#endif
 
 #ifdef SIM
     printf("bad model%d data using default\n",id+1);
