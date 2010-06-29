@@ -1611,7 +1611,7 @@ uint16_t pulses2MHz[60];
 
 void perOut()
 {
-  static int16_t anaNoTrim[NUM_XCHNRAW];
+  // static int16_t anaNoTrim[NUM_XCHNRAW];
   static int16_t anas     [NUM_XCHNRAW];
 
   for(uint8_t i=0;i<4;i++){        // calc Sticks
@@ -1655,17 +1655,20 @@ void perOut()
     if((2-(g_eeGeneral.stickMode&1)) == i)  //stickMode=0123 -> thr=2121
       trace((v+512)/32); //trace thr 0..32
 
-    anaNoTrim[i]  = v;
+    // anaNoTrim[i]  = v;
     //trim
     v += trimVal(i) + g_model.trimData[i].trimDef;
     anas[i] = v; //10+1 Bit
   }
   for(uint8_t i=4;i<7;i++){
     int16_t v= g_anaIns[i];
-    anaNoTrim[i] = anas[i] = v-512; // [-512..511]
+    // anaNoTrim[i] = 
+    anas[i] = v-512; // [-512..511]
   }
-  anaNoTrim[7] = anas[7] = 512; //100% für MAX
-  anaNoTrim[8] = anas[8] = 512; //100% für MAX
+  // anaNoTrim[7] = 
+  anas[7] = 512; //100% für MAX
+  // anaNoTrim[8] = 
+  anas[8] = 512; //100% für MAX
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
    in anas mit Trimmung */
 
@@ -1678,10 +1681,12 @@ void perOut()
       for(uint8_t i = NUM_CHNOUT;  i<NUM_XCHNOUT; i++){
         uint8_t   j = i - NUM_XCHNOUT + NUM_XCHNRAW;
         if(chans[i])
-          anaNoTrim[j]= anas[j]=
+          // anaNoTrim[j]= 
+          anas[j]=
             (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
         else
-          anaNoTrim[j]= anas[j]=0;
+          // anaNoTrim[j]= 
+          anas[j]=0;
       }
     }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
@@ -1706,18 +1711,11 @@ void perOut()
         continue;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
 
       int16_t v;
-      if(md.curve){
-        v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anaNoTrim[md.srcRaw-1];
-        //switch(md.curve){
-        //          case 1: if( v<0 ) v=0;   break;//x|x>0
-        //          case 2: if( v>0 ) v=0;   break;//x|x<0
-        //          case 3: v = abs(v);      break; //ABS
-        //            //case 4: v = v==0 ? 0 : (v > 0 ? 512 : -512)  ; break; //ABS
-        //            // Kurve soll erst nach Speed gerechnet werden
-        //        }
-      }
-      else
-        v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
+//       if(md.curve){
+//         v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anaNoTrim[md.srcRaw-1];
+//       }
+//       else
+      v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
 
       if (md.speedUp || md.speedDown)
       {
