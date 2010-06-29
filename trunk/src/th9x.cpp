@@ -300,6 +300,8 @@ uint8_t checkTrim(uint8_t event)
   return event;
 }
 
+//global helper vars
+bool    checkIncDec_Ret;
 
 bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, uint8_t i_flags)
 {
@@ -346,29 +348,29 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     if(i_flags & _FL_SIZE2 ) *(int16_t*)i_pval = newval;
     else                     *( int8_t*)i_pval = newval;
     eeDirty(i_flags & (EE_GENERAL|EE_MODEL));
-    return true;
+    return checkIncDec_Ret=true;
   }
-  return false;
+  return checkIncDec_Ret=false;
 }
 
-int16_t checkIncDec_hm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|EE_MODEL);
+  checkIncDecGen2(event,&i_val,i_min,i_max,EE_MODEL);
   return i_val;
 }
-int16_t checkIncDec_vm(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_MODEL);
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
   return i_val;
 }
-int16_t checkIncDec_hg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|EE_GENERAL);
+  checkIncDecGen2(event,&i_val,i_min,i_max,EE_GENERAL);
   return i_val;
 }
-int16_t checkIncDec_vg(uint8_t event, int16_t i_val, int16_t i_min, int16_t i_max)
+int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_SIZE2|_FL_VERT|EE_GENERAL);
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_GENERAL);
   return i_val;
 }
 

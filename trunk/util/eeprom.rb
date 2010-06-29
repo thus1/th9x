@@ -160,7 +160,7 @@ CStruct.defStruct "EEGeneral_V4",<<-"END_TYP"
   int8_t  lightSw;
   TrainerData_V4 trainer;
   END_TYP
-
+class ErrorBadNextIndex < Exception; end
 class Reader_V4
   def deepCopy(dst,src,key="")
     #pp "---",src
@@ -218,6 +218,7 @@ class Reader_V4
           break
         end
         @fat[j]=(fi+?a).chr+("%02d "%cnt);
+        true
       }
       @fbuf[fi]    = buf[0,sz]
       @fbufdec[fi] = decode(@fbuf[fi])
@@ -227,7 +228,14 @@ class Reader_V4
     chain_each(@eefs.freeList){|j,cnt,nxt| 
       @freeBlks+=1
       puts "ERROR used block is also in free chain #{j}" if @fat[j] 
-      @fat[j]="%+3d "%(nxt-j); 
+      if nxt>=0x80
+        puts "ERROR bad chain index #{nxt} at idx#{j} = adr 0x%04x"%(j*16)
+        @fat[j]="%+3d "%(nxt-j); 
+        false
+      else
+        @fat[j]="%+3d "%(nxt-j); 
+        true
+      end
     }
     @fat.each_with_index{|f,i|
       next if i<4
@@ -344,9 +352,13 @@ class Reader_V4
     cnt=0
     while i!=0
       nxt=@blocks[i*16+0]
-      yield i,cnt,nxt if block_given?
+      #printf("chain %d -> %d \n",i,nxt)
+      if block_given?
+        break if ! yield( i,cnt,nxt)
+      end
       cnt += 1
       break if cnt>=lim
+      raise ErrorBadNextIndex.new("bad next index %d"%nxt)  if nxt>=0x80
       i = nxt
     end
   end
@@ -373,7 +385,7 @@ class Reader_V4
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
     printf("%s  %4d %2d  %3d ",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0)
-    chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j)}
+    chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
   end
   def export(dir)
