@@ -40,10 +40,10 @@ typedef struct t_TrainerData {
 //eeprom modelspec
 typedef struct t_ExpoData {
   int8_t  expNorm;
-  int8_t  expNormWeight;
   int8_t  expDr;
-  int8_t  expSwWeight;
   int8_t  drSw;
+  int8_t  expNormWeight;
+  int8_t  expSwWeight;
 } __attribute__((packed)) ExpoData;
 typedef struct t_TrimData {
   int8_t  trim;    //quadratisch
