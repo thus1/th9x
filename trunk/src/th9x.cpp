@@ -305,7 +305,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
 {
   int16_t val = i_flags & _FL_SIZE2 ? *(int16_t*)i_pval : *(int8_t*)i_pval ;
   int16_t newval = val;
-  uint8_t kpl=KEY_RIGHT, kmi=KEY_LEFT, kother=-1;
+  uint8_t kpl=KEY_RIGHT, kmi=KEY_LEFT, kother = -1;
 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
@@ -319,7 +319,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     beepKey();     
     kother=kpl;
   }
-  if(kother!=-1 && keyState((EnumKeys)kother)){
+  if((kother != (uint8_t)-1) && keyState((EnumKeys)kother)){
     newval=-val;
     killEvents(kmi);
     killEvents(kpl);
