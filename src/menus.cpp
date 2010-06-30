@@ -1724,20 +1724,41 @@ void perOut()
       {
       //static prog_uint8_t APM dlt_t[] = {0, 5, 3,2,1 }; 
       //static prog_uint8_t APM tmr_t[] = {0, 0, 0,0,0,1,2,3,4,5,6,7,8,9,10,11};
-        static prog_uint8_t APM tmr_t[] = {0, 0, 0,0,0,0,0,0,1,2,3,4,5,6, 7, 8};
-        static prog_uint8_t APM dlt_t[] = {0,18,12,8,5,3,2,1 }; 
+        /*
+    dt=[ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9];dx=[18,13,9,6,4,3,2,3,1,2,1,1,1,1,1]
+    rp=1; 15.times{|i| r=dx[i]*100.0/(dt[i]); printf("%2d: rate=%4d i/s full=%5.1fs %3.1f\n",i+1,r,1024.0/r,rp/r);rp=r}
+ 1: rate=1800 i/s full=  0.6s 0.0
+ 2: rate=1300 i/s full=  0.8s 1.4
+ 3: rate= 900 i/s full=  1.1s 1.4
+ 4: rate= 600 i/s full=  1.7s 1.5
+ 5: rate= 400 i/s full=  2.6s 1.5
+ 6: rate= 300 i/s full=  3.4s 1.3
+ 7: rate= 200 i/s full=  5.1s 1.5
+ 8: rate= 150 i/s full=  6.8s 1.3
+ 9: rate= 100 i/s full= 10.2s 1.5
+10: rate=  66 i/s full= 15.4s 1.5
+11: rate=  50 i/s full= 20.5s 1.3
+12: rate=  33 i/s full= 30.7s 1.5
+13: rate=  25 i/s full= 41.0s 1.3
+14: rate=  16 i/s full= 61.4s 1.5
+15: rate=  11 i/s full= 92.2s 1.5
+         */
+        //                                                   1 1 1 1 1 1 
+        //                                1  2 3 4 5 6 7 8 9 0 1 2 3 4 5
+        static prog_uint8_t APM dlt_t[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
+        static prog_uint8_t APM tmr_t[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
         int16_t     diff     = v - act[i];
         if(diff){
           uint8_t   speed    = (diff > 0) ? md.speedUp : md.speedDown;
           if(speed){
-            uint8_t timerend =                pgm_read_byte(&tmr_t[speed]);
-            int8_t  dlt      = timerend ? 1 : pgm_read_byte(&dlt_t[speed]);
+            uint8_t timerend = pgm_read_byte(&tmr_t[speed-1]);
+            int8_t  dlt      = pgm_read_byte(&dlt_t[speed-1]);
             dlt              = min((int16_t)dlt, abs(diff)) ;
             if(diff < 0) dlt = -dlt;
 
-            if (timer[i] != 0)
+            if (--timer[i] != 0)
             {
-              if (--timer[i] > timerend)     timer[i] = timerend;
+              if (timer[i] > timerend) timer[i] = timerend;
             }
             else
             {
@@ -1745,7 +1766,7 @@ void perOut()
               timer[i]       = timerend;
             }
           }else{
-            act[i] = v;
+            act[i]   = v;
             timer[i] = 0;
           }
         }
