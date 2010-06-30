@@ -23,8 +23,8 @@ The advantage of serial and parallel port programmer are the lack necessary driv
 
 USB ISP’s are fed by the USB port and can even power the target (i.e. the Tx). However, it has to be obeyed that for windows necessary drivers are provided.
 
-A list of programmers supported by AVRdude can be found [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html here]. You can purchase those on eBay or electronic retailers, costs vary between $5 and $30.
-Users on rclineforum.de have tested a couple of ISP’s:
+A list of programmers supported by AVRdude can be found [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html here]. You can purchase those on eBay or electronic retailers, costs vary between $5 and $30. 
+Members of [http://www.rclineforum.de/forum/index.php rclineforum] have tested a couple of ISP’s:
 
 || || USB || LPT ||
 || successfully || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
@@ -38,9 +38,7 @@ The pins of the programmer have to be connected to the microcontroller in the Tx
 
 <img src="http://th9x.googlecode.com/svn/wiki/atmel_6pin.png" width=600>
 
-these have to be connected to the Tx as in the following picture. The Turnigy 9ch Tx is available
- in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for
- easier soldering (red circle).
+these have to be connected to the Tx as in the following picture. The Turnigy 9ch Tx is available in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for easier soldering (red circle).
 
 <img src="http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png" width=600>
 
@@ -70,8 +68,7 @@ All words written in `small letters` are console commands, meaning in windows en
   * `-p m64` -> states the target processor (ATmega64)
   * `-P xxx` -> xxx states the port, e.g. com1, lpt1, usb not required for most USB ISP
   * `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency
- # Checking the connection with AVRdude:
-run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:    `avrdude: Device signature = 0x1e9602`
+ # Checking the connection with AVRdude: run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:					`avrdude: Device signature = 0x1e9602`
  # download binary [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
 
 
@@ -109,7 +106,7 @@ Have fun!
 
 
 || message || problem -> solution || picture ||
-|| Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK! || RST not connected, perhabs due to destroyed PCB track (double check) -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
+|| `Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!` || RST not connected, perhabs due to destroyed PCB track (double check) -> bridge with braid from pad to pin on processor (yeap, has been done before :) ) || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
 || `avrdude: Error: Could not find xxxx device` || unplug and plug the ISP into the USB port; power supply of the USB port is insufficient on some notebooks -> try different port or use desktop pc || ||
 || `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || some cables are mixed up -> check them and get them in order; Ail D/R switch has to be off; decrease programming frequency by: `-P xx`, increase xx, e.g. 20); if RST level is below 5V Volt (double check) -> connect a pull up resistor from RST to Vcc at input of programmer (e.g. start at 1kOhm, if not sufficient lower until 200Ohm) ; remove yellow 10/46uF Tantal Elektrolytkondensator above RST Pad || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
 
