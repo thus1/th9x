@@ -51,12 +51,12 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t s
   }
 }
 
-inline uint16_t anaIn(uint8_t chan)
-{
-  //                     ana-in:   3 1 2 0 4 5 6 7          
-  static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
-  return s_ana[pgm_read_byte(crossAna+chan)] / 4;
-}
+//inline uint16_t anaIn(uint8_t chan)
+//{
+//  //                     ana-in:   3 1 2 0 4 5 6 7          
+//  static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
+//  return s_ana[pgm_read_byte(crossAna+chan)] / 4;
+//}
 #endif
 
 
@@ -184,7 +184,7 @@ void killEvents(uint8_t event)
 }
 
 
-uint16_t g_anaIns[8];
+//uint16_t g_anaIns[8];
 uint8_t  g_vbat100mV;
 volatile uint16_t g_tmr10ms;
 volatile uint8_t  g_blinkTmr10ms;
@@ -218,16 +218,18 @@ void per10ms()
     keys[enuk].input(in & pgm_read_byte(crossTrim+i),(EnumKeys)enuk);
     ++enuk;
   }
-  for(int i=0; i<8; i++)
-  {
-    g_anaIns[i] = anaIn(i);
-  }
+  //  for(int i=0; i<8; i++)
+  //  {
+  //    g_anaIns[i] = anaIn(i);
+  //  }
   //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
   //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
   //0.137176291331963    k=((2.65+5.07)/2.65*5/1024)*10*9.74/10.1
   // g_vbat100mV=g_anaIns[7]*35/256; //34/239;
   // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
-  g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
+  //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
+  uint16_t ab = anaIn(7);
+  g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
 
   static uint8_t s_batCheck;
   s_batCheck++;
@@ -235,6 +237,6 @@ void per10ms()
     beepWarn1();
   }
 #ifndef SIM
-  STARTADCONV;            // Analogkanäle lesen
+  //  STARTADCONV;            // Analogkanäle lesen
 #endif
 }

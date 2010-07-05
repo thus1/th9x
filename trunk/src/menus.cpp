@@ -984,24 +984,32 @@ void menuProcDiagCalib(uint8_t event)
       switch(sub)
       {
         case 2: //get mid
-          for(uint8_t i=0; i<4; i++)midVals[i] = g_anaIns[i];
+          //for(uint8_t i=0; i<4; i++)midVals[i] = g_anaIns[i];
+          for(uint8_t i=0; i<4; i++)midVals[i] = anaIn(i);
           beepKey();
           break;
         case 3: 
-          for(uint8_t i=0; i<4; i++)lowVals[i] = g_anaIns[i];
+          //for(uint8_t i=0; i<4; i++)lowVals[i] = g_anaIns[i];
+          for(uint8_t i=0; i<4; i++)lowVals[i] = anaIn(i);
           beepKey();
           break;
         case 4: 
 #ifdef SIM
           printf("do calib");
 #endif
-          int16_t sum=0;
           for(uint8_t i=0; i<4; i++){
-            sum += g_eeGeneral.calibMid[i]  = midVals[i];
-            int16_t    dv1 = abs(midVals[i]-lowVals[i]);
-            int16_t    dv2 = abs(midVals[i]-(int16_t)g_anaIns[i]);
-            sum += g_eeGeneral.calibSpan[i] = min(dv1,dv2);
+            g_eeGeneral.calibMid[i]  = midVals[i];
+            //int16_t    dv1 = abs(midVals[i]-lowVals[i]);
+            //            int16_t    dv2 = abs(midVals[i]-(int16_t)anaIn(i));
+            //            sum += g_eeGeneral.calibSpan[i] = min(dv1,dv2);
+            uint16_t v;
+            v = midVals[i]       - lowVals[i];
+            g_eeGeneral.calibSpanNeg[i] = v - v/64;
+            v = anaIn(i)- midVals[i];
+            g_eeGeneral.calibSpanPos[i] = v - v/64;
           }
+          int16_t sum=0;
+          for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
           g_eeGeneral.chkSum = sum;
           eeDirty(EE_GENERAL); //eeWriteGeneral();
           beepKey();
@@ -1019,11 +1027,14 @@ void menuProcDiagCalib(uint8_t event)
   {
     uint8_t y=i*FH+0;
     lcd_putsn_P( 8*FW,  y,      PSTR("A1A2A3A4")+2*i,2);  
-    lcd_outhex4(12*FW,  y,      g_anaIns[i]);
+    //lcd_outhex4(12*FW,  y,      g_anaIns[i]);
+    lcd_outhex4(12*FW,  y,      anaIn(i));
+    lcd_puts_P( 16*FW,  y+4*FH, PSTR(":-"));  
+    lcd_outhex4(17*FW,  y,      g_eeGeneral.calibMid[i]);
     lcd_putsn_P( 8*FW,  y+4*FH, PSTR("C1C2C3C4")+2*i,2);  
-    lcd_puts_P( 11*FW,  y+4*FH, PSTR("*    /"));  
-    lcd_outhex4(12*FW,  y+4*FH, g_eeGeneral.calibMid[i]);
-    lcd_outhex4(17*FW,  y+4*FH, g_eeGeneral.calibSpan[i]);
+    lcd_puts_P( 11*FW,  y+4*FH, PSTR("-    +"));  
+    lcd_outhex4(12*FW,  y+4*FH, g_eeGeneral.calibSpanNeg[i]);
+    lcd_outhex4(17*FW,  y+4*FH, g_eeGeneral.calibSpanPos[i]);
   }
 
 }
@@ -1040,10 +1051,14 @@ void menuProcDiagAna(uint8_t event)
   {
     uint8_t y=i*FH;
     lcd_putsn_P( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2);  
-    lcd_outhex4( 8*FW, y,g_anaIns[i]);
+    //lcd_outhex4( 8*FW, y,g_anaIns[i]);
+    lcd_outhex4( 8*FW, y,anaIn(i));
     if(i<4){
-      int16_t v = g_anaIns[i];
-      lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
+      //int16_t v = g_anaIns[i];
+      int16_t v = anaIn(i) - g_eeGeneral.calibMid[i];
+      v =  v*50/max(1, (v > 0 ? g_eeGeneral.calibSpanPos[i] :  g_eeGeneral.calibSpanNeg[i])/2);
+      lcd_outdez(17*FW, y, v);
+        //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
       putsVBat(13*FW,y,sub==1 ? BLINK : 0);
@@ -1620,12 +1635,16 @@ void perOut()
 
     //Normierung  [0..1024] ->   [-512..512]
     
-    cli();
-    int16_t v= g_anaIns[i];
-    sei();
+    //cli();
+    //    int16_t v= g_anaIns[i];
+    //    sei();
+    int16_t v= anaIn(i);
     v -= g_eeGeneral.calibMid[i];
     //v  = v * ((signed)RESXu/8) / (max(40,g_eeGeneral.calibSpan[i]/8));
-    v  = v * (int32_t)RESX / (max((int16_t)100,g_eeGeneral.calibSpan[i]));
+    v  =  v * (int32_t)RESX /  (max((int16_t)100,
+                                    (v>0 ? 
+                                     g_eeGeneral.calibSpanPos[i] : 
+                                     g_eeGeneral.calibSpanNeg[i])));
 
     if(v <= -RESX) v = -RESX;
     if(v >=  RESX) v =  RESX;
@@ -1664,7 +1683,8 @@ void perOut()
     anas[i] = v; //10+1 Bit
   }
   for(uint8_t i=4;i<7;i++){
-    int16_t v= g_anaIns[i];
+    //int16_t v= g_anaIns[i];
+    int16_t v= anaIn(i);
     // anaNoTrim[i] = 
     anas[i] = v-512; // [-512..511]
   }

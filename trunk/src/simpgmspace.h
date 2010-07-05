@@ -52,7 +52,7 @@ typedef const int8_t prog_int8_t;
 
 extern unsigned char pinb,pind,pine,ping,portb;
 extern unsigned char dummyport;
-extern uint16_t anaIn(uint8_t chan);
+//extern uint16_t anaIn(uint8_t chan);
 //void eeprom_write_block (const void *pointer_ram,
 //                    void *pointer_eeprom,
 //                         size_t size);

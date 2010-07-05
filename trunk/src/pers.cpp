@@ -23,33 +23,56 @@ EFile theFile2; //sometimes we need two files
 
 #define FILE_TYP_GENERAL 1
 #define FILE_TYP_MODEL   2
-
+#define partCopy(sizeDst,sizeSrc)                         \
+      pSrc -= (sizeSrc);                                  \
+      pDst -= (sizeDst);                                  \
+      memmove(pDst, pSrc, (sizeSrc));                     \
+      memset (pDst+(sizeSrc), 0,  (sizeDst)-(sizeSrc));
+#define fullCopy(size) partCopy(size,size)
 void generalDefault()
 {
   memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
-  g_eeGeneral.myVers   =  1;
+  g_eeGeneral.myVers   =  2;
   g_eeGeneral.currModel=  0;
   g_eeGeneral.contrast = 30;
   g_eeGeneral.vBatWarn = 90;
   g_eeGeneral.stickMode=  1;
   int16_t sum=0;
   for (int i = 0; i < 4; ++i) {
-    sum += g_eeGeneral.calibMid[i]  = 0x200;
-    sum += g_eeGeneral.calibSpan[i] = 0x180;
+    sum += g_eeGeneral.calibMid[i]     = 0x200;
+    sum += g_eeGeneral.calibSpanNeg[i] = 0x180;
+    sum += g_eeGeneral.calibSpanPos[i] = 0x180;
   }
   g_eeGeneral.chkSum = sum;
 }
 bool eeLoadGeneral()
 {
   theFile.openRd(FILE_GENERAL);
-  theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
+  uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
   uint16_t sum=0;
-  for(int i=0; i<8;i++) sum+=g_eeGeneral.calibMid[i];
+  if( sz == sizeof(EEGeneral) && g_eeGeneral.myVers == 2){
+    for(int i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
 #ifdef SIM
-  if(g_eeGeneral.myVers != 1)    printf("bad g_eeGeneral.myVers == 1\n");
-  if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
+    if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
 #endif  
-  return g_eeGeneral.myVers == 1 && g_eeGeneral.chkSum == sum;
+    return g_eeGeneral.chkSum == sum;
+  }
+  if( sz == sizeof(EEGeneral_lt119) && g_eeGeneral.myVers == 1 ){
+#ifdef SIM
+    printf("converting EEGeneral data from < 119\n");
+#endif
+    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_lt119); //Pointers behind the end
+    char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral);
+    fullCopy(sizeof(EEGeneral_lt119)-offsetof(EEGeneral_lt119,calibSpan));
+    for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+    g_eeGeneral.chkSum = sum;
+    g_eeGeneral.myVers = 2;
+    return true;
+  }
+#ifdef SIM
+  printf("bad g_eeGeneral\n");
+#endif  
+  return false;
 }
 
 void modelDefault(uint8_t id)
@@ -108,12 +131,6 @@ void eeLoadModel(uint8_t id)
       char* pSrc = ((char*)&g_model) + sizeof(ModelData_lt84); //Pointers behind the end
       char* pDst = ((char*)&g_model) + sizeof(ModelData);
 
-#define partCopy(sizeDst,sizeSrc)                         \
-      pSrc -= (sizeSrc);                                  \
-      pDst -= (sizeDst);                                  \
-      memmove(pDst, pSrc, (sizeSrc));                     \
-      memset (pDst+(sizeSrc), 0,  (sizeDst)-(sizeSrc));
-#define fullCopy(size) partCopy(size,size)
 
       fullCopy(sizeof(g_model.trimData)+sizeof(g_model.curves9)+sizeof(g_model.curves5));
 

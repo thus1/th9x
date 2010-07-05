@@ -16,7 +16,7 @@
 
 
 //eeprom data
-#define EE_VERSION 2
+//#define EE_VERSION 2
 #define MAX_MODELS 16
 #define MAX_MIXERS 25
 
@@ -33,10 +33,30 @@ typedef struct t_TrainerData {
   TrainerData1  chanMix[4];
 } __attribute__((packed)) TrainerData; //
 
-typedef struct t_EEGeneral {
+typedef struct t_EEGeneral_lt119 {
   uint8_t   myVers;
   int16_t   calibMid[4];
   int16_t   calibSpan[4];
+  uint16_t  chkSum;
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib;  
+  int8_t    lightSw;
+  TrainerData trainer;
+  uint8_t   view;     //index of subview in main scrren
+#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
+#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
+#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
+#define BEEP_VAL (  g_eeGeneral.warnOpts & 0x08 ? 0 : 1)
+  uint8_t   warnOpts; //bitset for several warnings
+  uint8_t   stickMode;   // 1
+} __attribute__((packed)) EEGeneral_lt119;
+typedef struct t_EEGeneral {
+  uint8_t   myVers;
+  int16_t   calibMid[4];
+  int16_t   calibSpanNeg[4];
+  int16_t   calibSpanPos[4];
   uint16_t  chkSum;
   uint8_t   currModel; //0..15
   uint8_t   contrast;
