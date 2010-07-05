@@ -310,7 +310,7 @@ extern bool    checkIncDec_Ret;//global helper vars
 #define STORE_MODELVARS eeDirty(EE_MODEL)
 
 
-extern uint16_t           g_anaIns[8];
+//extern uint16_t           g_anaIns[8];
 extern uint8_t            g_vbat100mV;
 extern volatile uint16_t  g_tmr10ms;
 extern volatile uint8_t   g_blinkTmr10ms;
@@ -400,7 +400,8 @@ void setupPulsesTracerCtp1009();
 
 extern int16_t intpol(int16_t, uint8_t);
 
-extern uint16_t s_ana[8];
+//extern uint16_t s_ana[8];
+extern uint16_t anaIn(uint8_t chan);
 
 
 
@@ -432,7 +433,6 @@ inline void _beep(uint8_t b) {
 
 #endif
 
-#define STARTADCONV (ADCSRA  = (1<<ADEN) | (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADSC) | (1 << ADIE))
 
 
 /*eof*/

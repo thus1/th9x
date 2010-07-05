@@ -215,9 +215,11 @@ void checkTHR()
   while(g_tmr10ms<20){} //wait for some ana in
 #endif
   int thrchn=(2-(g_eeGeneral.stickMode&1));//stickMode=0123 -> thr=2121
-  int16_t v      = g_anaIns[thrchn];
-  int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpan[thrchn] +
-    g_eeGeneral.calibSpan[thrchn]/8;
+  //int16_t v      = g_anaIns[thrchn];
+  int16_t v      = anaIn(thrchn);
+
+  int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpanNeg[thrchn] +
+    g_eeGeneral.calibSpanNeg[thrchn]/8;
   //  v -= g_eeGeneral.calibMid[thrchn];
   //v  = v * (512/8) / (max(40,g_eeGeneral.calibSpan[thrchn]/8));
   if(v > lowLim)  
@@ -528,25 +530,72 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
   heartbeat |= HEART_TIMER2Mhz;
 }
 
-uint16_t s_ana[8];
+class AutoLock
+{
+  uint8_t m_saveFlags;
+public:
+  AutoLock(){
+    m_saveFlags = SREG;
+    cli();
+  };
+  ~AutoLock(){
+    SREG = m_saveFlags;// & (1<<SREG_I)) sei();
+  };
+};
+
+#define STARTADCONV (ADCSRA  = (1<<ADEN) | (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADSC) | (1 << ADIE))
+static uint16_t s_anaFilt[8];
+uint16_t anaIn(uint8_t chan)
+{
+  //                     ana-in:   3 1 2 0 4 5 6 7          
+  //static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
+  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7};
+  volatile uint16_t *p = &s_anaFilt[pgm_read_byte(crossAna+chan)];
+  AutoLock autoLock;
+  return *p;
+}
 
 
 ISR(ADC_vect, ISR_NOBLOCK)
 {
-  static uint8_t chan;
+  static uint8_t  chan;
+  static uint16_t s_ana[8];
 
-  uint8_t k = chan & 0x7;
-  ADMUX = k | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
-  s_ana[k]   += ADC - s_ana[k] / 4; // Index ist immer 1 weniger als Kanal
-  ++chan;
-  if(chan & 0x20)
-  {
-    chan = 0;       // letzter Kanal war 6
-    ADCSRA &= ~(1 << ADIE);
-  }
-  else
-    STARTADCONV;
+  ADCSRA  = 0; //reset adconv, 13>25 cycles
+  //if(! keyState(SW_ThrCt)){
+  s_anaFilt[chan] = s_ana[chan] / 16;
+  s_ana[chan]    += ADC - s_anaFilt[chan]; //
+    //}
+  chan    = chan + 1 & 0x7;
+  ADMUX   = chan | (1<<REFS0);  // Multiplexer stellen
+  STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec
 }
+
+void setupAdc(void)
+{
+  ADMUX = (1<<REFS0);      //start with ch0
+  STARTADCONV;
+}
+
+//ISR(ADC_vect, ISR_NOBLOCK)
+//{
+//  static uint8_t  chan;
+//  static uint16_t s_ana[8];
+//
+//  uint8_t k = chan & 0x7;
+//  ADMUX = k | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
+//  if(! keyState(SW_ThrCt)){
+//    s_ana[k]   += ADC - s_ana[k] / 4; // Index ist immer 1 weniger als Kanal
+//  }
+//  ++chan;
+//  if(chan & 0x20)
+//  {
+//    chan = 0;       // letzter Kanal war 6
+//    ADCSRA &= ~(1 << ADIE);
+//  }
+//  else
+//    STARTADCONV;
+//}
 
 
 volatile uint8_t g_tmr16KHz;
@@ -631,11 +680,6 @@ void evalCaptures()
   }
 }
 
-void setupAdc(void)
-{
-  ADMUX = (1<<REFS0);      //
-  STARTADCONV;
-}
 
 extern uint16_t g_timeMain;
 //void main(void) __attribute__((noreturn));
