@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
+- ad-conversion jitter
 + thr-error overflow
 + cv4 geht nicht
 + bug mixer end
@@ -24,25 +25,30 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- timer mit thr-switch
-- more mixer
-- trim -> limitoffset
-+ negativ student weight
-+ standard curves after delay
-+ special curve x<0 and x>0 when FUL
-+ switch delay curve sequence?
-+ sinnvoller default 4ch
+- calibration pos + neg
+- column select mit doppelclick?
+- curr event global var
+- trim -> limitoffset (subtrim)
+- default acro/heli120
 - select zero beep/store beep
 - select zero stop/ 2-stage mixer?
-- doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
-- pruefung des Sch�lersignals
+- pruefung des Schuelersignals
 - format eeprom
 - pcm 
 - light auto off
+- timer mit thr-switch
 - stat mit times
 - fast multiply 8*16 > 32
-- doku light-pin B7 pin17
+doku
+- doku subtrim
+- doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
+- special curve x<0 and x>0 when FUL doku
 done
++ more mixer ->25
++ standard curves after delay
++ negativ student weight
++ sinnvoller default 4ch
++ doku light-pin B7 pin17
 + dualrate expo+weight+differentialweight
 + limit + offset
 + curves mit -100..100, cache
@@ -376,48 +382,72 @@ int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
   return i_val;
 }
 
-uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
+//uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
+uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
 {
   uint8_t subOld=sub;
-  uint8_t inc = vert ?  KEY_DOWN : KEY_RIGHT;
-  uint8_t dec = vert ?  KEY_UP   : KEY_LEFT;
-  
-  if(event==EVT_KEY_REPT(inc) || event==EVT_KEY_FIRST(inc))
-  {
-    beepKey();
-    if(sub < (num-1)) {
-      (sub)++;
-    }else{
-      if(event==EVT_KEY_REPT(inc))
-      {
-        beepWarn();
-        killEvents(event);
+ 
+  if(mode==SUB_MODE_H_DBL){
+    if(event==EVT_KEY_DBL(KEY_RIGHT))
+    {
+      beepKey();
+      if(sub < (num-1)) {
+        (sub)++;
       }else{
         (sub)=0;
       }
     }
-  }
-  else if(event==EVT_KEY_REPT(dec) || event==EVT_KEY_FIRST(dec))
-  {
-    beepKey();
-    if(sub > 0) {
-      (sub)--;
-    }else{
-      if(event==EVT_KEY_REPT(dec))
-      {
-        beepWarn();
-        killEvents(event);
+    else if(event==EVT_KEY_DBL(KEY_LEFT))
+    {
+      beepKey();
+      if(sub > 0) {
+        (sub)--;
       }else{
         (sub)=(num-1);
       }
     }
-  }
-  else if(event==EVT_ENTRY)
-  {
-    sub = 0;
+  }else{
+  
+    uint8_t inc = (mode==SUB_MODE_V) ?  KEY_DOWN : KEY_RIGHT;
+    uint8_t dec = (mode==SUB_MODE_V) ?  KEY_UP   : KEY_LEFT;
+
+    if(event==EVT_KEY_REPT(inc) || event==EVT_KEY_FIRST(inc))
+    {
+      beepKey();
+      if(sub < (num-1)) {
+        (sub)++;
+      }else{
+        if(event==EVT_KEY_REPT(inc))
+        {
+          beepWarn();
+          killEvents(event);
+        }else{
+          (sub)=0;
+        }
+      }
+    }
+    else if(event==EVT_KEY_REPT(dec) || event==EVT_KEY_FIRST(dec))
+    {
+      beepKey();
+      if(sub > 0) {
+        (sub)--;
+      }else{
+        if(event==EVT_KEY_REPT(dec))
+        {
+          beepWarn();
+          killEvents(event);
+        }else{
+          (sub)=(num-1);
+        }
+      }
+    }
+    else if(event==EVT_ENTRY)
+    {
+      sub = 0;
+    }
   }
   if(subOld!=sub) BLINK_SYNC;
-  return sub;//false;
+  return sub;
 }
 void popMenu(bool uppermost)
 {
@@ -566,8 +596,8 @@ ISR(ADC_vect, ISR_NOBLOCK)
   s_anaFilt[chan] = s_ana[chan] / 16;
   s_ana[chan]    += ADC - s_anaFilt[chan]; //
     //}
-  chan    = chan + 1 & 0x7;
-  ADMUX   = chan | (1<<REFS0);  // Multiplexer stellen
+  chan    = (chan + 1) & 0x7;
+  ADMUX   =  chan | (1<<REFS0);  // Multiplexer stellen
   STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec
 }
 

@@ -64,10 +64,12 @@ struct MState
   /// entry    initialisiert, 
   /// keine reaktion auf exit
   uint8_t checkVert( uint8_t maxVert);
+  uint8_t checkVertAnyCase( uint8_t maxVert);
   /// schltet horiz weiter zum naechsten subsubmenu. 
   /// entry    initialisiert, 
   /// keine reaktion auf exit
   uint8_t checkHorz( uint8_t myVert, uint8_t maxHoriz);
+  uint8_t checkHorzDbl( uint8_t myVert, uint8_t maxHoriz);
 };
 uint8_t MState::event;
 void MState::checkExit(uint8_t i_event,int8_t exitMode)
@@ -112,14 +114,24 @@ void MState::checkChain( uint8_t curr, MenuFuncP *menuTab, uint8_t size)
   lcd_putcAtt(128-FW*2,0,'/',attr);
   lcd_putcAtt(128-FW*3,0,curr+'1',attr);
 }
+uint8_t MState::checkVertAnyCase( uint8_t maxVert)
+{
+  sVert=checkSubGen(event, maxVert, sVert, SUB_MODE_V);
+  return sVert;
+}
 uint8_t MState::checkVert( uint8_t maxVert)
 {
-  if(sHorz==0)  sVert=checkSubGen(event, maxVert, sVert, true);
+  if(sHorz==0)  checkVertAnyCase( maxVert);
   return sVert;
 }
 uint8_t MState::checkHorz( uint8_t myVert, uint8_t maxHoriz)
 {
-  if(myVert==sVert)  sHorz=checkSubGen(event, maxHoriz, sHorz, false);
+  if(myVert==sVert)  sHorz=checkSubGen(event, maxHoriz, sHorz, SUB_MODE_H);
+  return sHorz;
+}
+uint8_t MState::checkHorzDbl( uint8_t myVert, uint8_t maxHoriz)
+{
+  if(myVert==sVert)  sHorz=checkSubGen(event, maxHoriz, sHorz, SUB_MODE_H_DBL);
   return sHorz;
 }
 
@@ -145,29 +157,29 @@ void menuProcLimits(uint8_t event)
   TITLE("LIMITS");  
   mState.checkExit(event);
   mState.checkChain(7,menuTabModel,DIM(menuTabModel));
-  int8_t sub = mState.checkVert(8+1) - 1;
+  int8_t sub = mState.checkVertAnyCase(8+1) - 1;
   static uint8_t s_pgOfs;
   uint8_t subSub=0;
   if(sub>=0){
     LimitData *ld = &g_model.limitData[sub];
-    subSub=mState.checkHorz(sub+1,5);
+    subSub=mState.checkHorzDbl(sub+1,5);
 
     switch(subSub)
     {
       case 1:
-        if(CHECK_INCDEC_V_MODELVAR_BF( event, ld->offset, -63,63))  LIMITS_DIRTY;
+        if(CHECK_INCDEC_H_MODELVAR_BF( event, ld->offset, -63,63))  LIMITS_DIRTY;
         break;
       case 2:
         ld->min -=  100;
-        if(CHECK_INCDEC_V_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
+        if(CHECK_INCDEC_H_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
         ld->min +=  100;
         break;
       case 3:
         ld->max +=  100;
-        if(CHECK_INCDEC_V_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
+        if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
         ld->max -=  100;
         break;
-      case 4: CHECK_INCDEC_V_MODELVAR_BF( event, ld->revert,    0,1);
+      case 4: CHECK_INCDEC_H_MODELVAR_BF( event, ld->revert,    0,1);
         break;
     }
   }
@@ -304,7 +316,7 @@ void menuProcMixOne(uint8_t event)
   mState.checkExit(event,1);
   int8_t sub = mState.checkVert(7);
 
-#define CURV_STR "  -x>0x<0|x|cv1cv2cv3cv4"
+#define CURV_STR "  -""x>0""x<0""|x|""cv1""cv2""cv3""cv4"
   for(uint8_t i=0; i<=6; i++)
   {
     uint8_t y=i*FH+FH;
@@ -1029,11 +1041,12 @@ void menuProcDiagCalib(uint8_t event)
     lcd_putsn_P( 8*FW,  y,      PSTR("A1A2A3A4")+2*i,2);  
     //lcd_outhex4(12*FW,  y,      g_anaIns[i]);
     lcd_outhex4(12*FW,  y,      anaIn(i));
-    lcd_puts_P( 16*FW,  y+4*FH, PSTR(":-"));  
-    lcd_outhex4(17*FW,  y,      g_eeGeneral.calibMid[i]);
-    lcd_putsn_P( 8*FW,  y+4*FH, PSTR("C1C2C3C4")+2*i,2);  
-    lcd_puts_P( 11*FW,  y+4*FH, PSTR("-    +"));  
-    lcd_outhex4(12*FW,  y+4*FH, g_eeGeneral.calibSpanNeg[i]);
+    //lcd_puts_P( 16*FW,  y+4*FH, PSTR(":-"));  
+    //lcd_putsn_P( 8*FW,  y+4*FH, PSTR("C1C2C3C4")+2*i,2);  
+    //lcd_puts_P( 11*FW,  y+4*FH, PSTR("-    +"));  
+    lcd_puts_P( 11*FW,  y+4*FH, PSTR("<    >"));  
+    lcd_outhex4( 8*FW-3,y+4*FH, g_eeGeneral.calibSpanNeg[i]);
+    lcd_outhex4(12*FW,  y+4*FH, g_eeGeneral.calibMid[i]);
     lcd_outhex4(17*FW,  y+4*FH, g_eeGeneral.calibSpanPos[i]);
   }
 
