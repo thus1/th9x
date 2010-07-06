@@ -79,12 +79,14 @@ uint8_t getEvent()
 
 class Key
 {
-#define FFVAL        0x0f
+#define FFVAL        0x03
 #define KSTATE_OFF      0
+#define KSTATE_SHORT   96
 #define KSTATE_START   97
 #define KSTATE_PAUSE   98
 #define KSTATE_KILLED  99
-  uint8_t m_vals:4;
+  uint8_t m_vals:2;
+  uint8_t m_dblcnt:2;
   uint8_t m_cnt;
   uint8_t m_state;
 public:
@@ -98,30 +100,45 @@ public:
 Key keys[NUM_KEYS];
 void Key::input(bool val, EnumKeys enuk)
 {       
-  //#ifdef SIM
-  //  if(val) printf("Key::input = %d %d m_vals %d m_cnt%d\n",val,enuk,m_vals,m_cnt);
-  //#endif
   //  uint8_t old=m_vals;
   m_vals <<= 1;  if(val) m_vals |= 1; //portbit einschieben
+  m_cnt++;
 
   if(m_state && m_vals==0){  //gerade eben sprung auf 0
     if(m_state!=KSTATE_KILLED) {
-      putEvent(EVT_KEY_GEN_BREAK(enuk));
+      if(m_state == KSTATE_SHORT){
+        m_dblcnt++;
+  #ifdef SIM
+        printf("Key m_dblcnt=%d, m_cnt=%d\n",m_dblcnt,m_cnt);
+  #endif
+        if(m_dblcnt==2){
+          putEvent(EVT_KEY_DBL(enuk));
+          m_dblcnt=0;
+        }
+      }else{
+        putEvent(EVT_KEY_GEN_BREAK(enuk));
+        m_dblcnt=0;
+      }
     }
+    m_cnt   = 0;
     m_state = KSTATE_OFF;
   }
-  m_cnt++;
   switch(m_state){
     case KSTATE_OFF: 
       if(m_vals==FFVAL){ //gerade eben sprung auf ff
-        m_state = KSTATE_START;
-        m_cnt=0;
+        m_state = KSTATE_SHORT;
+        if(m_cnt>20) m_dblcnt=0; //pause zu lang fuer double
+        m_cnt   = 0;
       }
       break;
+    case KSTATE_SHORT: 
+      if(m_cnt<8)  break;
+      m_state = KSTATE_START;
+      //fallthrough
     case KSTATE_START: 
       putEvent(EVT_KEY_FIRST(enuk));
-      m_state = 16;
-      m_cnt   = 0;
+      m_state   = 16;
+      m_cnt     = 0;
       break;
     case 16: 
       if(m_cnt == 30)        putEvent(EVT_KEY_LONG(enuk));
