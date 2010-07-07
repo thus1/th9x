@@ -27,7 +27,7 @@ A list of programmers supported by AVRdude can be found [http://www.nongnu.org/a
 Members of [http://www.rclineforum.de/forum/index.php rclineforum] have tested a couple of ISP’s:
 
 || || USB || LPT ||
-|| successfully || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
+|| successfully || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
 || problematic || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer], Pocket AVR Programmer ||
 
 Since you probably want to use a USB programmer, the instructions are focused on those. However, apart from the power supply of the Tx and the interface selection in AVRdude everything else should be equal.
@@ -66,7 +66,7 @@ All words written in `small letters` are console commands, meaning in windows en
  # Required parameter for avrdude:
   * `-c xxxx` -> xxxx states the programmer used, see [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html list]
   * `-p m64` -> states the target processor (ATmega64)
-  * `-P xxx` -> xxx states the port, e.g. com1, lpt1, usb not required for most USB ISP
+  * `-P xxx` -> xxx states the port, e.g. com1, lpt1, usb, this parameter is not required for most USB programmer
   * `-B  xx` -> xx states the duration of one cycle in uS, higher values indicate lower programming frequency
  # Checking the connection with AVRdude: run `avrdude -c xxxx -p m64`. If everything has been set up properly the output should then show something including the ATmega64 signature:					`avrdude: Device signature = 0x1e9602`
  # download binary [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
@@ -80,9 +80,9 @@ Prior flashing the new software you probably want to backup the original one. In
 
 Following commands back up the current flash and eeprom content in **.bin:
 
-`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:a`
+`avrdude -c xxxx -p m64 -U flash:r:backupflash.bin:r`
 
-`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":a`
+`avrdude -c xxxx -p m64 -U eeprom:r:"backupeeprom.bin":r`
 
 To upload the new software, i.e. the image th9x.bin enter the following:
 

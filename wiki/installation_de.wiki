@@ -33,7 +33,7 @@ Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nong
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 || || USB || LPT ||
-|| erfolgreich || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
+|| erfolgreich || AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
 || problematisch || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer], Pocket AVR Programmer ||
 
 Da wahrscheinlich ein USB programmer bevorzugt wird, ist die Anleitung dahingehend ausgerichtet. Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings gleich.
@@ -87,11 +87,11 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
   * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode von der Mac OS installer DVD vorraus). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
   * Die aktuelle Version von AVRdude ist 5.10
-  * Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) oder Windows & Linux (z.B. [http://www.soft-land.de/ AVRBurner])
+ # Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für Windows & Mac OS (z.B. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) oder Windows & Linux (z.B. [http://www.soft-land.de/ AVRBurner])
  # Benötigte Parameter für avrdude:
   * `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
   * `-p m64` -> gibt den Target Prozessor an (ATmega64)
-  * `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb` bei USB meist unnötig
+  * `-P xxx` -> xxx gibt den Port an, z.B. `com1`, `lpt1`, `usb`, dieser Parameter ist bei USB Programmer meist unnötig
   * `-B  xx` -> xx ist die Periodendauer eines Taktes in uS, höhere Werte bedeuten niedrigere Programmierfrequenz
  # Überprüfen der Verbindung mit AVRdude: bei Eingabe von `avrdude -c xxxx -p m64` sollte, wenn alles richtig gemacht wurde, u.a. folgendes erscheinen:					`avrdude: Device signature = 0x1e9602`
  # Aktuelles binary herunderladen: [http://th9x.googlecode.com/svn/trunk/th9x.bin th9x.bin]
@@ -112,7 +112,7 @@ Folgende Befehle sichern den aktuellen Flash  und eeprom Inhalt in **.bin:
 
 Zum aufpielen des neuen Images th9x.bin gibt man folgendes ein:
 
-	`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:r`
+	`avrdude -c xxxx -p m64 -U flash:w:th9x.bin:a`
 
 Parameter Werte:
  * speichertyp = flash/eeprom
@@ -136,7 +136,7 @@ So einiges kann schiefgehen, bis jetzt ist aber noch kein Fall bekannt bei dem e
 || Meldung || Problem -> Lösung || Bild ||
 || `Setting mode and device parameters.. OK! Entering programming mode.. FAILED! Leaving programming mode.. OK!` || nicht angeschlossenes RST, evtl. durch zerstörte Leiterbahn auf der Platine (nachmessen) -> Leiterbahn vom Lötpad zum Prozessorpin überbrücken || <img src="http://th9x.googlecode.com/svn/wiki/rst_bridge.png" width=200> ||
 || `avrdude: Error: Could not find xxxx device` || ISP am USB Port aus und wieder einstecken; Stromversorgung des USB Ports reicht bei manchen Laptops nicht aus  -> anderen Port ausprobieren oder an Desktop PC versuchen || ||
-|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen; Ail D/R Schalter auf AUS stellen; Programmierfrequenz absenken: `-P xx`, xx erhöhen, z.b. 20) ; Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
+|| `initialization failed, rc=-1 : AVR device initialized and ready to accept instructions : Device signature = 0x000000 : Yikes! Invalid device signature. : Expected signature for ATMEGA64 is 1E 96 02` || vertauschte Anschlusskabel -> richtig anschliessen; Ail D/R und Thr Cut Schalter auf AUS stellen (v1); Ail D/R und Thr Cut Schalter auf AN stellen (v2); Programmierfrequenz absenken: `-P xx`, xx erhöhen, z.b. 20) ; Falls der RST Pegel unter 5V Volt ist (nachmessen) -> Pull Up Widerstand von RST nach Vcc am Eingang des Programmers anschließen (anfangen bei etwa 1kOhm, falls nicht ausreichend bis etwa 200Ohm gelben 10/46uF Tantal Elektrolytkondensator über RST Pad entfernen || <img src="http://th9x.googlecode.com/svn/wiki/rst_elko.png" width=200> ||
 
 
 
