@@ -50,10 +50,10 @@ MenuFuncP_PROGMEM APM menuTabDiag[] = {
 
 struct MState
 {
-  uint8_t sVert;
-  uint8_t sHorz;
+  uint8_t m_posVert;
+  uint8_t m_posHorz;
   static uint8_t event;
-  void init(){sVert=sHorz=0;};
+  void init(){m_posVert=m_posHorz=0;};
   
   void checkExit(uint8_t event,int8_t exitMode=0);
   /// schltet horiz weiter zum naechsten menu. 
@@ -81,7 +81,7 @@ void MState::checkExit(uint8_t i_event,int8_t exitMode)
     popMenu(true); //return to uppermost, beeps itself
   }
   if(event == EVT_KEY_FIRST(KEY_EXIT)){
-    if(sVert==0 || exitMode) {
+    if(m_posVert==0 || exitMode) {
       popMenu();  //beeps itself
     } else {
       beepKey();  
@@ -94,7 +94,7 @@ void MState::checkChain( uint8_t curr, MenuFuncP *menuTab, uint8_t size)
 {
   uint8_t attr = INVERS; 
   curr--; //calc from 0, user counts from 1
-  if(sVert==0){
+  if(m_posVert==0){
     attr = BLINK;
     switch(event)
     {
@@ -116,29 +116,29 @@ void MState::checkChain( uint8_t curr, MenuFuncP *menuTab, uint8_t size)
 }
 uint8_t MState::checkVertAnyCase( uint8_t maxVert)
 {
-  sVert=checkSubGen(event, maxVert, sVert, SUB_MODE_V);
-  return sVert;
+  m_posVert=checkSubGen(event, maxVert, m_posVert, SUB_MODE_V);
+  return m_posVert;
 }
 uint8_t MState::checkVert( uint8_t maxVert)
 {
-  if(sHorz==0)  checkVertAnyCase( maxVert);
-  return sVert;
+  if(m_posHorz==0)  checkVertAnyCase( maxVert);
+  return m_posVert;
 }
 uint8_t MState::checkHorz( uint8_t myVert, uint8_t maxHoriz)
 {
-  if(myVert==sVert)  sHorz=checkSubGen(event, maxHoriz, sHorz, SUB_MODE_H);
-  return sHorz;
+  if(myVert==m_posVert)  m_posHorz=checkSubGen(event, maxHoriz, m_posHorz, SUB_MODE_H);
+  return m_posHorz;
 }
 uint8_t MState::checkHorzDbl( uint8_t myVert, uint8_t maxHoriz)
 {
-  if(myVert==sVert)  sHorz=checkSubGen(event, maxHoriz, sHorz, SUB_MODE_H_DBL);
-  return sHorz;
+  if(myVert==m_posVert)  m_posHorz=checkSubGen(event, maxHoriz, m_posHorz, SUB_MODE_H_DBL);
+  return m_posHorz;
 }
 
 #ifdef SIM
 extern char g_title[80];
 MState mState;
-#define TITLEP(pstr) lcd_putsAtt(0,0,pstr,INVERS);sprintf(g_title,"%s_%d_%d",pstr,mState.sVert,mState.sHorz);
+#define TITLEP(pstr) lcd_putsAtt(0,0,pstr,INVERS);sprintf(g_title,"%s_%d_%d",pstr,mState.m_posVert,mState.m_posHorz);
 #else
 #define TITLEP(pstr) lcd_putsAtt(0,0,pstr,INVERS)  
 #endif
@@ -159,10 +159,12 @@ void menuProcLimits(uint8_t event)
   mState.checkChain(7,menuTabModel,DIM(menuTabModel));
   int8_t sub = mState.checkVertAnyCase(8+1) - 1;
   static uint8_t s_pgOfs;
-  uint8_t subSub=0;
+  uint8_t subSub=mState.m_posHorz;
   if(sub>=0){
     LimitData *ld = &g_model.limitData[sub];
-    subSub=mState.checkHorzDbl(sub+1,5);
+    //    subSub=
+    if(mState.checkHorzDbl(sub+1,5) != subSub) 
+      event=EVT_KEY_DBL(EVT_KEY_MASK & event);
 
     switch(subSub)
     {
@@ -910,12 +912,12 @@ void menuProcModelSelect(uint8_t event)
   //mState.event = event;
   //if(!s_editMode) 
   mState.checkExit(event,s_editMode ? -1 : 1); // EVT_ENTRY no KEY_EXIT -> init,popMenu
-  //mState.sVert++; //trick, never 0 -> only print x/5
+  //mState.m_posVert++; //trick, never 0 -> only print x/5
   //mState.checkChain(1,menuTabModel,DIM(menuTabModel));
-  //mState.sVert--;
+  //mState.m_posVert--;
   lcd_putsAtt(128-FW*3,0,PSTR("1/7"),INVERS);
 
-  int8_t sub = mState.sVert;
+  int8_t sub = mState.m_posVert;
   int8_t subOld=sub;
   sub = mState.checkVert(MAX_MODELS);
   static uint8_t s_pgOfs;
@@ -930,9 +932,9 @@ void menuProcModelSelect(uint8_t event)
       }
       //fallthrough
     case  EVT_KEY_FIRST(KEY_RIGHT):
-      if(g_eeGeneral.currModel != mState.sVert)
+      if(g_eeGeneral.currModel != mState.m_posVert)
       {
-        eeLoadModel(g_eeGeneral.currModel = mState.sVert);
+        eeLoadModel(g_eeGeneral.currModel = mState.m_posVert);
         eeDirty(EE_GENERAL);
         LIMITS_DIRTY;
         beepKey();
@@ -957,7 +959,7 @@ void menuProcModelSelect(uint8_t event)
     case EVT_ENTRY:
       s_editMode = false;
       
-      mState.sVert = g_eeGeneral.currModel;
+      mState.m_posVert = g_eeGeneral.currModel;
       eeCheck(true); //force writing of current model data before this is changed
       break;
   }
@@ -987,7 +989,7 @@ void menuProcDiagCalib(uint8_t event)
   mState.checkExit(event);
   mState.checkChain(7,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(5);
-  int8_t sub = mState.sVert;
+  int8_t sub = mState.m_posVert;
   static int16_t midVals[4];
   static int16_t lowVals[4];
   switch(event)
@@ -1058,7 +1060,7 @@ void menuProcDiagAna(uint8_t event)
   mState.checkExit(event);
   mState.checkChain(6,menuTabDiag,DIM(menuTabDiag));
   mState.checkVert(2);
-  int8_t sub = mState.sVert;
+  int8_t sub = mState.m_posVert;
 
   for(uint8_t i=0; i<8; i++)
   {
@@ -1267,13 +1269,16 @@ void menuProcSetup0(uint8_t event)
   }
 }
 
-uint16_t s_timeCum16; //gewichtete laufzeit in 1/16 sec
-int16_t  s_timerVal;
+uint16_t s_timeCumTot;    
+uint16_t s_timeCumAbs;  //laufzeit in 1/16 sec
+uint16_t s_timeCumThr;  //gewichtete laufzeit in 1/16 sec
+uint16_t s_timeCum16ThrP; //gewichtete laufzeit in 1/16 sec
 uint8_t  s_timerState;
 #define TMR_OFF     0
 #define TMR_RUNNING 1
 #define TMR_BEEPING 2
 #define TMR_STOPPED 3
+int16_t  s_timerVal;
 void timer(uint8_t val)
 {
   static uint16_t s_time;
@@ -1288,22 +1293,30 @@ void timer(uint8_t val)
   s_sum  -= val*s_cnt; //rest
   s_cnt   = 0;
 
+  s_timeCumTot           += 1;
+  s_timeCumAbs           += 1;
+  if(val) s_timeCumThr   += 1;
+  s_timeCum16ThrP        += val/2;
+
+  s_timerVal = g_model.tmrVal;
   switch(g_model.tmrMode)
   {
     case TMRMODE_NONE:
       s_timerState = TMR_OFF;
       return;
     case TMRMODE_THR_REL:
-      s_timeCum16 += val/2;
+      s_timerVal -= s_timeCum16ThrP/16;
+      //s_timeCum16 += val/2;
       break;
     case TMRMODE_THR:     
-      if(val) s_timeCum16 += 16;
+      s_timerVal -= s_timeCumThr;
+      //if(val) s_timeCum16 += 16;
       break;
     case TMRMODE_ABS:
-      s_timeCum16 += 16;
+      s_timerVal -= s_timeCumAbs;
+      //s_timeCum16 += 16;
       break;
   }
-  s_timerVal = g_model.tmrVal - s_timeCum16/16;
   switch(s_timerState)
   {
     case TMR_OFF:
@@ -1320,14 +1333,10 @@ void timer(uint8_t val)
       break;
   }
 
-  //if(s_timerVal<=0 && s_timerVal >= -MAX_ALERT_TIME) {
-  //if(s_timerVal<=0 && s_timerVal >= -MAX_ALERT_TIME) {
-  //  }
-
   if(s_timerState==TMR_BEEPING){
     static int16_t last_tmr;
     if(last_tmr != s_timerVal){
-      last_tmr = s_timerVal;
+      last_tmr   = s_timerVal;
       beepWarn1();
     }
   }
@@ -1406,8 +1415,15 @@ void menuProcStatistic(uint8_t event)
       break;
   }
 
-  lcd_puts_P(  0*FW, FH*2, PSTR("TME"));
-  putsTime(    4*FW, FH*2, s_timeCum16/16, 0, 0);
+  lcd_puts_P(  1*FW, FH*1, PSTR("TME"));
+  putsTime(    4*FW, FH*1, s_timeCumAbs, 0, 0);
+  lcd_puts_P( 17*FW, FH*1, PSTR("TOT"));
+  putsTime(   10*FW, FH*1, s_timeCumTot,      0, 0);
+
+  lcd_puts_P(  1*FW, FH*2, PSTR("THR"));
+  putsTime(    4*FW, FH*2, s_timeCumThr, 0, 0);
+  lcd_puts_P( 17*FW, FH*2, PSTR("THR%"));
+  putsTime(   10*FW, FH*2, s_timeCum16ThrP/16, 0, 0);
 
 
   uint16_t traceRd = s_traceCnt>MAXTRACE ? s_traceWr : 0;
@@ -1499,7 +1515,9 @@ void menuProc0(uint8_t event)
       break;
     case EVT_KEY_LONG(KEY_EXIT):
       s_timerState = TMR_OFF; //is changed to RUNNING dep from mode
-      s_timeCum16=0;
+      s_timeCumAbs=0;
+      s_timeCumThr=0;
+      s_timeCum16ThrP=0;
       beepKey();
       break;
     case EVT_ENTRY:
@@ -1520,9 +1538,10 @@ void menuProc0(uint8_t event)
 
   //if(g_model.tmrMode != TMRMODE_NONE){
   if(s_timerState != TMR_OFF){
-    int16_t tmr = g_model.tmrVal - s_timeCum16/16;
+    //int16_t tmr = g_model.tmrVal - s_timeCum16/16;
     uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? BLINK : 0);
-    putsTime( x+8*FW, FH*2, tmr, att,att);
+    //putsTime( x+8*FW, FH*2, tmr, att,att);
+    putsTime( x+8*FW, FH*2, s_timerVal, att,att);
     lcd_putsnAtt(   x+ 4*FW, FH*2, PSTR(" TME THRTHR%")-4+4*g_model.tmrMode,4,0);
   }
   //trim sliders

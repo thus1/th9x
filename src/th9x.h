@@ -173,18 +173,19 @@ enum EnumKeys {
 #define NUM_KEYS TRM_RH_UP+1
 #define TRM_BASE TRM_LH_DWN
 
+//#define _MSK_KEY_FIRST (_MSK_KEY_REPT|0x20)
+//#define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
 #define _MSK_KEY_REPT    0x40
-#define _MSK_KEY_FIRST (_MSK_KEY_REPT|0x20)
-#define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
-#define IS_KEY_BREAK(key)  (((key)&0xf0)==0x20)
-#define EVT_KEY_BREAK(key) ((key)|0x20)
-#define EVT_KEY_FIRST(key) ((key)|_MSK_KEY_FIRST)
-#define EVT_KEY_REPT(key)  ((key)|_MSK_KEY_REPT)
+#define _MSK_KEY_DBL     0x10
+#define IS_KEY_BREAK(key)  (((key)&0xf0)        ==  0x20)
+#define EVT_KEY_BREAK(key) ((key)|                  0x20)
+#define EVT_KEY_FIRST(key) ((key)|    _MSK_KEY_REPT|0x20)
+#define EVT_KEY_REPT(key)  ((key)|    _MSK_KEY_REPT     )
 #define EVT_KEY_LONG(key)  ((key)|0x80)
-#define EVT_KEY_DBL(key)   ((key)|0x10)
-#define EVT_ENTRY                0xff
-#define EVT_ENTRY_UP             0xfe
-//#define EVT_EXIT                 0xfd
+#define EVT_KEY_DBL(key)   ((key)|_MSK_KEY_DBL)
+//#define EVT_KEY_DBL(key)   ((key)|0x10)
+#define EVT_ENTRY               (0xff - _MSK_KEY_REPT)
+#define EVT_ENTRY_UP            (0xfe - _MSK_KEY_REPT)
 #define EVT_KEY_MASK             0x0f
 
 
@@ -205,8 +206,11 @@ enum EnumKeys {
 
 typedef void (*MenuFuncP)(uint8_t event);
 
+/// stoppt alle events von dieser taste bis eine kurze Zeit abgelaufen ist
 void pauseEvents(uint8_t enuk);
-
+/// liefert die Zahl der schnellen Wiederholungen dieser Taste
+uint8_t getEventDbl(uint8_t event);
+/// stoppt alle events von dieser taste bis diese wieder losgelassen wird
 void    killEvents(uint8_t enuk);
 /// liefert den Wert einer beliebigen Taste KEY_MENU..SW_Trainer
 bool    keyState(EnumKeys enuk);

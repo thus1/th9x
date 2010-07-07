@@ -81,7 +81,7 @@ class Key
 {
 #define FFVAL        0x03
 #define KSTATE_OFF      0
-#define KSTATE_SHORT   96
+  //#define KSTATE_SHORT   96
 #define KSTATE_START   97
 #define KSTATE_PAUSE   98
 #define KSTATE_KILLED  99
@@ -93,7 +93,8 @@ public:
   void input(bool val, EnumKeys enuk);
   bool state()       { return m_vals==FFVAL;                }
   void pauseEvents() { m_state = KSTATE_PAUSE;  m_cnt   = 0;}
-  void killEvents()  { m_state = KSTATE_KILLED;             }
+  void killEvents()  { m_state = KSTATE_KILLED; m_dblcnt=0; }
+  uint8_t getDbl()   { return m_dblcnt;                     }
 };
 
 
@@ -106,19 +107,21 @@ void Key::input(bool val, EnumKeys enuk)
 
   if(m_state && m_vals==0){  //gerade eben sprung auf 0
     if(m_state!=KSTATE_KILLED) {
-      if(m_state == KSTATE_SHORT){
-        m_dblcnt++;
-  #ifdef SIM
-        printf("Key m_dblcnt=%d, m_cnt=%d\n",m_dblcnt,m_cnt);
-  #endif
-        if(m_dblcnt==2){
-          putEvent(EVT_KEY_DBL(enuk));
-          m_dblcnt=0;
-        }
-      }else{
-        putEvent(EVT_KEY_GEN_BREAK(enuk));
+      //      if(m_state == KSTATE_SHORT){
+      //        m_dblcnt++;
+      //  #ifdef SIM
+      //        printf("Key m_dblcnt=%d, m_cnt=%d\n",m_dblcnt,m_cnt);
+      //  #endif
+      //        if(m_dblcnt==2){
+      //          putEvent(EVT_KEY_DBL(enuk));
+      //          m_dblcnt=0;
+      //        }
+      //      }else{
+      putEvent(EVT_KEY_BREAK(enuk));
+      if(!( m_state == 16 && m_cnt<16)){
         m_dblcnt=0;
       }
+        //      }
     }
     m_cnt   = 0;
     m_state = KSTATE_OFF;
@@ -126,17 +129,20 @@ void Key::input(bool val, EnumKeys enuk)
   switch(m_state){
     case KSTATE_OFF: 
       if(m_vals==FFVAL){ //gerade eben sprung auf ff
-        m_state = KSTATE_SHORT;
-        if(m_cnt>20) m_dblcnt=0; //pause zu lang fuer double
+        m_state = KSTATE_START;
+        //m_state = KSTATE_SHORT;
+        //        if(m_cnt>25) m_dblcnt=0; //pause zu lang fuer double
+        if(m_cnt>16) m_dblcnt=0; //pause zu lang fuer double
         m_cnt   = 0;
       }
       break;
-    case KSTATE_SHORT: 
-      if(m_cnt<8)  break;
-      m_state = KSTATE_START;
+      //    case KSTATE_SHORT: 
+      //      if(m_cnt<12)  break;
+      //      m_state = KSTATE_START;
       //fallthrough
     case KSTATE_START: 
       putEvent(EVT_KEY_FIRST(enuk));
+      m_dblcnt++;
       m_state   = 16;
       m_cnt     = 0;
       break;
@@ -200,6 +206,12 @@ void killEvents(uint8_t event)
   if(event < (int)DIM(keys))  keys[event].killEvents();
 }
 
+uint8_t getEventDbl(uint8_t event)
+{
+  event=event & EVT_KEY_MASK;
+  if(event < (int)DIM(keys))  return keys[event].getDbl();
+  return 0;
+}
 
 //uint16_t g_anaIns[8];
 uint8_t  g_vbat100mV;

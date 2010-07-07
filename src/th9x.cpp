@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
-- ad-conversion jitter
++ ad-conversion jitter
 + thr-error overflow
 + cv4 geht nicht
 + bug mixer end
@@ -25,7 +25,6 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- calibration pos + neg
 - column select mit doppelclick?
 - curr event global var
 - trim -> limitoffset (subtrim)
@@ -44,6 +43,7 @@ doku
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 - special curve x<0 and x>0 when FUL doku
 done
++ calibration pos + neg
 + more mixer ->25
 + standard curves after delay
 + negativ student weight
@@ -320,6 +320,12 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
+  if(event & _MSK_KEY_DBL){
+    uint8_t hlp=kpl;
+    kpl=kmi;
+    kmi=hlp;
+    event=EVT_KEY_FIRST(EVT_KEY_MASK & event);
+  }
   if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
     newval++; 
     beepKey();     
@@ -388,7 +394,7 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
   uint8_t subOld=sub;
  
   if(mode==SUB_MODE_H_DBL){
-    if(event==EVT_KEY_DBL(KEY_RIGHT))
+    if(event==EVT_KEY_FIRST(KEY_RIGHT) && getEventDbl(KEY_RIGHT)==2)
     {
       beepKey();
       if(sub < (num-1)) {
@@ -397,7 +403,7 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
         (sub)=0;
       }
     }
-    else if(event==EVT_KEY_DBL(KEY_LEFT))
+    else if(event==EVT_KEY_FIRST(KEY_LEFT) && getEventDbl(KEY_LEFT)==2)
     {
       beepKey();
       if(sub > 0) {
