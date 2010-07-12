@@ -731,13 +731,13 @@ int main(void)
   DDRG = 0x10;  PORTG = 0xff; //pullups + SIM_CTL=1 = phonejack = ppm_in
   lcd_init();
 
-  // TCNT0         10ms = 16MHz/160000
+  // TCNT0         10ms = 16MHz/160000  periodic timer
   //TCCR0  = (1<<WGM01)|(7 << CS00);//  CTC mode, clk/1024
   TCCR0  = (7 << CS00);//  Norm mode, clk/1024
   OCR0   = 156;
   TIMSK |= (1<<OCIE0) |  (1<<TOIE0);
 
-  // TCNT1 2MHz
+  // TCNT1 2MHz Pulse generator
   TCCR1A = (0<<WGM10);
   TCCR1B = (1 << WGM12) | (2<<CS10); // CTC OCR1A, 16MHz / 8
   //TIMSK |= (1<<OCIE1A); enable immediately before mainloop
@@ -751,14 +751,14 @@ int main(void)
 
   eeReadAll();
   checkMem();
+  setupAdc(); //before checkTHR
   checkTHR();
   checkSwitches();
   setupPulses();
-  setupAdc();
   wdt_enable(WDTO_500MS);
 
   lcdSetRefVolt(g_eeGeneral.contrast);
-  TIMSK |= (1<<OCIE1A); //enable immediately before mainloop
+  TIMSK |= (1<<OCIE1A); // Pulse generator enable immediately before mainloop
   while(1){
     uint16_t old10ms=g_tmr10ms;
     uint16_t t0 = getTmr16KHz();
