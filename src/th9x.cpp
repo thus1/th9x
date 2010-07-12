@@ -159,7 +159,7 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
 }
 void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {
-  att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
+  //att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
   lcd_putcAtt(   x+ 4*FW,   y,    'V',att);
   lcd_outdezAtt( x+ 4*FW,   y,    g_vbat100mV,att|PREC1);
 }
@@ -388,6 +388,7 @@ int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
   return i_val;
 }
 
+#if 0
 //uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
 uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
 {
@@ -455,6 +456,8 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
   if(subOld!=sub) BLINK_SYNC;
   return sub;
 }
+#endif
+
 void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){

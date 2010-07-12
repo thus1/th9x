@@ -377,7 +377,7 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2);
 #define SUB_MODE_V     1
 #define SUB_MODE_H     2
 #define SUB_MODE_H_DBL 3
-uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode);
+//uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode);
 
 void menuProcLimits(uint8_t event);
 void menuProcMixOne(uint8_t event);
