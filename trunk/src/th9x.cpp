@@ -258,7 +258,7 @@ MenuFuncP g_menuStack[5]
 ;
 uint8_t  g_menuStackPtr = 0;
 uint8_t  g_beepCnt;
-uint8_t  g_beepVal;
+uint8_t  g_beepVal[4];
 
 void alert(const prog_char * s)
 {
@@ -492,13 +492,13 @@ void pushMenu(MenuFuncP newMenu)
 
 
 
+uint8_t  g_vbat100mV;
 void evalCaptures();
 
 void perMain()
 {
   perOut();
   eeCheck();
-  g_beepVal = BEEP_VAL;
 
   lcd_clear();
   uint8_t evt=getEvent();
@@ -513,6 +513,46 @@ void perMain()
     evalCaptures();
 #endif
   }
+  switch( g_tmr10ms & 0x1f ) { //alle 10ms*32
+    case 1:
+      //check light switch
+      if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
+      else                                  PORTB &= ~(1<<OUT_B_LIGHT);
+      break;
+
+    case 2:
+      {
+        //check v-bat
+        //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
+        //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
+        //0.137176291331963    k=((2.65+5.07)/2.65*5/1024)*10*9.74/10.1
+        // g_vbat100mV=g_anaIns[7]*35/256; //34/239;
+        // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
+        //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
+        uint16_t ab = anaIn(7);
+        g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
+
+        static uint8_t s_batCheck;
+        s_batCheck+=32;
+        if(s_batCheck==0 && g_vbat100mV < g_eeGeneral.vBatWarn){
+          beepWarn1();
+        }
+      }
+      break;
+    case 3:
+      {
+        static prog_uint8_t APM beepTab[]= {
+          0,0, 0,  0, //quiet
+          0,1,30,100, //silent
+          1,1,30,100, //normal
+          4,4,50,150, //for motor
+        };
+        memcpy_P(g_beepVal,beepTab+4*BEEP_VAL,4);
+          //g_beepVal = BEEP_VAL;
+      }
+      break;
+  }
+  
 }
 volatile uint16_t captureRing[16];
 volatile uint8_t  captureWr;

@@ -214,7 +214,6 @@ uint8_t getEventDbl(uint8_t event)
 }
 
 //uint16_t g_anaIns[8];
-uint8_t  g_vbat100mV;
 volatile uint16_t g_tmr10ms;
 volatile uint8_t  g_blinkTmr10ms;
 
@@ -251,20 +250,6 @@ void per10ms()
   //  {
   //    g_anaIns[i] = anaIn(i);
   //  }
-  //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
-  //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
-  //0.137176291331963    k=((2.65+5.07)/2.65*5/1024)*10*9.74/10.1
-  // g_vbat100mV=g_anaIns[7]*35/256; //34/239;
-  // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
-  //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
-  uint16_t ab = anaIn(7);
-  g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
-
-  static uint8_t s_batCheck;
-  s_batCheck++;
-  if(s_batCheck==0 && g_vbat100mV < g_eeGeneral.vBatWarn){
-    beepWarn1();
-  }
 #ifndef SIM
   //  STARTADCONV;            // Analogkanäle lesen
 #endif
