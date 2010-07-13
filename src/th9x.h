@@ -320,7 +320,7 @@ extern uint8_t            g_vbat100mV;
 extern volatile uint16_t  g_tmr10ms;
 extern volatile uint8_t   g_blinkTmr10ms;
 extern uint8_t            g_beepCnt;
-extern uint8_t            g_beepVal;
+extern uint8_t            g_beepVal[4];
 extern const PROGMEM char modi12x3[];
 //extern uint16_t           pulses2MHz[9];
 extern uint16_t           pulses2MHz[60];
@@ -432,12 +432,12 @@ inline void _beep(uint8_t b) {
 }
 
 /// Erzeugt einen kurzen beep
-#define beepWarn1() _beep(1)
-#define beepKey()   _beep(g_beepVal)
+#define beepKey()   _beep(g_beepVal[0])
+#define beepWarn1() _beep(g_beepVal[1])
 /// Erzeugt einen langen beep
-#define beepWarn() _beep(30)
+#define beepWarn() _beep(g_beepVal[2])
 /// Erzeugt einen sehr langen beep
-#define beepErr()  _beep(100)
+#define beepErr()  _beep(g_beepVal[3])
 
 #endif
 

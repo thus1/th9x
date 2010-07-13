@@ -45,10 +45,6 @@ typedef struct t_EEGeneral_lt119 {
   int8_t    lightSw;
   TrainerData trainer;
   uint8_t   view;     //index of subview in main scrren
-#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
-#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
-#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VAL (  g_eeGeneral.warnOpts & 0x08 ? 0 : 1)
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_lt119;
@@ -68,7 +64,7 @@ typedef struct t_EEGeneral {
 #define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
 #define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
 #define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VAL (  g_eeGeneral.warnOpts & 0x08 ? 0 : 1)
+#define BEEP_VAL ( (g_eeGeneral.warnOpts & 0x18) >>3 )
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral;
