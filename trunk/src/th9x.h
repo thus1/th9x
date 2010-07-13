@@ -235,7 +235,7 @@ void    perMain();
 /// wie z.B. einlesen aller Eingaenge, Entprellung, Key-Repeat..
 void    per10ms();
 /// Erzeugt periodisch alle Outputs ausser Bildschirmausgaben.
-void    perOut();
+void perOut(int16_t *chanOut);
 ///   Liefert den Zustand des Switches 'swtch'. Die Numerierung erfolgt ab 1
 ///   (1=SW_ON, 2=SW_ThrCt, 10=SW_Trainer). 0 Bedeutet not conected.
 ///   Negative Werte  erzeugen invertierte Ergebnisse.
@@ -277,6 +277,8 @@ bool checkIncDecModVar(uint8_t event, void*p, uint8_t flags)
 {
   return checkIncDecGen2(event, p, min, max, flags);
 }
+
+
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
@@ -315,17 +317,6 @@ extern bool    checkIncDec_Ret;//global helper vars
 #define STORE_MODELVARS eeDirty(EE_MODEL)
 
 
-//extern uint16_t           g_anaIns[8];
-extern uint8_t            g_vbat100mV;
-extern volatile uint16_t  g_tmr10ms;
-extern volatile uint8_t   g_blinkTmr10ms;
-extern uint8_t            g_beepCnt;
-extern uint8_t            g_beepVal[4];
-extern const PROGMEM char modi12x3[];
-//extern uint16_t           pulses2MHz[9];
-extern uint16_t           pulses2MHz[60];
-extern int16_t            g_ppmIns[8];
-
 
 
 
@@ -338,6 +329,7 @@ template<class t> inline t abs(t a){ return a>0?a:-a; }
 template<class t> inline t min(t a, t b){ return a<b?a:b; }
 /// liefert das Maximum der Argumente
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
+template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? -1 : 0); }
 
 
 #define EE_GENERAL 1
@@ -415,6 +407,17 @@ extern uint16_t anaIn(uint8_t chan);
 
 
 //extern TrainerData g_trainer;
+//extern uint16_t           g_anaIns[8];
+extern uint8_t            g_vbat100mV;
+extern volatile uint16_t  g_tmr10ms;
+extern volatile uint8_t   g_blinkTmr10ms;
+extern uint8_t            g_beepCnt;
+extern uint8_t            g_beepVal[4];
+extern const PROGMEM char modi12x3[];
+//extern uint16_t           pulses2MHz[9];
+extern uint16_t           pulses2MHz[60];
+extern int16_t            g_ppmIns[8];
+extern int16_t            g_chans512[NUM_CHNOUT];
 
 #include "lcd.h"
 extern const char stamp1[];
@@ -438,6 +441,10 @@ inline void _beep(uint8_t b) {
 #define beepWarn() _beep(g_beepVal[2])
 /// Erzeugt einen sehr langen beep
 #define beepErr()  _beep(g_beepVal[3])
+
+
+
+
 
 #endif
 

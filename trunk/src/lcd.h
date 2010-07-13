@@ -29,6 +29,7 @@
 #define INVERS        0x01
 #define BLINK         0x02
 #define LEADING0      0x04
+#define SIGN          0x08
 
 #define BSS_NO_INV    0x10
 #define BSS_INVERS    0x11

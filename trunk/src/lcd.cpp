@@ -173,6 +173,7 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
     x-=fw;
   }
   if(neg) lcd_putcAtt(x-fw,y,'-',mode);
+  else  if((mode & SIGN)) lcd_putcAtt(x-fw,y,'+',mode);
 }
 
 void lcd_plot(uint8_t x,uint8_t y)
