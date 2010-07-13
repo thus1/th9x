@@ -497,7 +497,7 @@ void evalCaptures();
 
 void perMain()
 {
-  perOut();
+  perOut(g_chans512);
   eeCheck();
 
   lcd_clear();
