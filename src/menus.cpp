@@ -95,14 +95,15 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
     lcd_putcAtt(128-FW*3,0,curr+'1',attr);
   }
 
-#define MAXCOL(row) (horTab ? horTab[min( row, horTabMax )]-1 : 0)
+#define MAXCOL(row) (horTab ? pgm_read_byte(horTab+min( row, horTabMax ))-1 : 0)
 #define INC(val,max) if(val<max) {val++;} else {val=0;}
 #define DEC(val,max) if(val>0  ) {val--;} else {val=max;}
   uint8_t maxcol = MAXCOL(m_posVert);
   switch(event)
   {
     case EVT_ENTRY:
-      if(m_posVert>maxrow) m_posVert=0;
+      //if(m_posVert>maxrow) 
+        m_posVert=0;
       //init();BLINK_SYNC;
       break;
     case EVT_KEY_LONG(KEY_EXIT):

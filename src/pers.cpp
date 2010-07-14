@@ -116,13 +116,31 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
     }
   }
 }
+int8_t trimRevert(int16_t val)
+{
+  uint8_t idx = 0;
+  bool    neg = val<0; val=abs(val);
+  while(val>0){
+    idx++;
+    val-=idx;
+  }
+  return neg ? -idx : idx;
+}
+int16_t trimVal(uint8_t idx);
 void eeLoadModel(uint8_t id)
 {
   if(id<MAX_MODELS)
   {
     theFile.openRd(FILE_MODEL(id));
     uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
-    if( sz == sizeof(g_model) && g_model.mdVers == MDVERS) return;
+    if( sz == sizeof(g_model) && g_model.mdVers == MDVERS) {
+      for(uint8_t i=0; i<4; i++){
+        int16_t val = trimVal(i) + g_model.trimData[i].trimDef;
+        g_model.trimData[i].trim = trimRevert(val);
+        g_model.trimData[i].trimDef=0;
+      }
+      return;
+    }
 
     if( sz == sizeof(ModelData_lt84) ){
 #ifdef SIM
