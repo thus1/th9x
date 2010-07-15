@@ -133,14 +133,6 @@ void eeLoadModel(uint8_t id)
   {
     theFile.openRd(FILE_MODEL(id));
     uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
-    if( sz == sizeof(g_model) && g_model.mdVers == MDVERS) {
-      for(uint8_t i=0; i<4; i++){
-        int16_t val = trimVal(i) + g_model.trimData[i].trimDef;
-        g_model.trimData[i].trim = trimRevert(val);
-        g_model.trimData[i].trimDef=0;
-      }
-      return;
-    }
 
     if( sz == sizeof(ModelData_lt84) ){
 #ifdef SIM
@@ -148,7 +140,7 @@ void eeLoadModel(uint8_t id)
 #endif
       char* pSrc = ((char*)&g_model) + sizeof(ModelData_lt84); //Pointers behind the end
       char* pDst = ((char*)&g_model) + sizeof(ModelData);
-
+      sz = sizeof(ModelData);
 
       fullCopy(sizeof(g_model.trimData)+sizeof(g_model.curves9)+sizeof(g_model.curves5));
 
@@ -157,10 +149,16 @@ void eeLoadModel(uint8_t id)
       for(uint8_t i=0; i<DIM(g_model.expoData); i++){
         partCopy(sizeof(ExpoData), sizeof(ExpoData_lt84));
       }
-      //for(uint8_t i=0; i<DIM(g_model.limitData); i++){
-      //        partCopy(sizeof(LimitData), sizeof(LimitData_lt84));
-      //      }
       g_model.mdVers = MDVERS;
+      return;
+    }
+
+    if( sz == sizeof(ModelData) && g_model.mdVers == MDVERS) {
+      for(uint8_t i=0; i<4; i++){
+        int16_t val = trimVal(i) + g_model.trimData[i].trimDef;
+        g_model.trimData[i].trim = trimRevert(val);
+        g_model.trimData[i].trimDef=0;
+      }
       return;
     }
 
