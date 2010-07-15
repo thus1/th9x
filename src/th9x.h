@@ -223,6 +223,8 @@ uint8_t getEvent();
 void    chainMenu(MenuFuncP newMenu);
 /// goto given Menu, store current menu in menuStack
 void    pushMenu(MenuFuncP newMenu);
+///deliver address of last menu which was popped from
+MenuFuncP lastPopMenu();
 /// return to last menu in menustack
 /// if uppermost is set true, thenmenu return to uppermost menu in menustack
 void    popMenu(bool uppermost=false);

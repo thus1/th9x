@@ -1544,9 +1544,9 @@ void menuProc0(uint8_t event)
 #ifdef SIM
   sprintf(g_title,"M0");  
 #endif
-  static uint8_t sub;
-  //static uint8_t view;
-  //sub = checkSubGen(event, 2, sub, false);
+  static uint8_t   sub;
+  static MenuFuncP s_lastPopMenu[2];
+
   switch(event)
   {
     case  EVT_KEY_LONG(KEY_MENU):
@@ -1561,6 +1561,10 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_RIGHT):
+      if(getEventDbl(event)==2 && s_lastPopMenu[1]){
+        pushMenu(s_lastPopMenu[1]);
+        break;
+      }
       if(sub<1) {
         sub=sub+1;
         beepKey();
@@ -1571,6 +1575,10 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_LEFT):
+      if(getEventDbl(event)==2 && s_lastPopMenu[0]){
+        pushMenu(s_lastPopMenu[0]);
+        break;
+      }
       if(sub>0) {
         sub=sub-1;
         beepKey();
@@ -1610,8 +1618,9 @@ void menuProc0(uint8_t event)
       s_timeCum16ThrP=0;
       beepKey();
       break;
-    case EVT_ENTRY:
     case EVT_ENTRY_UP:
+      s_lastPopMenu[sub] = lastPopMenu();
+    case EVT_ENTRY:
       killEvents(KEY_EXIT);
       killEvents(KEY_UP);
       killEvents(KEY_DOWN);

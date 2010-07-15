@@ -458,6 +458,10 @@ uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
 }
 #endif
 
+MenuFuncP lastPopMenu()
+{
+  return  g_menuStack[g_menuStackPtr+1];
+}
 void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){
@@ -618,7 +622,8 @@ public:
     cli();
   };
   ~AutoLock(){
-    SREG = m_saveFlags;// & (1<<SREG_I)) sei();
+    if(m_saveFlags & (1<<SREG_I)) sei();
+    //SREG = m_saveFlags;// & (1<<SREG_I)) sei();
   };
 };
 
