@@ -1,4 +1,4 @@
-#summary Instructions on modifying the Turnigy/Eurgle/Imax/FlySky 9ch Tx to flash new Software
+#summary Instructions on modifying the Turnigy 9X/Eurgle 9X/iMAX 9X/FlySky FS-TH9X 9ch Tx to flash new Software
 
 = Contents =
 
@@ -6,15 +6,16 @@
 
 = You need =
 
- * Transmitter (Turnigy/Eurgle/Imax/FlySky)
+ * Transmitter (Turnigy 9X/Eurgle 9X/iMAX 9X/FlySky FS-TH9X)
  * Soldering iron
  * AVR Programmer
  * Computer with Linux/Mac OS/Windows
+ * Multimeter
 
 
 = Which programmer? =
 
-Basically every AVR compatible ISP (AVR ISP, In-System Programmer) is suitable. Personally I only can recommend ones that are compatible with AVRdude! Why?
+Basically any AVR compatible ISP (AVR ISP, In-System Programmer) is suitable. Personally I only can recommend ones that are compatible with AVRdude! Why?
 
 AVRdude is Open Source, available for Windows, Linux&Mac, supports COM/LPT&USB, is widely supported and being actively developed.
 
@@ -27,7 +28,7 @@ A list of programmers supported by AVRdude can be found [http://www.nongnu.org/a
 Members of [http://www.rclineforum.de/forum/index.php rclineforum] have tested a couple of ISP’s:
 
 || || USB || LPT ||
-|| successfully || [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer], AVR ISP MKII, [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer], [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer] ||
+|| successfully || [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer], AVR ISP MKII, USB-ASP [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer], [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer], AVR-Dragon ||
 || problematic || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer] ||
 
 You probably prefer a USB programmer over its LPT pendant. However, apart from the power supply of the Tx and the interface selection in AVRdude everything else is identical.
@@ -38,18 +39,18 @@ The pins of the programmer have to be connected to the microcontroller in the Tx
 
 <img src="http://th9x.googlecode.com/svn/wiki/atmel_6-10pin.png" width=600>
 
-these have to be connected to the Tx as in the following picture. The Turnigy 9ch Tx is available in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for easier soldering (red circle).
+these have to be connected to the Tx as shown in the following picture. The Turnigy 9ch Tx is available in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for easier soldering (red circle).
 
 <img src="http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png" width=600>
 
-It is recommended to use a thin, flexible cable (e.g. braid from a Cat5 cable). Otherwise the leads could come of the PCB. It is further recommended to use a hot glue gun to secure the soldered spots. Hot glue can easily be applied and also removed!
+It is recommended to use a thin, flexible cable (e.g. braid from a Cat5 cable). Otherwise the leads could come off the PCB. It is further recommended to use a hot glue gun to secure the soldered spots. Hot glue can easily be applied and also removed!
 
 
-Usually most programmers already come with a 6pin connector and plug. After soldering, check if there is a connection from the plug of the programmer up to the pins of the micro processor (see arrows pin assignment processor). If not, see troubleshooting.
+Usually most programmers already come with a 6pin connector and plug. After soldering, check with a multimeter if there is a connection from the plug of the programmer up to the pins of the micro processor (see arrows pin assignment processor). If not, see troubleshooting.
 
-With removed back of the Tx and disconnected 12pin connector you can now check the connection from programmer to the Tx. If Vcc is connected and target power supply jumper is closed (on), the Tx should now turn itself on and return a SwitchError. This is normal since most switches are disconnected by the 12 pin connector.
+With removed back of the Tx and disconnected 12pin connector you can now check the connection from programmer to the Tx. If Vcc is connected and target power supply jumper is closed (on), the Tx should now turn itself on and return a SwitchError. This is expected since most switches are disconnected by the 12 pin connector.
 
-Note that most parallel port programmer require the Vcc pin to be connected to power the programmer itself, hence the batterie must be connected. USB programmer on the other hand are fed by the USB port and can power the Tx with the Vcc pin such that no battery is required for flashing the firmware.
+Note that most parallel port programmer require the Vcc pin to be connected to power the programmer itself, hence the battery must be connected. USB programmer on the other hand are fed by the USB port and can power the Tx with the Vcc pin such that no battery is required for flashing the firmware.
 
 
 = Setting up the Software =
@@ -93,7 +94,7 @@ parameter values:
  * operation = r/w (read/write),
  * format = r (raw binary, a=autodetect does not work with read operation)
 
-Well, thats it! The eeprom contents doesn't need to be overwritten. The transmitter initializes the eeprom itself on first startup. Optionally you could  use a GUI, however the only thing these do is just starting AVRdude with your selected parameters. Mostly, GUI’s are only more convenient in selecting files and folders.
+Well, thats it! The eeprom contents doesn't need to be overwritten. The transmitter initializes the eeprom itself on first startup. Optionally you could  use a GUI, however the only thing a GUI does is starting AVRdude with your selected parameters. Mostly, GUI’s are only more convenient in selecting files and folders.
 After your first start with the new firmware, remember to calibrate your sticks.
 
 *ATTENTION: If a GUI is used, DO NOT touch fuses settings!*
@@ -113,11 +114,11 @@ Have fun!
 
 = Links =
 
- * Review Turnigy 9ch v2 by [http://rcmodelreviews.com/turnigy9xv2review.shtml RCModelReviews]    
+ * Review Turnigy 9X v2 by [http://rcmodelreviews.com/turnigy9xv2review.shtml RCModelReviews]    
  * Infos on AVRdude: http://www.nongnu.org/avrdude/user-manual/    
  * Tutorial on AVR Programmer http://www.mikrocontroller.net/articles/AVR_In_System_Programmer#Einf.C3.BChrung
  * Tutorial on AVR in general: http://www.mikrocontroller.net/articles/AVR-Tutorial    
  * Electronics intro (e.g. SMD soldering): http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
  * Thread on [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
- * Thread on [http://www.rcgroups.com/forums/showthread.php?t=1266162 rcgroups.com], [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
+ * Threads on [http://www.rcgroups.com/forums/showthread.php?t=1266162 rcgroups.com]; [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
  * Alternative firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/

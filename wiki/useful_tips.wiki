@@ -11,3 +11,8 @@ Obwohl die Ladebuchse des Senders mechanisch mit der von Graupner kompatibel ist
 = Einbau 35Mhz FM Modul =
 
 Beschreibung mit Bildern im [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=43 Thread]
+
+
+= Einbau LCD Hintergrundbeleuchtung =
+
+Einbauanleitung mit Bildern im [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=22 Thread]. Die neue Firmware erlaubt das zuweisen eines Schalters für die Beleuchtung, Beschreibung siehe [http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf Dokumentation] Kapitel 4.5.
