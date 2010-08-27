@@ -58,10 +58,10 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len);
 extern void lcd_outdez(unsigned char x,unsigned char y,int16_t val);
 
 extern void lcd_plot(unsigned char x,unsigned char y);
-extern void lcd_hline(unsigned char x,unsigned char y, signed char w);
-extern void lcd_hlineStip(unsigned char x,unsigned char y, signed char w,uint8_t pat);
-extern void lcd_vline(unsigned char x,unsigned char y, signed char h);
-
+extern void lcd_hline(int8_t x,int8_t y, signed char w);
+extern void lcd_hlineStip(int8_t x,int8_t y, signed char w,uint8_t pat);
+extern void lcd_vline(int8_t x,int8_t y, signed char h);
+extern void lcd_vlineStip(int8_t x,int8_t y, int8_t h, uint8_t pat);
 extern void lcd_img_f(unsigned char x,unsigned char y);
 extern void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8_t mode);
 
