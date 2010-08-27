@@ -155,9 +155,9 @@ void eeLoadModel(uint8_t id)
 
     if( sz == sizeof(ModelData) && g_model.mdVers == MDVERS) {
       for(uint8_t i=0; i<4; i++){
-        int16_t val = trimVal(i) + g_model.trimData[i].trimDef;
+        int16_t val = trimVal(i) + g_model.trimData[i].trimDef_lt133;
         g_model.trimData[i].trim = trimRevert(val);
-        g_model.trimData[i].trimDef=0;
+        g_model.trimData[i].trimDef_lt133=0;
       }
       return;
     }
