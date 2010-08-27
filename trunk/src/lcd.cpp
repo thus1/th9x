@@ -184,9 +184,14 @@ void lcd_plot(uint8_t x,uint8_t y)
   uint8_t *p   = &displayBuf[ y / 8 * DISPLAY_W + x ];
   if(p<DISPLAY_END) *p ^= BITMASK(y%8);
 }
-void lcd_hlineStip(unsigned char x,unsigned char y, signed char w,uint8_t pat)
+void lcd_hlineStip(int8_t x,int8_t y, int8_t w,uint8_t pat)
 {
   if(w<0) {x+=w; w=-w;}
+  if(x<0) {w+=x; x=0;}
+  if(x+w>DISPLAY_W) {w=DISPLAY_W-x;}
+  if(w<=0) return;
+  if(y<0) return;
+  if(y>=DISPLAY_H) return;
   uint8_t *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
   uint8_t msk = BITMASK(y%8);
   while(w){
@@ -202,24 +207,30 @@ void lcd_hlineStip(unsigned char x,unsigned char y, signed char w,uint8_t pat)
   }
 }
 
-void lcd_hline(uint8_t x,uint8_t y, int8_t w)
+void lcd_hline(int8_t x,int8_t y, int8_t w)
 {
   lcd_hlineStip(x,y,w,0xff);
 }
-void lcd_vline(uint8_t x,uint8_t y, int8_t h)
+void lcd_vline(int8_t x,int8_t y, int8_t h)
 {
-  //while(h){
-  //    lcd_plot(x,y++);
-  //    h--;
-  //  }
+  lcd_vlineStip(x, y, h, 0xff);
+}
+void lcd_vlineStip(int8_t x,int8_t y, int8_t h, uint8_t pat)
+{
+  if(h<0) {y+=h; h=-h;}
+  if(y<0) {h+=y; y=0;}
+  if(y+h>DISPLAY_H) {h=DISPLAY_H-y;}
+  if(h<=0) return;
+  if(x<0) return;
+  if(x>=DISPLAY_W) return;
   uint8_t *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
   uint8_t *q  = &displayBuf[ (y+h) / 8 * DISPLAY_W + x ];
-  *p ^= ~(BITMASK(y%8)-1);
+  *p ^= ~(BITMASK(y%8)-1)&pat;
   while(p<q){
     p  += DISPLAY_W;
-    *p ^= 0xff;
+    *p ^= pat;
   }
-  *p ^= ~(BITMASK((y+h)%8)-1);
+  *p ^= ~(BITMASK((y+h)%8)-1)&pat;
 }
 
 void lcdSendCtl(uint8_t val)
