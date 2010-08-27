@@ -51,8 +51,8 @@ typedef struct t_EEGeneral_lt119 {
 typedef struct t_EEGeneral {
   uint8_t   myVers;
   int16_t   calibMid[4];
-  int16_t   calibSpanNeg[4];
-  int16_t   calibSpanPos[4];
+  int16_t   calibSpanNeg[4]; //ge119
+  int16_t   calibSpanPos[4]; //ge119
   uint16_t  chkSum;
   uint8_t   currModel; //0..15
   uint8_t   contrast;
@@ -92,9 +92,8 @@ typedef struct t_ExpoData {
 
 typedef struct t_TrimData {
   int8_t  trim;    //quadratisch
-  int16_t trimDef;
+  int16_t trimDef_lt133;
 } __attribute__((packed)) TrimData;
-
 
 typedef struct t_LimitData_lt84 {
   int8_t  min;
@@ -104,7 +103,7 @@ typedef struct t_LimitData_lt84 {
 
 typedef struct t_LimitData {
   int8_t  min;
-  int8_t  max;
+  int8_t  max; 
   bool    revert:1;
   int8_t  offset:7;
 } __attribute__((packed)) LimitData;
