@@ -176,16 +176,20 @@ enum EnumKeys {
 //#define _MSK_KEY_FIRST (_MSK_KEY_REPT|0x20)
 //#define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
 #define _MSK_KEY_REPT    0x40
+#define _MSK_KEY_FIRST   0x20
 #define _MSK_KEY_DBL     0x10
-#define IS_KEY_BREAK(key)  (((key)&0xf0)        ==  0x20)
-#define EVT_KEY_BREAK(key) ((key)|                  0x20)
-#define EVT_KEY_FIRST(key) ((key)|    _MSK_KEY_REPT|0x20)
-#define EVT_KEY_REPT(key)  ((key)|    _MSK_KEY_REPT     )
+#define IS_KEY_BREAK(evt)  (((evt)&0xf0)        ==                 _MSK_KEY_FIRST)
+#define IS_KEY_FIRST(evt)  (((evt)&0xf0)        ==  (_MSK_KEY_REPT|_MSK_KEY_FIRST))
+#define IS_KEY_REPT(evt)   ( (evt)&                  _MSK_KEY_REPT)
+#define EVT_KEY_BREAK(key) ((key)|                                 _MSK_KEY_FIRST)
+#define EVT_KEY_FIRST(key) ((key)|                   _MSK_KEY_REPT|_MSK_KEY_FIRST)
+#define EVT_KEY_REPT(key)  ((key)|                   _MSK_KEY_REPT     )
 #define EVT_KEY_LONG(key)  ((key)|0x80)
 #define EVT_KEY_DBL(key)   ((key)|_MSK_KEY_DBL)
 //#define EVT_KEY_DBL(key)   ((key)|0x10)
 #define EVT_ENTRY               (0xff - _MSK_KEY_REPT)
 #define EVT_ENTRY_UP            (0xfe - _MSK_KEY_REPT)
+#define EVT_TYPE_MASK            0xf0
 #define EVT_KEY_MASK             0x0f
 
 
@@ -261,6 +265,8 @@ void checkMem();
 void checkTHR();
 ///   Pr�ft beim Einschalten ob alle Switches 'off' sind.
 void    checkSwitches();
+uint8_t checkLastSwitch(uint8_t sw,uint8_t flg);
+
 
 /// Bearbeite alle events die zum gewaehlten mode passen.
 /// KEY_LEFT u. KEY_RIGHT
@@ -294,6 +300,7 @@ extern bool    checkIncDec_Ret;//global helper vars
 
 #define _FL_SIZE2     4
 #define _FL_VERT      8
+#define _FL_POSNEG 0X10
 
 #define CHECK_INCDEC_H_GENVAR( event, var, min, max)     \
   checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_GENERAL) \
@@ -314,6 +321,9 @@ extern bool    checkIncDec_Ret;//global helper vars
     checkIncDec_Ret                                                     \
   )
 
+#define CHECK_LAST_SWITCH( var, flg)                                    \
+   var=checkLastSwitch(var,flg)
+  
 
 
 #define STORE_MODELVARS eeDirty(EE_MODEL)
@@ -368,9 +378,9 @@ void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
 void putsVBat(uint8_t x,uint8_t y,uint8_t att);
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2);
 
-#define SUB_MODE_V     1
-#define SUB_MODE_H     2
-#define SUB_MODE_H_DBL 3
+//#define SUB_MODE_V     1
+//#define SUB_MODE_H     2
+//#define SUB_MODE_H_DBL 3
 //uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode);
 
 void menuProcLimits(uint8_t event);

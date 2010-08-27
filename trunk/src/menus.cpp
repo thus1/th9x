@@ -103,7 +103,8 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
   {
     case EVT_ENTRY:
       //if(m_posVert>maxrow) 
-        m_posVert=0;
+      checkLastSwitch(0,0);
+      m_posVert=0;
       //init();BLINK_SYNC;
       break;
     case EVT_KEY_LONG(KEY_EXIT):
@@ -372,7 +373,10 @@ void menuProcMixOne(uint8_t event)
         }
         break;
       case 3:   putsDrSwitches(3*FW,  y,md2->swtch,attr);
-        if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+        if(attr) {
+	  CHECK_INCDEC_H_MODELVAR_BF( event, md2->swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+	  CHECK_LAST_SWITCH(md2->swtch,EE_MODEL|_FL_POSNEG);
+	}
         break;
       case 4:   lcd_putcAtt(0*FW+1, y, '<',0);
         lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
@@ -746,7 +750,10 @@ void editExpoVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, ui
       break; 
     case 2:
       putsDrSwitches(x,y,g_model.expoData[chn].drSw,invBlk);
-      if(edit) CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[chn].drSw,0,MAX_DRSWITCH); 
+      if(edit) {
+	CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[chn].drSw,0,MAX_DRSWITCH); 
+        CHECK_LAST_SWITCH(g_model.expoData[chn].drSw,EE_MODEL);
+      }
       break; 
     case 3:
       lcd_outdezAtt(x, y, g_model.expoData[chn].expDr, invBlk);
@@ -764,7 +771,8 @@ void menuProcExpoOne(uint8_t event)
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
   putsChnRaw(x,0,s_expoChan+1,0);
-  MSTATE_CHECK0_V(5);
+  bool withDr=g_model.expoData[s_expoChan].drSw!=0;
+  MSTATE_CHECK0_V(withDr ? 5 : 3);
   int8_t  sub    = mstate2.m_posVert;
 
   //uint8_t  invBlk = 0;
@@ -783,15 +791,16 @@ void menuProcExpoOne(uint8_t event)
   lcd_puts_P(0,y,PSTR("DrSw"));  
   editExpoVals(event,2,sub==2,5*FW, y,s_expoChan);
   y+=FH;
+  
+  if(withDr){
+    lcd_puts_P(0,y,PSTR("DrExp"));  
+    editExpoVals(event,3,sub==3,9*FW, y,s_expoChan);
+    y+=FH;
 
-  lcd_puts_P(0,y,PSTR("DrExp"));  
-  editExpoVals(event,3,sub==3,9*FW, y,s_expoChan);
-  y+=FH;
-
-  lcd_puts_P(0,y,PSTR("Weight"));
-  editExpoVals(event,4,sub==4,9*FW, y,s_expoChan);
-  y+=FH;
-
+    lcd_puts_P(0,y,PSTR("Weight"));
+    editExpoVals(event,4,sub==4,9*FW, y,s_expoChan);
+    y+=FH;
+  }
 
   int8_t   kView  = 0;
   int8_t   wView  = 0;
@@ -801,10 +810,12 @@ void menuProcExpoOne(uint8_t event)
     kView  = g_model.expoData[s_expoChan].expNorm;
     wView  = g_model.expoData[s_expoChan].expNormWeight+100;
   }else{
-    if(sub<=3){
+    if(sub<=4 && withDr){
       kView =g_model.expoData[s_expoChan].expDr;
       wView =g_model.expoData[s_expoChan].expSwWeight+100;
-    }     
+    }else{
+      return;
+    }
   }
  
 #define WCHART 32
@@ -816,21 +827,26 @@ void menuProcExpoOne(uint8_t event)
     yv = (yv * wView)/100;
     lcd_plot(X0+xv, Y0-yv);
     lcd_plot(X0-xv, Y0+yv);
-    if((xv&3) == 0){
-      lcd_plot(X0+xv, Y0+0);
-      lcd_plot(X0-xv, Y0+0);
-      lcd_plot(X0  , Y0+xv);
-      lcd_plot(X0  , Y0-xv);
-    }
+    //if((xv&3) == 0){
+//       lcd_plot(X0+xv, Y0+0);//x achse
+//       lcd_plot(X0-xv, Y0+0);
+//       lcd_plot(X0  , Y0+xv);//y achse
+//       lcd_plot(X0  , Y0-xv);
+//     }
   }
+  lcd_vline(X0,Y0-WCHART,WCHART*2);
+  lcd_hline(X0-WCHART,Y0,WCHART*2);
+
   int16_t x512  = anaCalib[s_expoChan];
   int16_t y512  = expo(x512,kView);
   y512 = y512 * (wView / 4)/(100 / 4);
 
-  lcd_vline(X0+x512/(RESXu/WCHART), Y0-WCHART,WCHART*2);
-  lcd_hline(X0-WCHART,             Y0-y512/(RESXu/WCHART),WCHART*2);
   lcd_outdezAtt( 19*FW, 6*FH,x512*25/((signed) RESXu/4), 0 );
   lcd_outdezAtt( 14*FW, 1*FH,y512*25/((signed) RESXu/4), 0 );
+  x512 = X0+x512/(RESXu/WCHART);
+  y512 = Y0-y512/(RESXu/WCHART);
+  lcd_vline(x512, y512-3,3*2+1);
+  lcd_hline(x512-3, y512,3*2+1);
   //dy/dx
   
   int16_t dy  = x512>0 ? y512-expo(x512-20,kView) : expo(x512+20,kView)-y512;
@@ -869,29 +885,6 @@ void menuProcExpoAll(uint8_t event)
     }else{
       if(sub==i && subHor>=3) mstate2.m_posHorz=2;
     }
-    //     uint8_t invNorm = 0;
-    //     uint8_t invDr   = 0;
-    //     if(sub==i){
-    //       //if(g_model.expoData[i].drSw && keyState((EnumKeys)(SW_BASE+g_model.expoData[i].drSw))){
-    //       if( getSwitch(g_model.expoData[i].drSw,0)){
-    //         CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expSwWeight, -100, 0);
-    //         invDr = BLINK;
-    //       }else{
-    //         CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[i].expNormWeight,-100, 0);
-    //         invNorm = BLINK;
-    //       }
-    //     }
-    // 
-    //     lcd_outdezAtt(  6*FW, y, g_model.expoData[i].expNorm,0);
-    //     lcd_outdezAtt( 10*FW, y, g_model.expoData[i].expNormWeight+100,invNorm);
-    //     if(g_model.expoData[i].drSw){
-    //       putsDrSwitches( 10*FW, y, g_model.expoData[i].drSw,0);
-    //       lcd_outdezAtt( 17*FW, y, g_model.expoData[i].expDr,0);
-    //       lcd_outdezAtt( 21*FW, y, g_model.expoData[i].expSwWeight+100,invDr);
-    //     }
-    //else{
-    //  lcd_putc( 13*FW, y,'-');
-    //}
   }
 }
 const prog_char APM s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
@@ -1259,7 +1252,10 @@ void menuProcTrainer(uint8_t event)
 
     edit = (sub==i && subSub==4);
     putsDrSwitches(15*FW, y, td->swtch, edit ? BLINK : 0);
-    if(edit) td->swtch = checkIncDec_hg( event, td->swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+    if(edit) {
+      td->swtch = checkIncDec_hg( event, td->swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
+      CHECK_LAST_SWITCH(td->swtch,EE_GENERAL|_FL_POSNEG);
+    }
 
 
   }
@@ -1342,6 +1338,7 @@ void menuProcSetup0(uint8_t event)
   putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
   if(sub==2){
     CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH); //5-10V
+    CHECK_LAST_SWITCH(g_eeGeneral.lightSw,EE_GENERAL|_FL_POSNEG);
   }
   lcd_puts_P( 6*FW, y,PSTR("LIGHT"));
 
@@ -1947,9 +1944,9 @@ void perOut(int16_t *chanOut)
     v = max(s_cacheLimitsMin[i],v);
     v = min(s_cacheLimitsMax[i],v);
 
-    //offset after limit -> 
-    v+=g_model.limitData[i].offset*5; // 512/100
     if(g_model.limitData[i].revert) v=-v;
+    //offset after limit -> 
+    v+=g_model.limitData[i].offset*5; // 512/100  //issue 40
 
     cli();
     chanOut[i] = v; //copy consistent word to int-level
@@ -2003,7 +2000,7 @@ void setupPulsesPPM()
   //http://www.aerodesign.de/peter/2000/PCM/frame_ppm.gif
   //22.5 ges   0.3low 8* (0.7-1.7 high 0.3low) high
   //uint16_t rest=22500u*2;
-  uint16_t rest=22500u*2;
+  uint16_t rest=(22500u-300u*9)*2; //issue 4, 41
   uint8_t j=0;
   for(uint8_t i=0;i<8;i++){ //NUM_CHNOUT
     int16_t v = g_chans512[i];

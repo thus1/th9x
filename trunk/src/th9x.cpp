@@ -11,6 +11,10 @@
  * GNU General Public License for more details.
 
 bugs:
+- thr error wenn invert
++ trim entschaerfen i35,39
++ frame length 22.5 statt 25,2 i4,41
++ subtrim wenn invert i40
 + ad-conversion jitter
 + thr-error overflow
 + cv4 geht nicht
@@ -25,24 +29,39 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- column select mit doppelclick?
+- Pi mit switch full
+- autom switch erkennung bei betaetigung
+- thr curve statt expo
+- thr trim nur am neg ende
+- sonderfunc als 3pkt userfunc
+- input invert für querruderdiff mit einer kurve
+- prc-werte dynamisch 64 werte 1-150
+ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
+0 1 2 3 4 5 6 7 8 10 12 14 16 18 20 22 24 27 30 33 36 39 42 45 
+48 52 56 60 64 68 72 76 80 85 90 95 100 105 110 115 120 126 132 138 144 150 156 162 
+ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
+0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 33 36 39 42 45 48 51 54 57 60
+64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
+
 - curr event global var
-- trim -> limitoffset (subtrim)
 - default acro/heli120
-- select zero beep/store beep
-- select zero stop/ 2-stage mixer?
 - pruefung des Schuelersignals
 - format eeprom
 - pcm 
 - light auto off
 - timer mit thr-switch
-- stat mit times
 - fast multiply 8*16 > 32
 doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 - special curve x<0 and x>0 when FUL doku
 done
++ trim ohne repeat (nur richtung null) i35,39
++ column select mit long click? 
++ trim -> limitoffset (subtrim)
++ select zero beep/store beep
++ no! select zero stop/ 2-stage mixer?
++ stat mit times
 + calibration pos + neg
 + more mixer ->25
 + standard curves after delay
@@ -202,6 +221,27 @@ bool getSwitch(int8_t swtch, bool nc)
   if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch-1));
   return               keyState((EnumKeys)(SW_BASE+swtch-1));
 }
+uint8_t checkLastSwitch(uint8_t sw,uint8_t flg)
+{
+  static bool lastState[SW_Trainer-SW_BASE+1];
+  uint8_t newSw = sw;
+  for( uint8_t i=0; i< (SW_Trainer-SW_BASE+1); i++)
+  {
+    bool st= keyState((EnumKeys)(i+SW_BASE));
+    if(st != lastState[i]) {
+      lastState[i] = st;
+      newSw = i+1;
+#ifdef SIMU
+      printf("NEWSW=%d",newSw);
+#endif
+      if((flg&_FL_POSNEG) && !st) newSw=-newSw;
+    }
+  }
+
+  if(sw==newSw) return sw;
+  if(flg&(EE_MODEL|EE_GENERAL)) eeDirty(flg&(EE_MODEL|EE_GENERAL));
+  return newSw;
+}
 
 void checkMem()
 {
@@ -280,21 +320,25 @@ void doFxEvents();
 uint8_t checkTrim(uint8_t event)
 {
   int8_t k = (event & EVT_KEY_MASK) - TRM_BASE;
-  if((k>=0) && (k<8) && (event & _MSK_KEY_REPT))
+  if((k>=0) && (k<8) && IS_KEY_REPT(event))
   {
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
     bool    up  = k&1;
     //if(idx==3) dwn=!dwn;
-    if(!up){
-      if(g_model.trimData[idx].trim > -31){
-        g_model.trimData[idx].trim--;
+    if(up){
+      if( (g_model.trimData[idx].trim < 0) ||
+          ((g_model.trimData[idx].trim < 31) &&  IS_KEY_FIRST(event)) //issue 35, 39
+      ){
+        g_model.trimData[idx].trim++;
         STORE_MODELVARS;
         beepKey();
       }
     }else{
-      if(g_model.trimData[idx].trim < 31){
-        g_model.trimData[idx].trim++;
+      if( (g_model.trimData[idx].trim > 0) ||
+          ((g_model.trimData[idx].trim > -31) &&  IS_KEY_FIRST(event))
+      ){
+        g_model.trimData[idx].trim--;
         STORE_MODELVARS;
         beepKey();
       }
@@ -388,75 +432,6 @@ int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
   return i_val;
 }
 
-#if 0
-//uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, bool vert)
-uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode)
-{
-  uint8_t subOld=sub;
- 
-  if(mode==SUB_MODE_H_DBL){
-    if(event==EVT_KEY_FIRST(KEY_RIGHT) && getEventDbl(KEY_RIGHT)==2)
-    {
-      beepKey();
-      if(sub < (num-1)) {
-        (sub)++;
-      }else{
-        (sub)=0;
-      }
-    }
-    else if(event==EVT_KEY_FIRST(KEY_LEFT) && getEventDbl(KEY_LEFT)==2)
-    {
-      beepKey();
-      if(sub > 0) {
-        (sub)--;
-      }else{
-        (sub)=(num-1);
-      }
-    }
-  }else{
-  
-    uint8_t inc = (mode==SUB_MODE_V) ?  KEY_DOWN : KEY_RIGHT;
-    uint8_t dec = (mode==SUB_MODE_V) ?  KEY_UP   : KEY_LEFT;
-
-    if(event==EVT_KEY_REPT(inc) || event==EVT_KEY_FIRST(inc))
-    {
-      beepKey();
-      if(sub < (num-1)) {
-        (sub)++;
-      }else{
-        if(event==EVT_KEY_REPT(inc))
-        {
-          beepWarn();
-          killEvents(event);
-        }else{
-          (sub)=0;
-        }
-      }
-    }
-    else if(event==EVT_KEY_REPT(dec) || event==EVT_KEY_FIRST(dec))
-    {
-      beepKey();
-      if(sub > 0) {
-        (sub)--;
-      }else{
-        if(event==EVT_KEY_REPT(dec))
-        {
-          beepWarn();
-          killEvents(event);
-        }else{
-          (sub)=(num-1);
-        }
-      }
-    }
-    else if(event==EVT_ENTRY)
-    {
-      sub = 0;
-    }
-  }
-  if(subOld!=sub) BLINK_SYNC;
-  return sub;
-}
-#endif
 
 MenuFuncP lastPopMenu()
 {
