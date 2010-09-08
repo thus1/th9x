@@ -29,12 +29,14 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- alte standard kurven als defaults _/ /- \/ 
 - Pi mit switch full
-- autom switch erkennung bei betaetigung
++ autom switch erkennung bei betaetigung
++ trimbase entfernen
 - thr curve statt expo
 - thr trim nur am neg ende
-- sonderfunc als 3pkt userfunc
-- input invert für querruderdiff mit einer kurve
++ sonderfunc als 3pkt userfunc
++ input invert für querruderdiff mit einer kurve
 - prc-werte dynamisch 64 werte 1-150
 ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
 0 1 2 3 4 5 6 7 8 10 12 14 16 18 20 22 24 27 30 33 36 39 42 45 
@@ -151,8 +153,8 @@ mode4 ail thr ele rud
 
 
 
-EEGeneral g_eeGeneral;
-ModelData g_model;
+EEGeneral_r119 g_eeGeneral;
+ModelData_r143 g_model;
 
 
 
@@ -227,14 +229,14 @@ uint8_t checkLastSwitch(uint8_t sw,uint8_t flg)
   uint8_t newSw = sw;
   for( uint8_t i=0; i< (SW_Trainer-SW_BASE+1); i++)
   {
-    bool st= keyState((EnumKeys)(i+SW_BASE));
+    EnumKeys key = (EnumKeys)(i+SW_BASE);
+    bool st= keyState(key);
     if(st != lastState[i]) {
       lastState[i] = st;
-      newSw = i+1;
-#ifdef SIMU
-      printf("NEWSW=%d",newSw);
-#endif
-      if((flg&_FL_POSNEG) && !st) newSw=-newSw;
+      if(key<SW_ID0 || key>SW_ID2 || st==true){
+	newSw = i+1;
+	if((flg&_FL_POSNEG) && !st) newSw=-newSw;
+      }
     }
   }
 
@@ -242,38 +244,6 @@ uint8_t checkLastSwitch(uint8_t sw,uint8_t flg)
   if(flg&(EE_MODEL|EE_GENERAL)) eeDirty(flg&(EE_MODEL|EE_GENERAL));
   return newSw;
 }
-
-void checkMem()
-{
-  if(! WARN_MEM) return;
-  if(EeFsGetFree() < 200)  
-  {
-    alert(PSTR("EEPROM low mem"));
-  }
-  
-}
-void checkTHR()
-{
-  if(! WARN_THR) return;
-#ifdef SIM
-  for(uint8_t i=0; i<20; i++) per10ms(); //read anas
-#else
-  while(g_tmr10ms<20){} //wait for some ana in
-#endif
-  int thrchn=(2-(g_eeGeneral.stickMode&1));//stickMode=0123 -> thr=2121
-  //int16_t v      = g_anaIns[thrchn];
-  int16_t v      = anaIn(thrchn);
-
-  int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpanNeg[thrchn] +
-    g_eeGeneral.calibSpanNeg[thrchn]/8;
-  //  v -= g_eeGeneral.calibMid[thrchn];
-  //v  = v * (512/8) / (max(40,g_eeGeneral.calibSpan[thrchn]/8));
-  if(v > lowLim)  
-  {
-    alert(PSTR("THR not idle"));
-  }
-}
-
 void checkSwitches()
 {
   if(! WARN_SW) return;
@@ -287,6 +257,40 @@ void checkSwitches()
   if(i==SW_Trainer) return;
   beepErr();
   pushMenu(menuProcDiagKeys);
+}
+
+
+void checkMem()
+{
+  if(! WARN_MEM) return;
+  if(EeFsGetFree() < 200)  
+  {
+    alert(PSTR("EEPROM low mem"));
+  }
+  
+}
+void setTHR0pos()
+{
+  g_eeGeneral.thr0pos = anaIn(THRCHN)>>6; //leave 4 bits
+  eeDirty(EE_GENERAL);
+}
+void checkTHR()
+{
+  if(! WARN_THR) return;
+#ifdef SIM
+  for(uint8_t i=0; i<20; i++) per10ms(); //read anas
+#else
+  while(g_tmr10ms<20){} //wait for some ana in
+#endif
+  uint8_t v  = anaIn(THRCHN)>>6; //leave 4 bits
+
+  //int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpanNeg[thrchn] +
+  //  g_eeGeneral.calibSpanNeg[thrchn]/8;
+  //if(v > lowLim)  
+  if(abs(v-g_eeGeneral.thr0pos)>1)  
+  {
+    alert(PSTR("THR not idle"));
+  }
 }
 
 
@@ -416,11 +420,11 @@ int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
   checkIncDecGen2(event,&i_val,i_min,i_max,EE_MODEL);
   return i_val;
 }
-int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
-{
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
-  return i_val;
-}
+//int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+//{
+//  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
+//  return i_val;
+//}
 int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
   checkIncDecGen2(event,&i_val,i_min,i_max,EE_GENERAL);
@@ -618,13 +622,25 @@ uint16_t anaIn(uint8_t chan)
 ISR(ADC_vect, ISR_NOBLOCK)
 {
   static uint8_t  chan;
-  static uint16_t s_ana[8];
+  //static uint16_t s_ana[8];
+  static uint8_t s_filtBuf[8*4*2];
 
   ADCSRA  = 0; //reset adconv, 13>25 cycles
-  //if(! keyState(SW_ThrCt)){
-  s_anaFilt[chan] = s_ana[chan] / 16;
-  s_ana[chan]    += ADC - s_anaFilt[chan]; //
-    //}
+
+  // s_anaFilt[chan] = s_ana[chan] / 16;
+  // s_ana[chan]    += ADC - s_anaFilt[chan]; //
+
+  uint16_t v=ADC;
+
+  uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(chan*4*2));
+  for(uint8_t i=g_eeGeneral.adcFilt; i>0; i--,filt++){
+    uint16_t vn = *filt / 4; //0,16,23,28 vals to 99%
+    *filt += v - vn; // *3/4
+    v=vn;
+  }
+  asm("":::"memory"); //barrier saves 6 asm-instructions
+  s_anaFilt[chan] = v;
+
   chan    = (chan + 1) & 0x7;
   ADMUX   =  chan | (1<<REFS0);  // Multiplexer stellen
   STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec

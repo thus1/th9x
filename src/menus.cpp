@@ -180,38 +180,82 @@ MState2 mstate2;
 
 static uint8_t s_curveChan;
 
+uint8_t curveTyp(uint8_t idx)
+{
+  if(idx<3) return 3;
+  if(idx<5) return 5;
+  return 9;
+}
+int8_t* curveTab(uint8_t idx)
+{
+  if(idx<3) return g_model.curves3[idx];
+  if(idx<5) return g_model.curves5[idx-3];
+  return           g_model.curves9[idx-5];
+}
+
 void menuProcCurveOne(uint8_t event) {
   static MState2 mstate2;
   uint8_t x = TITLE("CURVE ");
   lcd_putcAtt(x, 0, s_curveChan + '1', INVERS);
 
-  bool    cv9 = s_curveChan >= 2;
-  MSTATE_CHECK0_V((cv9 ? 9 : 5)+1);
+/*  bool    cv9 = s_curveChan >= 2;
+  MSTATE_CHECK0_V((cv9 ? 9 : 5)+1);*/
+  uint8_t cvTyp=curveTyp(s_curveChan);
+  int8_t *crv = curveTab(s_curveChan);//cv9 ? g_model.curves9[s_curveChan-2] : g_model.curves5[s_curveChan];
+  MSTATE_CHECK0_V(cvTyp+1);
+
   int8_t  sub    = mstate2.m_posVert;
 
-  int8_t *crv = cv9 ? g_model.curves9[s_curveChan-2] : g_model.curves5[s_curveChan];
 
-    for (uint8_t i = 0; i < 5; i++) {
-      uint8_t y = i * FH + 16;
-      uint8_t attr = sub == i ? BLINK : 0;
-      lcd_outdezAtt(4 * FW, y, crv[i], attr);
-    }
-  if(cv9)
+  for (uint8_t i = 0; i < min(cvTyp,(uint8_t)5); i++) {
+    uint8_t y = i * FH + 16;
+    uint8_t attr = sub == i ? BLINK : 0;
+    lcd_outdezAtt(4 * FW, y, crv[i], attr);
+  }
+  if(cvTyp==9)
     for (uint8_t i = 0; i < 4; i++) {
       uint8_t y = i * FH + 16;
       uint8_t attr = sub == i + 5 ? BLINK : 0;
       lcd_outdezAtt(8 * FW, y, crv[i + 5], attr);
     }
-  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == (cv9 ? 9 : 5) ? BLINK : 0);
+  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == cvTyp ? BLINK : 0);
 
   static int8_t dfltCrv;
-  if(sub<(cv9 ? 9 : 5))  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -100,100);
+  if(sub<cvTyp)  CHECK_INCDEC_H_MODELVAR( event, crv[sub], -100,100);
   else {
-    if( checkIncDecGen2(event, &dfltCrv, -4, 4, 0)){
-      if(cv9) for (uint8_t i = 0; i < 9; i++) crv[i] = (i-4)*dfltCrv* 100 / 16;
-      else    for (uint8_t i = 0; i < 5; i++) crv[i] = (i-2)*dfltCrv* 100 /  8;
+    if( checkIncDecGen2(event, &dfltCrv, -10, 10, 0)){
+      for (uint8_t i = 0; i < 5; i++) {
+        int8_t pos=0,neg=0;
+        switch(abs(dfltCrv)){
+          case 0: break;
+          case 1: 
+          case 2: 
+          case 3: 
+          case 4: neg = -25*abs(dfltCrv)*i/4;  pos=-neg;  break;
+          case 5: neg =  50-25*i/2  ; pos =    100-neg;   break;
+          case 6:                     pos =       25*i   ;break;
+          case 7: neg =      -25*i  ;                     break;
+          case 8: neg =       25*i  ; pos =       25*i   ;break;
+          case 9: neg = -100        ; pos = -100+ 50*i   ;break;
+         case 10: neg = +100 -50*i  ; pos = +100         ;break;
+        }
+        if(dfltCrv<0) {neg=-neg;pos=-pos;}
+        switch(cvTyp){ 
+          case 9:                crv[4-i] = neg; crv[4+i] = pos;  break;
+          case 5: if(i%2) break; crv[2-i/2] = neg; crv[2+i/2] = pos;  break;
+          case 3: if(i%4) break; crv[1-i/4] = neg; crv[1+i/4] = pos;  break;
+        }
+      }
       eeDirty(EE_MODEL);
     }
+    //    if( checkIncDecGen2(event, &dfltCrv, -4, 4, 0)){
+    //  switch(cvTyp){ 
+    //case 9: for (uint8_t i = 0; i < 9; i++) crv[i] = (i-4)*dfltCrv* 100 / 16; break;
+    //	case 5: for (uint8_t i = 0; i < 5; i++) crv[i] = (i-2)*dfltCrv* 100 /  8; break;
+    //	case 3: for (uint8_t i = 0; i < 3; i++) crv[i] = (i-1)*dfltCrv* 100 /  4; break;
+    //      }
+    //      eeDirty(EE_MODEL);
+    //    }
   }
 
 #define WCHART 32
@@ -223,8 +267,9 @@ void menuProcCurveOne(uint8_t event) {
 #define RESKul  100ul
 
   for (uint8_t xv = 0; xv < WCHART * 2; xv++) {
-    uint16_t yv = intpol(xv * (RESXu / WCHART) - RESXu, s_curveChan) / (RESXu
-                                                                      / WCHART);
+    uint16_t yv = intpol(xv * (RESXu / WCHART) - RESXu, s_curveChan) / 
+      (RESXu / WCHART);
+    if((int16_t)yv<-31) yv=-31;
     lcd_plot(X0 + xv - WCHART, Y0 - yv);
     if ((xv & 3) == 0) {
       lcd_plot(X0 + xv - WCHART, Y0 + 0);
@@ -236,7 +281,7 @@ void menuProcCurveOne(uint8_t event) {
 void menuProcCurve(uint8_t event) {
   static MState2 mstate2;
   TITLE("CURVE");
-  MSTATE_CHECK_V(7,menuTabModel,4+1);
+  MSTATE_CHECK_V(7,menuTabModel,7+1);
   int8_t  sub    = mstate2.m_posVert - 1;
 
   switch (event) {
@@ -247,24 +292,26 @@ void menuProcCurve(uint8_t event) {
     }
     break;
   }
-  uint8_t y    = 2*FH;
-  for (uint8_t i = 0; i < 4; i++) {
+  uint8_t y    = 1*FH;
+  for (uint8_t i = 0; i < 7; i++) {
     uint8_t attr = sub == i ? BLINK : 0;
     lcd_putsAtt(   FW*0, y,PSTR("CV"),attr);
     lcd_outdezAtt( FW*3, y,i+1 ,attr);
 
-    bool    cv9 = i >= 2;
-    int8_t *crv = cv9 ? g_model.curves9[i-2] : g_model.curves5[i];
-    for (uint8_t j = 0; j < 5; j++) {
+  uint8_t cvTyp=curveTyp(i);
+  int8_t *crv = curveTab(i);
+  //  bool    cv9 = i >= 2;
+  //  int8_t *crv = cv9 ? g_model.curves9[i-2] : g_model.curves5[i];
+    for (uint8_t j = 0; j < min(cvTyp,(uint8_t)5); j++) {
       lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j], 0);
     }
     y += FH;
-    if(cv9){
+/*    if(cv9){
       for (uint8_t j = 0; j < 4; j++) {
         lcd_outdezAtt( j*(3*FW+3) + 7*FW, y, crv[j+5], 0);
       }
       y += FH;
-    }
+    }*/
   }
 }
 
@@ -295,7 +342,7 @@ void menuProcLimits(uint8_t event)
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
-    LimitData *ld = &g_model.limitData[k];
+    LimitData_r84 *ld = &g_model.limitData[k];
     for(uint8_t j=0; j<=4;j++){
       uint8_t attr = ((sub==k && subSub==j) ? BLINK : 0);
       switch(j)
@@ -345,13 +392,14 @@ void menuProcMixOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLEP(s_currMixInsMode ? PSTR("INSERT MIX ") : PSTR("EDIT MIX "));  
-  MixData *md2 = &g_model.mixData[s_currMixIdx];
+  MixData_r0 *md2 = &g_model.mixData[s_currMixIdx];
   putsChn(x,0,md2->destCh,0);
   MSTATE_CHECK0_V(7);
   int8_t  sub    = mstate2.m_posVert;
 
 
-#define CURV_STR "  -""x>0""x<0""|x|""cv1""cv2""cv3""cv4"
+//#define CURV_STR "  -""x>0""x<0""|x|""cv1""cv2""cv3""cv4"
+#define CURV_STR "  -""cv1""cv2""cv3""cv4""cv5""cv6""cv7"
   for(uint8_t i=0; i<=6; i++)
   {
     uint8_t y=i*FH+FH;
@@ -367,8 +415,8 @@ void menuProcMixOne(uint8_t event)
         break;
       case 2:   lcd_putsnAtt( FW*4,y,PSTR(CURV_STR)+md2->curve*3,3,attr);
         if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2->curve, 0,7); //!! bitfield
-        if(attr && md2->curve>=4 && event==EVT_KEY_FIRST(KEY_MENU)){
-          s_curveChan = md2->curve-4;
+        if(attr && md2->curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
+          s_curveChan = md2->curve-1;
           pushMenu(menuProcCurveOne);
         }
         break;
@@ -392,8 +440,8 @@ void menuProcMixOne(uint8_t event)
           memmove(
             &g_model.mixData[s_currMixIdx],
             &g_model.mixData[s_currMixIdx+1],
-            (MAX_MIXERS-(s_currMixIdx+1))*sizeof(MixData));
-          memset(&g_model.mixData[MAX_MIXERS-1],0,sizeof(MixData));
+            (MAX_MIXERS-(s_currMixIdx+1))*sizeof(MixData_r0));
+          memset(&g_model.mixData[MAX_MIXERS-1],0,sizeof(MixData_r0));
           STORE_MODELVARS;
           popMenu();  
         }
@@ -430,7 +478,7 @@ void genMixTab()
   uint8_t sel     = 1;
   memset(s_mixTab,0,sizeof(s_mixTab));
 
-  MixData *md=g_model.mixData;
+  MixData_r0 *md=g_model.mixData;
 
   for(uint8_t i=0; i<MAX_MIXERS; i++)
   {
@@ -481,7 +529,7 @@ void menuProcMix(uint8_t event)
   int8_t  sub    = mstate2.m_posVert;
 
   static uint8_t s_pgOfs;
-  MixData *md=g_model.mixData;
+  MixData_r0 *md=g_model.mixData;
   switch(event)
   {
     case EVT_ENTRY:
@@ -528,7 +576,7 @@ void menuProcMix(uint8_t event)
       markedIdx        = i;
     }
     if(s_mixTab[k].hasDat){ //show data 
-      MixData *md2=&md[s_mixTab[k].editIdx];
+      MixData_r0 *md2=&md[s_mixTab[k].editIdx];
       uint8_t attr = sub==s_mixTab[k].selDat ? BLINK : 0; 
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
       lcd_putcAtt(    7*FW+1, y, '%',0);
@@ -567,12 +615,10 @@ void menuProcMix(uint8_t event)
   else if(markedIdx>=5 && i>=7)      s_pgOfs++;
 }
 
-
-
 int16_t trimVal(uint8_t idx)
 {
-  int8_t trim = g_model.trimData[idx].trim;
-  return trim*(abs(trim)+1)/2;
+  return trimExp(g_model.trimData[idx].trim);
+//  return trim*(abs(trim)+1)/2;
 }
 
 void menuProcTrim(uint8_t event)
@@ -1233,7 +1279,7 @@ void menuProcTrainer(uint8_t event)
   lcd_puts_P( 3*FW, 1*FH,PSTR("mode prc src swt"));
   for(uint8_t i=0; i<4; i++){
     y=(i+2)*FH;
-    TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
+    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
     putsChnRaw( 0, y,i+1,
                 sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
     edit = (sub==i && subSub==1);
@@ -1281,15 +1327,16 @@ void menuProcSetup1(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("SETUP OPTS");  
-  MSTATE_CHECK_V(2,menuTabDiag,1+4);
+  MSTATE_CHECK_V(2,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
-  for(uint8_t i=0; i<4; i++){
+  for(uint8_t i=0; i<5; i++){
     uint8_t y=i*FH+2*FH;
     uint8_t attr = sub==i ? BLINK : 0; 
     lcd_putsnAtt( FW*7,y,PSTR("THR Warn"
                               "SW  Warn"
                               "Mem Warn"
-                              "Beeper  ")+i*8,8,0);
+                              "Beeper  "
+                              "AdcFilt.")+i*8,8,0);
     switch(i){
       case 0:
       case 1:
@@ -1298,17 +1345,26 @@ void menuProcSetup1(uint8_t event)
           uint8_t bit = 1<<i;
           bool    val = !(g_eeGeneral.warnOpts & bit);
           lcd_putsAtt( FW*3, y, val ? PSTR("ON"): PSTR("OFF"),attr);
-          if(attr)  val = checkIncDec_hg( event, val, 0, 1); //!! bitfield
+          if(attr)  {
+            val = checkIncDec_hg( event, val, 0, 1); //!! bitfield
+            if(checkIncDec_Ret && (i==0) && val) // THR warn changed
+              setTHR0pos();
+          }
           g_eeGeneral.warnOpts |= bit;
           if(val) g_eeGeneral.warnOpts &= ~bit;
+
+
           break;
         }
       case 3:
-        uint8_t bits = 3<<i;
-        uint8_t val = (g_eeGeneral.warnOpts & bits)>>3;
-        lcd_outdezAtt( FW*4, y, val,attr);
-        if(attr)  val = checkIncDec_hg( event, val, 0, 3); //!! bitfield
-        g_eeGeneral.warnOpts = (g_eeGeneral.warnOpts & ~bits) | (val<<3);
+        lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVal,attr);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVal,0,3);
+        break;
+        //uint8_t val = g_eeGeneral.beepVal;
+        //if(attr)  g_eeGeneral.beepVal = checkIncDec_hg( event, val, 0, 3); //!! bitfield
+      case 4:
+        lcd_outdezAtt( FW*4, y, g_eeGeneral.adcFilt,attr);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.adcFilt,0,3);
         break;
     }
   }
@@ -1393,11 +1449,9 @@ void timer(uint8_t val)
       return;
     case TMRMODE_THR_REL:
       s_timerVal -= s_timeCum16ThrP/16;
-      //s_timeCum16 += val/2;
       break;
     case TMRMODE_THR:     
       s_timerVal -= s_timeCumThr;
-      //if(val) s_timeCum16 += 16;
       break;
     case TMRMODE_ABS:
       s_timerVal -= s_timeCumAbs;
@@ -1436,6 +1490,9 @@ uint16_t s_traceWr;
 uint16_t s_traceCnt;
 void trace(uint8_t val)
 {
+  if(val>31)val=31;
+  if(g_eeGeneral.thr0pos > 8) val=31-val; //inverted throttle usage
+
   timer(val);
   static uint16_t s_time;
   static uint16_t s_cnt;
@@ -1728,23 +1785,27 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
 {
 #define D9 (RESX * 2 / 8)
 #define D5 (RESX * 2 / 4)
-  bool    cv9 = idx >= 2;
-  int8_t *crv = cv9 ? g_model.curves9[idx-2] : g_model.curves5[idx];
+#define D3 (RESX * 2 / 2)
+  uint8_t cvTyp=curveTyp(idx);
+  int8_t *crv = curveTab(idx);
+  /*  bool    cv9 = idx >= 2;
+  int8_t *crv = cv9 ? g_model.curves9[idx-2] : g_model.curves5[idx];*/
   int16_t erg;
 
   x+=RESXu;
   if(x < 0) {
     erg = crv[0]             * (RESX/2);
   } else if(x >= (RESX*2)) {
-    erg = crv[(cv9 ? 8 : 4)] * (RESX/2);
+    erg = crv[cvTyp-1] * (RESX/2);
   } else {
     int16_t a,dx;
-    if(cv9){
-      a   = (uint16_t)x / D9;
-      dx  =((uint16_t)x % D9) * 2;
-    } else {
+    switch(cvTyp){
+      case 9:	a   = (uint16_t)x / D9;	dx  =((uint16_t)x % D9) * 2; break;
+      case 5:	a   = (uint16_t)x / D5;	dx  =((uint16_t)x % D5)    ; break;
+      default: /*case 3*/	a   = (uint16_t)x / D3;	dx  =((uint16_t)x % D3) / 2; break;
+/*    } else {
       a   = (uint16_t)x / D5;
-      dx  = (uint16_t)x % D5;
+      dx  = (uint16_t)x % D5;*/
     }
     erg  = (int16_t)crv[a]*(D5-dx) + (int16_t)crv[a+1]*(dx);
   }
@@ -1782,7 +1843,7 @@ void perOut(int16_t *chanOut)
                               g_model.expoData[i].expSwWeight+100 :
                               g_model.expoData[i].expNormWeight+100) / 100;
     v = (int16_t)x;
-    TrainerData1*  td = &g_eeGeneral.trainer.chanMix[i];
+    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
     if(td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
@@ -1796,8 +1857,8 @@ void perOut(int16_t *chanOut)
     }
 
     //trace throttle
-    if((2-(g_eeGeneral.stickMode&1)) == i)  //stickMode=0123 -> thr=2121
-      trace((v+512)/32); //trace thr 0..32
+    if(THRCHN == i)  //stickMode=0123 -> thr=2121
+      trace((v+512)/32); //trace thr 0..31
 
     //trim
     v += trimVal(i); // + g_model.trimData[i].trimDef;
@@ -1830,7 +1891,7 @@ void perOut(int16_t *chanOut)
       }
     }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
-      MixData &md = g_model.mixData[i];
+      MixData_r0 &md = g_model.mixData[i];
 
       static uint8_t timer[MAX_MIXERS];
       static int16_t act  [MAX_MIXERS];
@@ -1845,14 +1906,15 @@ void perOut(int16_t *chanOut)
       //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
 
       if( !getSwitch(md.swtch,1) &&
-          md.srcRaw != 8         && //MAX
-          md.srcRaw != 9            //FUL
+          (md.srcRaw <= 4 ||  md.srcRaw > 9) //P1 P2 P3 MAX FUL
+          //          md.srcRaw != 8         && //MAX
+          //          md.srcRaw != 9            //FUL
       )
         continue;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
 
       int16_t v;
       v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
-
+      if(md.weight<0) v=-v;
       if (md.speedUp || md.speedDown)
       {
         /*
@@ -1903,34 +1965,35 @@ void perOut(int16_t *chanOut)
         }
         v = act[i];
       }
-      switch(md.curve){ 
-        case 0: 
-          break;
-        case 1: 
-          if(md.srcRaw == 9) //FUL
-          {
-            if( v<0 ) v=-512;   //x|x>0
-            else      v=-512+2*v;
-          }else{
-            if( v<0 ) v=0;   //x|x>0
-          }
-          break;
-        case 2: 
-          if(md.srcRaw == 9) //FUL
-          {
-            if( v>0 ) v=512;   //x|x<0
-            else      v=512+2*v;
-          }else{
-            if( v>0 ) v=0;   //x|x<0
-          }
-          break;
-        case 3: v = abs(v);      break; //ABS
-        default:
-          //if((md.curve >= 4) && (md.curve < 8))
-          v = intpol(v, md.curve - 4);
-      }
+//       switch(md.curve){ 
+//         case 0: 
+//           break;
+//         case 1: 
+//           if(md.srcRaw == 9) //FUL
+//           {
+//             if( v<0 ) v=-512;   //x|x>0
+//             else      v=-512+2*v;
+//           }else{
+//             if( v<0 ) v=0;   //x|x>0
+//           }
+//           break;
+//         case 2: 
+//           if(md.srcRaw == 9) //FUL
+//           {
+//             if( v>0 ) v=512;   //x|x<0
+//             else      v=512+2*v;
+//           }else{
+//             if( v>0 ) v=0;   //x|x<0
+//           }
+//           break;
+//         case 3: v = abs(v);      break; //ABS
+//         default:
+//           //if((md.curve >= 4) && (md.curve < 8))
+//           v = intpol(v, md.curve - 4);
+//       }
+      if(md.curve) v = intpol(v, md.curve - 1);
 
-      int32_t dv=(int32_t)v*(md.weight); // 10+1 Bit + 7 = 17+1
+      int32_t dv=(int32_t)v*(abs(md.weight)); // 10+1 Bit + 7 = 17+1
       chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
     }
   }

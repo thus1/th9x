@@ -12,14 +12,177 @@ class String
     return ret
   end
 end
-
-
+CStruct.alignment=1
 
 
 # V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4
 
+CStruct.defStruct "TrainerData1_r0",<<-"END_TYP"
+  uint8_t srcChn3_swtch5; //0-7 = ch1-8
+  uint8_t weight6_mode2;  //off,add-mode,subst-mode
+  END_TYP
+
+CStruct.defStruct "TrainerData_r0",<<-"END_TYP"
+  int16_t       calib[4];
+  TrainerData1_r0  chanMix[4];
+  END_TYP
+CStruct.defStruct "EEGeneral_helper",<<-"END_TYP"
+  uint8_t myVers;
+  END_TYP
+CStruct.defStruct "EEGeneral_r0",<<-"END_TYP"
+  uint8_t myVers;
+  int16_t calibMid[4];
+  int16_t calibSpan[4];
+  uint16_t chkSum;
+  uint8_t currModel; //0..15
+  uint8_t contrast;
+  uint8_t vBatWarn;
+  int8_t  vBatCalib;  
+  int8_t  lightSw;
+  TrainerData_r0 trainer;
+  uint8_t   view;     //index of subview in main scrren
+  uint8_t   warnOpts; //bitset for several warnings
+  uint8_t   stickMode;   // 1
+  END_TYP
+
+
+CStruct.defStruct "EEGeneral_r119",<<-"END_TYP"
+  uint8_t   myVers;
+  int16_t   calibMid[4];
+  int16_t   calibSpanNeg[4]; //ge119
+  int16_t   calibSpanPos[4]; //ge119
+  uint16_t  chkSum;
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib;  
+  int8_t    lightSw;
+  TrainerData_r0 trainer;
+  uint8_t   view;     //index of subview in main scrren
+#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
+#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
+#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
+#define BEEP_VAL ( (g_eeGeneral.warnOpts & 0x18) >>3 )
+  uint8_t   warnOpts; //bitset for several warnings
+  uint8_t   stickMode;   // 1
+  END_TYP
+
+
+
+
+
+
+MAX_MIXERS_V1 = 20
 MAX_MODELS_V4 = 16
 MAXFILES_V4   = (1+MAX_MODELS_V4+3)
+CStruct.defStruct "ExpoData_r0",<<-"END_TYP"
+  int8_t  expNorm;
+  int8_t  expDr;
+  int8_t  drSw;
+  END_TYP
+
+CStruct.defStruct "ExpoData_r84",<<-"END_TYP"
+  int8_t  expNorm;
+  int8_t  expDr;
+  int8_t  drSw;
+  int8_t  expNormWeight;
+  int8_t  expSwWeight;
+  END_TYP
+CStruct.defStruct "TrimData_r0",<<-"END_TYP"
+  int8_t  trim;    //quadratisch
+  int16_t trimDef_lt133;
+  END_TYP
+
+CStruct.defStruct "TrimData_r143",<<-"END_TYP"
+  int8_t  trim;    //quadratisch
+  END_TYP
+CStruct.defStruct "LimitData_r0",<<-"END_TYP"
+  int8_t  min;
+  int8_t  max;
+  bool    revert;
+  END_TYP
+
+CStruct.defStruct "LimitData_r84",<<-"END_TYP"
+  int8_t  min;
+  int8_t  max; 
+  int8_t  rev_offset;
+  END_TYP
+
+CStruct.defStruct "MixData_r0",<<-"END_TYP"
+  uint8_t destCh4_srcRaw4; //
+  int8_t  weight;
+  uint8_t  swtch5_curve3;
+  uint8_t  speedUp4_speedDwn4;
+  END_TYP
+
+CStruct.defStruct "Crv3_V4",<<-"END_TYP"
+  int8_t    c[3];
+  END_TYP
+CStruct.defStruct "Crv5_V4",<<-"END_TYP"
+  int8_t    c[5];
+  END_TYP
+CStruct.defStruct "Crv9_V4",<<-"END_TYP"
+  int8_t    c[9];
+  END_TYP
+CStruct.defStruct "ModelData_r0",<<-"END_TYP"
+  char      name[10];    // 10
+  uint8_t   stickMode;   // 1
+  uint8_t   tmrMode;     // 1
+  uint16_t  tmrVal;      // 2
+  uint8_t   protocol;    // 1
+  char      res[3];      // 3
+  LimitData_r0 limitData[8];// 3*8
+  ExpoData_r0  expoData[4]; // 3*4
+  MixData_r0   mixData[#{MAX_MIXERS_V1}]; //4*20
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r0  trimData[4]; // 3*4
+  END_TYP
+
+
+MDVERS84 = 1
+
+CStruct.defStruct "ModelData_helper",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  END_TYP
+
+CStruct.defStruct "ModelData_r84",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r84 limitData[8];// 4*8
+  ExpoData_r84  expoData[4];          // 5*4
+  MixData_r0   mixData[25];  //0 4*25
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r0  trimData[4];          // 3*4
+  END_TYP
+
+MDVERS143 = 2
+CStruct.defStruct "ModelData_r143",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r84 limitData[8];// 4*8
+  ExpoData_r84  expoData[4];          // 5*4
+  MixData_r0   mixData[25];  //0 4*25
+  Crv3_V4   curves3[3];   // ß
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+ END_TYP
+  
+  
+
+
+
 
 CStruct.defStruct "DirEnt_V4",<<-"END_TYP"
   uint8_t  startBlk;
@@ -34,57 +197,8 @@ CStruct.defStruct "EeFs_V4",<<-"END_TYP"
   DirEnt_V4   files[#{MAXFILES_V4}];
   END_TYP
 
-CStruct.defStruct "MixData_V4",<<-"END_TYP"
-  uint8_t destCh4_srcRaw4; //
-  int8_t  weight;
-  uint8_t  swtch5_curve3;
-  uint8_t  speedUp4_speedDwn4;
-  END_TYP
-
-
-
-CStruct.defStruct "Crv5_V4",<<-"END_TYP"
-  int8_t    c[5];
-  END_TYP
-CStruct.defStruct "Crv9_V4",<<-"END_TYP"
-  int8_t    c[9];
-  END_TYP
-CStruct.defStruct "ModelData_V4",<<-"END_TYP"
-  char      name[10];    // 10
-  uint8_t   stickMode;   // 1
-  uint8_t   tmrMode;     // 1
-  uint16_t  tmrVal;      // 2
-  uint8_t   protocol;    // 1
-  char      res[3];      // 3
-  LimitData_V1 limitData[8];// 3*8
-  ExpoData_V1  expoData[4]; // 3*4
-  MixData_V4   mixData[#{MAX_MIXERS_V1}]; //4*20
-  Crv5_V4   curves5[2];   // 10
-  Crv9_V4   curves9[2];   // 18
-  TrimData_V1  trimData[4]; // 3*4
-  END_TYP
-
-CStruct.defStruct "TrainerData1_V4",<<-"END_TYP"
-  uint8_t srcChn3_swtch5; //0-7 = ch1-8
-  uint8_t weight6_mode2;  //off,add-mode,subst-mode
-  END_TYP
-
-CStruct.defStruct "TrainerData_V4",<<-"END_TYP"
-  int16_t       calib[4];
-  TrainerData1_V4  chanMix[4];
-  END_TYP
-CStruct.defStruct "EEGeneral_V4",<<-"END_TYP"
-  uint8_t myVers;
-  int16_t calibMid[4];
-  int16_t calibSpan[4];
-  uint16_t chkSum;
-  uint8_t currModel; //0..15
-  uint8_t contrast;
-  uint8_t vBatWarn;
-  int8_t  vBatCalib;  
-  int8_t  lightSw;
-  TrainerData_V4 trainer;
-  END_TYP
+  
+  
 class ErrorBadNextIndex < Exception; end
 class Reader_V4
   def deepCopy(dst,src,key="")
@@ -123,7 +237,7 @@ class Reader_V4
   def read(f)
     @eefs=CStruct::EeFs_V4.new()
     @eefs.read(f)
-    @eefs.mySize == (@eefs.sizeof) or raise "bad size eefs"
+    @eefs.mySize == (@eefs.sizeof) or raise "bad size eefs #{@eefs.mySize} != #{(@eefs.sizeof)}"
     @bs=@eefs.bs
     @blocks = 0.chr*@eefs.mySize + f.read
 
@@ -287,29 +401,83 @@ class Reader_V4
       i = nxt
     end
   end
-  def infoFileFull(fi)
-    puts "--- File #{fi}: ---------------------------------"
-    return if @fbufdec[fi] == ""
-    if fi==0
-      general=CStruct::EEGeneral_V4.new()
-      general.fromBin(@fbufdec[fi])
-      puts general
-    else
-      buf=@fbufdec[fi]
-      if (l1=buf.length) < (l2=CStruct::ModelData_V4.sizeof)
-        puts "bad length #{l1} != #{l2} fill up with zeroes"
-        buf=buf+(0.chr*(l2-l1))
+  def infoFileTyp(fi)
+    buf=@fbufdec[fi]
+    return nil,nil if buf == ""
+    hlp=CStruct::EEGeneral_helper.new()
+    hlp.fromBin(buf)
+    case v=hlp.myVers
+    when 1  ;   return "EEGeneral_r0              ",CStruct::EEGeneral_r0
+    when 2  ;   return "EEGeneral_r119            ",CStruct::EEGeneral_r119
+    when 3  ;   return "EEGeneral_r119_3          ",CStruct::EEGeneral_r119
+    else;
+      hlp=CStruct::ModelData_helper.new()
+      hlp.fromBin(buf)
+      if buf.length==CStruct::ModelData_r0.new().sizeof
+	return 			"ModelData_r0  ´#{hlp.name}´",CStruct::ModelData_r0
+      else
+	case hlp.mdVers
+	when MDVERS84; 	return 	"ModelData_r84 ´#{hlp.name}´",CStruct::ModelData_r84
+	when MDVERS143; return 	"ModelData_r143´#{hlp.name}´",CStruct::ModelData_r143
+	else;     	return 	"ModelData??   ´#{hlp.name}´",nil
+	end
       end
-      mod=CStruct::ModelData_V4.new()
-      mod.fromBin(buf)
-      puts mod
     end
+  end
+  def infoFileFull(fi)
+    cmt,cls = infoFileTyp(fi)
+    puts "--- File #{fi} #{cmt}: ---------------------------------"
+    return if !cls
+    obj=cls.new
+    obj.fromBin(@fbufdec[fi])
+    puts obj
+    
+#     return if @fbufdec[fi] == ""
+#     if fi==0
+#       hlp=CStruct::EEGeneral_helper.new()
+#       hlp.fromBin(@fbufdec[fi])
+#       case v=hlp.myVers
+#       when 1  ;   general=CStruct::EEGeneral_r0.new()
+#       when 2  ;   general=CStruct::EEGeneral_r119.new()
+#       else
+# 	raise "bad vers #{v}"
+#       end
+#       general.fromBin(@fbufdec[fi])
+#       puts general
+#     else
+#       buf=@fbufdec[fi]
+#       #if (l1=buf.length) < (l2=CStruct::ModelData_V4.sizeof)
+#       #  puts "bad length #{l1} != #{l2} fill up with zeroes"
+#       #  buf=buf+(0.chr*(l2-l1))
+#       #end
+#       if buf.length==CStruct::ModelData_r0.new().sizeof
+# 	puts "mod_r0"
+#         mod=CStruct::ModelData_r0.new()
+#       else
+# 	hlp=CStruct::ModelData_helper.new()
+# 	hlp.fromBin(buf)
+# 	case hlp.mdVers
+# 	when MDVERS84
+# 	  puts "mod_r84"
+# 	  mod=CStruct::ModelData_r84.new()
+# 	when MDVERS143
+# 	  puts "mod_r143"
+# 	  mod=CStruct::ModelData_r143.new()
+# 	else
+# 	  raise "unknown type #{hlp.mdVers}"
+# 	end
+#       end
+#       mod.fromBin(buf)
+#       puts mod
+#     end
   end
   def infoFile(fi)
     bi  = @eefs.files[fi].startBlk
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
-    printf("%s  %4d %2d  %3d ",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0)
+    cmt,cls = infoFileTyp(fi)
+
+    printf("%s  %4d %2d  %3d %s",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
   end

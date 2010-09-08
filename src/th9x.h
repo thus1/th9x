@@ -261,7 +261,10 @@ bool    getSwitch(int8_t swtch, bool nc);
 ///
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att);
 
+#define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
+
 void checkMem();
+void setTHR0pos();
 void checkTHR();
 ///   Pr�ft beim Einschalten ob alle Switches 'off' sind.
 void    checkSwitches();
@@ -290,7 +293,7 @@ bool checkIncDecModVar(uint8_t event, void*p, uint8_t flags)
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
+//int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
 int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
@@ -308,18 +311,22 @@ extern bool    checkIncDec_Ret;//global helper vars
 #define CHECK_INCDEC_H_MODELVAR( event, var, min, max)     \
   checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_MODEL) \
 
-#define CHECK_INCDEC_V_MODELVAR( event, var, min, max)     \
-  checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|_FL_VERT|EE_MODEL) \
+//#define CHECK_INCDEC_V_MODELVAR( event, var, min, max)                
+//  checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|_FL_VERT|EE_MODEL) 
 
 //for bitfields
+#define CHECK_INCDEC_H_GENVAR_BF( event, var, min, max)               \
+  ( var=checkIncDec_hg(event,var,min,max),                              \
+    checkIncDec_Ret                                                     \
+  )
 #define CHECK_INCDEC_H_MODELVAR_BF( event, var, min, max)               \
   ( var=checkIncDec_hm(event,var,min,max),                              \
     checkIncDec_Ret                                                     \
   )
-#define CHECK_INCDEC_V_MODELVAR_BF( event, var, min, max)               \
-  ( var=checkIncDec_vm(event,var,min,max),                              \
-    checkIncDec_Ret                                                     \
-  )
+//#define CHECK_INCDEC_V_MODELVAR_BF( event, var, min, max)             
+//  ( var=checkIncDec_vm(event,var,min,max),                              
+//    checkIncDec_Ret                                                     
+//  )
 
 #define CHECK_LAST_SWITCH( var, flg)                                    \
    var=checkLastSwitch(var,flg)
@@ -455,6 +462,10 @@ inline void _beep(uint8_t b) {
 #define beepErr()  _beep(g_beepVal[3])
 
 
+inline int16_t trimExp(uint8_t trim)
+{ 
+  return trim*(abs(trim)+1)/2;
+}
 
 
 

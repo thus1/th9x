@@ -32,7 +32,7 @@ EFile theFile2; //sometimes we need two files
 void generalDefault()
 {
   memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
-  g_eeGeneral.myVers   =  2;
+  g_eeGeneral.myVers   =  3;
   g_eeGeneral.currModel=  0;
   g_eeGeneral.contrast = 30;
   g_eeGeneral.vBatWarn = 90;
@@ -48,26 +48,31 @@ void generalDefault()
 bool eeLoadGeneral()
 {
   theFile.openRd(FILE_GENERAL);
-  uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(EEGeneral));
+  uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
   uint16_t sum=0;
-  if( sz == sizeof(EEGeneral) && g_eeGeneral.myVers == 2){
+  if( sz == sizeof(EEGeneral_r0) && g_eeGeneral.myVers == 1 ){
+#ifdef SIM
+    printf("converting EEGeneral data from < 119\n");
+#endif
+    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r0); //Pointers behind the end
+    char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r119);
+    fullCopy(sizeof(EEGeneral_r0)-offsetof(EEGeneral_r0,calibSpan));
+    for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+    g_eeGeneral.chkSum = sum;
+    sz = sizeof(EEGeneral_r119);
+    g_eeGeneral.myVers = 2;
+  }
+  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == 2){
+    g_eeGeneral.adcFilt = 2;
+    g_eeGeneral.thr0pos = 1; //upper 6 bits of adc value
+    g_eeGeneral.myVers  = 3;
+  }
+  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == 3){
     for(int i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
 #ifdef SIM
     if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
 #endif  
     return g_eeGeneral.chkSum == sum;
-  }
-  if( sz == sizeof(EEGeneral_lt119) && g_eeGeneral.myVers == 1 ){
-#ifdef SIM
-    printf("converting EEGeneral data from < 119\n");
-#endif
-    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_lt119); //Pointers behind the end
-    char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral);
-    fullCopy(sizeof(EEGeneral_lt119)-offsetof(EEGeneral_lt119,calibSpan));
-    for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
-    g_eeGeneral.chkSum = sum;
-    g_eeGeneral.myVers = 2;
-    return true;
   }
 #ifdef SIM
   printf("bad g_eeGeneral\n");
@@ -81,7 +86,7 @@ void modelDefault(uint8_t id)
   strcpy_P(g_model.name,PSTR("MODEL     "));
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
-  g_model.mdVers = MDVERS;
+  g_model.mdVers = MDVERS143;
   for(uint8_t i= 0; i<4; i++){
     //     0   1   2   3
     //0 1 rud ele thr ail
@@ -126,47 +131,61 @@ int8_t trimRevert(int16_t val)
   }
   return neg ? -idx : idx;
 }
-int16_t trimVal(uint8_t idx);
 void eeLoadModel(uint8_t id)
 {
-  if(id<MAX_MODELS)
-  {
-    theFile.openRd(FILE_MODEL(id));
-    uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
+  if(id>=MAX_MODELS) return; //paranoia
 
-    if( sz == sizeof(ModelData_lt84) ){
+  theFile.openRd(FILE_MODEL(id));
+  uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
+
+  if( sz == sizeof(ModelData_r0) ){
 #ifdef SIM
-      printf("converting model data from < 84\n");
+    printf("converting model data t0 r84\n");
 #endif
-      char* pSrc = ((char*)&g_model) + sizeof(ModelData_lt84); //Pointers behind the end
-      char* pDst = ((char*)&g_model) + sizeof(ModelData);
-      sz = sizeof(ModelData);
+    char* pSrc = ((char*)&g_model) + sizeof(ModelData_r0); //Pointers behind the end
+    char* pDst = ((char*)&g_model) + sizeof(ModelData_r84);
+    ModelData_r84 *model84 = (ModelData_r84*)&g_model;
+#define sizeof84(memb) sizeof(((ModelData_r84*)0)->memb)
+    fullCopy(sizeof84(trimData)+sizeof84(curves9)+sizeof84(curves5));
 
-      fullCopy(sizeof(g_model.trimData)+sizeof(g_model.curves9)+sizeof(g_model.curves5));
+    partCopy(sizeof84(mixData), sizeof(MixData_r0)*20);
 
-      partCopy(sizeof(g_model.mixData), sizeof(MixData)*20);
-
-      for(uint8_t i=0; i<DIM(g_model.expoData); i++){
-        partCopy(sizeof(ExpoData), sizeof(ExpoData_lt84));
-      }
-      g_model.mdVers = MDVERS;
-      return;
+    for(uint8_t i=0; i<DIM(model84->expoData); i++){
+      partCopy(sizeof(ExpoData_r84), sizeof(ExpoData_r0));
     }
-
-    if( sz == sizeof(ModelData) && g_model.mdVers == MDVERS) {
-      for(uint8_t i=0; i<4; i++){
-        int16_t val = trimVal(i) + g_model.trimData[i].trimDef_lt133;
-        g_model.trimData[i].trim = trimRevert(val);
-        g_model.trimData[i].trimDef_lt133=0;
-      }
-      return;
-    }
-
-#ifdef SIM
-    printf("bad model%d data using default\n",id+1);
-#endif
-    modelDefault(id);
+    sz = sizeof(ModelData_r84);
+    model84->mdVers = MDVERS84;
   }
+
+  if( sz == sizeof(ModelData_r84) && g_model.mdVers == MDVERS84) {
+#ifdef SIM
+    printf("converting model data from r84 to r143\n");
+#endif
+    ModelData_r84  *model84  = (ModelData_r84*)&g_model;
+    ModelData_r143 *model143 = (ModelData_r143*)&g_model;
+    for(int8_t i=3; i>=0; i--){
+      int16_t val = trimExp(model84->trimData[i].trim) + model84->trimData[i].trimDef_lt133;
+      model143->trimData[i].trim = trimRevert(val);
+    }
+    memmove(&model143->curves5, &model84->curves5, sizeof(model84->curves5)+sizeof(model84->curves9));
+    memset(model143->curves3, 0, sizeof(model143->curves3));
+    model143->curves3[0][2] =  100;
+    model143->curves3[2][0] =  100;
+    model143->curves3[2][2] =  100;
+    model143->curves3[1][0] = -100;
+    sz = sizeof(ModelData_r143);
+    model84->mdVers = MDVERS143;
+  }
+  
+  if( sz == sizeof(ModelData_r143) && g_model.mdVers == MDVERS143) {
+    return;
+  }
+
+#ifdef SIM
+  printf("bad model%d data using default\n",id+1);
+#endif
+  modelDefault(id);
+
 }
 
 bool eeDuplicateModel(uint8_t id)
@@ -206,7 +225,7 @@ void eeReadAll()
     EeFsFormat();
     generalDefault();
     theFile.writeRlc(FILE_GENERAL,FILE_TYP_GENERAL,(uint8_t*)&g_eeGeneral, 
-                     sizeof(EEGeneral),200);
+                     sizeof(g_eeGeneral),200);
 
     modelDefault(0);
     theFile.writeRlc(FILE_MODEL(0),FILE_TYP_MODEL,(uint8_t*)&g_model, 
@@ -233,7 +252,7 @@ void eeCheck(bool immediately)
   s_eeDirtyMsk = 0;
   if(msk & EE_GENERAL){
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_GENERAL, (uint8_t*)&g_eeGeneral, 
-                        sizeof(EEGeneral),20) == sizeof(EEGeneral))
+                        sizeof(g_eeGeneral),20) == sizeof(g_eeGeneral))
     {   
       EFile::swap(FILE_GENERAL,FILE_TMP);
     }else{

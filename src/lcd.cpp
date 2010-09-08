@@ -222,7 +222,7 @@ void lcd_vlineStip(int8_t x,int8_t y, int8_t h, uint8_t pat)
   if(y+h>DISPLAY_H) {h=DISPLAY_H-y;}
   if(h<=0) return;
   if(x<0) return;
-  if(x>=DISPLAY_W) return;
+  //if(x>=DISPLAY_W) return; //warning, not possible
   uint8_t *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
   uint8_t *q  = &displayBuf[ (y+h) / 8 * DISPLAY_W + x ];
   *p ^= ~(BITMASK(y%8)-1)&pat;
