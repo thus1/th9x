@@ -335,18 +335,21 @@ void Th9xSim::refreshDiplay()
       // id0    0        1
       // id1    1        1
       // id2    1        0
-    static FXuint id=0,k4st=0;
+    static FXuint id=0,k4st=0,k5st=0;
     bool ks=getApp()->getKeyState(KEY_4);
     if(ks != k4st){
-      if(ks){
-        id=(id+1)%3;
-        switch(id){
-          case 0: ping |=  (1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
-          case 1: ping &= ~(1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
-          case 2: ping &= ~(1<<INP_G_ID1);  pine |=  (1<<INP_E_ID2); break;
-        }
-      }
+      if(ks && id<2) id++;
       k4st = ks;
+    }
+    ks=getApp()->getKeyState(KEY_5);
+    if(ks != k5st){
+      if(ks && id>0) id--;
+      k5st = ks;
+    }
+    switch(id){
+      case 0: ping |=  (1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
+      case 1: ping &= ~(1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
+      case 2: ping &= ~(1<<INP_G_ID1);  pine |=  (1<<INP_E_ID2); break;
     }
 
   }
