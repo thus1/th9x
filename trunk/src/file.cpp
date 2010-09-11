@@ -244,14 +244,15 @@ uint8_t EFile::read(uint8_t*buf,uint8_t i_len){
   m_pos += i_len - len;
   return i_len - len;
 }
-uint8_t EFile::readRlc(uint8_t*buf,uint8_t i_len){
-  uint8_t i;
+uint16_t EFile::readRlc(uint8_t*buf,uint16_t i_len){
+  uint16_t i;
   for( i=0; i<i_len; ){
     if((m_bRlc&0x7f) == 0) {
       if(read(&m_bRlc,1)!=1) break;
     }
     assert(m_bRlc & 0x7f);
-    uint8_t l=min(m_bRlc&0x7f,i_len-i);
+    uint8_t l=m_bRlc&0x7f;
+    if((uint16_t)l>(i_len-i)) l = (uint8_t)(i_len-i);
     if(m_bRlc&0x80){
       memset(&buf[i],0,l);
     }else{
@@ -316,11 +317,11 @@ void EFile::closeTrunc()
   if(fri) EeFsFree( fri );  //chain in
 }
 
-uint8_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len, uint8_t maxTme10ms){
+uint16_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_len, uint8_t maxTme10ms){
   create(i_fileId,typ,maxTme10ms);
   bool    state0 = true;
   uint8_t cnt    = 0;
-  uint8_t i;
+  uint16_t i;
   for( i=0; i<=i_len; i++)
   {
     bool nst0 = buf[i] == 0;

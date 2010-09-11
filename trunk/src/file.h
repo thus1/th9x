@@ -61,7 +61,7 @@ public:
   ///open file, write to file and close it. 
   ///If file existed before, then contents is overwritten. 
   ///If file was larger before, then unused blocks are freed
-  uint8_t writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint8_t i_len, uint8_t maxTme10ms); 
+  uint16_t writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_len, uint8_t maxTme10ms); 
 
   uint8_t read(uint8_t*buf,uint8_t i_len);
   uint8_t write(uint8_t*buf,uint8_t i_len);
@@ -69,7 +69,7 @@ public:
   ///return size of compressed file without block overhead
   uint16_t size(); 
   ///read from opened file and decode rlc-coded data
-  uint8_t readRlc(uint8_t*buf,uint8_t i_len);
+  uint16_t readRlc(uint8_t*buf,uint16_t i_len);
   ///deliver current errno, this is reset in open
   uint8_t errno(){return m_err;}
 };
