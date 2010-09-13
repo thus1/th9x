@@ -21,8 +21,8 @@
 
 #ifdef TEST
 #include "assert.h"
-#  define EESIZE   150
-#  define BS       4
+#  define EESIZE   2048
+#  define BS       16
 #  define RESV     64  //reserv for eeprom header with directory (eeFs)
 #else
 //
@@ -228,7 +228,7 @@ uint8_t EFile::openRd(uint8_t i_fileId){
   return  eeFs.files[m_fileId].typ; 
 }
 uint8_t EFile::read(uint8_t*buf,uint8_t i_len){
-  uint8_t len = eeFs.files[m_fileId].size - m_pos; 
+  uint16_t len = eeFs.files[m_fileId].size - m_pos; 
   if(len < i_len) i_len = len;
   len = i_len;
   while(len)
@@ -367,6 +367,7 @@ uint16_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_le
 
 #ifdef TEST
 uint8_t eeprom[EESIZE];
+volatile uint16_t g_tmr10ms=0;
 static void EeFsDump(){
   for(int i=0; i<EESIZE; i++)
   {
@@ -396,7 +397,7 @@ void showfiles()
   EeFsDump();
   EFile f;
   for(int i=0; i<MAXFILES; i++){
-    if(f.open(i)==0) continue;
+    if(f.openRd(i)==0) continue;
     printf("file%d %4d ",i,f.size());
     for(int j=0; j<100; j++){ 
       uint8_t buf[2];
@@ -434,16 +435,23 @@ int main()
   showfiles();
   
   //f[0].create(6,6);
-  for(int i=0; i<1000; i++) buf[i]='6';
-  f[0].writeRlc(6,6,buf,255,100);   
+  for(int i=0; i<1000; i++) buf[i]='6'+i%4;
+  f[0].writeRlc(6,6,buf,300,100);   
   //f[0].trunc(); 
 
   f[0].writeRlc(5,5,buf,5,100);   
 
   showfiles();
 
-  f[0].open(6);
-  //  for(int i=0; i<9; i++){ uint8_t b; f[0].readRlc(&b,1);   }
+  f[0].openRd(6);
+  uint16_t sz=0;
+  for(int i=0; i<500; i++){ 
+    uint8_t b; 
+    uint16_t n=f[0].readRlc(&b,1);   
+    if(n) assert(b==('6'+sz%4));
+    sz+=n;
+  }
+  assert(sz==300);
 //f[0].trunc(); 
 
   showfiles();
