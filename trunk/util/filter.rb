@@ -1,5 +1,5 @@
 #! /usr/bin/env ruby
-require 'gnuplot'
+require 'gnuplot-thus'
 
 =begin
 ISR(ADC_vect, ISR_NOBLOCK)
@@ -36,12 +36,12 @@ class Main
   def init
     @temp=[0]*100
   end
-  def filter1(val,sft)
+  def filter141(val,sft)
     out=@temp[0] >> sft
     @temp[0] += val-out
     out
   end
-  def filter2(val,sft)
+  def filterErez(val)
     out= @temp[0] = (@temp[0]+@temp[1]) / 2
     @temp[1] = (@temp[1]+@temp[2]) / 2
     @temp[2] = (@temp[2]+@temp[3]) / 2
@@ -56,17 +56,12 @@ class Main
     }
     val
   end
-  def filter34(val,sft2)
-    sft2.times{|i|
+  def filterR143(val,rep)
+    rep.times{|i|
       valn=@temp[i]/4
       @temp[i] +=  val - valn
       val=valn
     }
-    # valn=@temp[1]/4
-    # @temp[1] +=  val - valn
-    # val=valn
-    # valn=@temp[2]/4
-    # @temp[2] +=  val - valn
     val
   end
   def filter4(val,sft)
@@ -88,17 +83,33 @@ class Main
   WM=10
   WP=10
   H=100
-  HM=10
-  HP=30
+  HM=5
+  HP=5
+  def plotSet(yin)
+    d=0#10
+    @curves=[]
+    addCurve("stimulation",yin){|y| y }
+    addCurve("f141" ,yin){|y| filter141(y,4)-d*1}
+    addCurve("ferez",yin){|y| filterErez(y)-d*2}
+    addCurve("f143_1",yin){|y| filterR143(y,1)-d*3}
+    addCurve("f143_2",yin){|y| filterR143(y,2)-d*3}
+    addCurve("f143_3",yin){|y| filterR143(y,3)-d*3}
+    addCurve("f143_4",yin){|y| filterR143(y,4)-d*3}
+  end
+
   def initialize
     x=(-WM...(W)).to_a
-    @curves=[]#  [1,x] ]
     
     grade = 4
     noise = 1#0
     @y0=[0]*WM + [H]*W
     @y1=[0]*WM + [40,0]*(W/2)
-    @y2=[0]*11 + ([0]*W).map{rand(noise)+100-noise/2}
+    #@y2=[0]*11 + ([0]*W).map{rand(noise)+100-noise/2}
+    @y2=[0]*11 + [100] + [0]*(W-1)
+    @y2=[0]*11; 
+    y=0
+10.times{|i| @y2 +=  ([y]*5); y+=1}
+10.times{|i| @y2 +=  ([y]*5); y-=1}
     #@y2=@y0
 
     #addCurve("y0",@y0)     {|y| y           }
@@ -111,36 +122,52 @@ class Main
     #addCurve("f3_#{grade}1",@y1){|y| filter3(y,grade)}
     #addCurve("f4_#{grade}1",@y1){|y| filter4(y,grade)}
 
-    d=0#10
-    addCurve("n#{noise}",@y2){|y| y +10 }
-    addCurve("f1_#{grade}_n#{ noise}",@y2){|y| filter1(y,grade)-d*1}
-    addCurve("f2_#{grade}_n#{ noise}",@y2){|y| filter2(y,grade)-d*2}
-    addCurve("f341_#{grade}_n#{noise}",@y2){|y| filter34(y,1)-d*3}
-    addCurve("f342_#{grade}_n#{noise}",@y2){|y| filter34(y,2)-d*3}
-    addCurve("f343_#{grade}_n#{noise}",@y2){|y| filter34(y,3)-d*3}
-    addCurve("f4_#{grade-1}_n#{ noise}",@y2){|y| filter4(y,grade-1)-d*4}
-    addCurve("f4_#{grade}_n#{ noise}",@y2){|y| filter4(y,grade)-d*4}
+    #addCurve("f4_#{grade-1}_n#{ noise}",@y2){|y| filter4(y,grade-1)-d*4}
+    #addCurve("f4_#{grade}_n#{ noise}",@y2){|y| filter4(y,grade)-d*4}
     
     
-    # File.open( "gnuplot.dat", "w") do |gp|
-    Gnuplot.open { |gp|
     #File.open( "gnuplot.dat", "w") { |gp|
+    Thread.new{
+    Gnuplot.open() { |gp|
       Gnuplot::Plot.new( gp ) { |plot|
         
         plot.xrange "[-#{WM}:#{W+WP}]"
         plot.yrange "[-#{HM}:#{H+HP}]"
-        
+        plotSet(@y0)     
         plot.data = @curves.map{|name,ya|
           Gnuplot::DataSet.new( [x,ya] ) { |ds|
             ds.with = "lines"
             ds.title = "#{name}"
-            ds.linewidth = 1
+            ds.linewidth = 2
           }
         }
       }
       #gp.puts
       #gp.puts "pause 100"
+      sleep 100
     }
+    }
+    #Thread.new{
+    Gnuplot.open { |gp|
+      Gnuplot::Plot.new( gp ) { |plot|
+        
+        plot.xrange "[-#{WM}:#{W+WP}]"
+        plot.yrange "[-#{HM}:#{H+HP}]"
+        
+        plotSet(@y2)     
+        plot.data = @curves.map{|name,ya|
+          Gnuplot::DataSet.new( [x,ya] ) { |ds|
+            ds.with = "lines"
+            ds.title = "#{name}"
+            ds.linewidth = 2
+          }
+        }
+      }
+      #gp.puts
+      #gp.puts "pause 100"
+      sleep 100
+    }
+    #}
   end
 end
 

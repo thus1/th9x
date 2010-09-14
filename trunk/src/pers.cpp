@@ -79,32 +79,94 @@ bool eeLoadGeneral()
 #endif  
   return false;
 }
+#define CM(x) convertMode(x)
 
+
+uint8_t modelMixerDefaults=4;
+prog_char* modelMixerDefaultName(uint8_t typ)
+{
+  switch(typ)
+  {
+    case 0: return PSTR("Simple 4-CH");
+    case 1: return PSTR("V-Tail");
+    case 2: return PSTR("Elevon\\Delta");
+    case 3: return PSTR("eCCPM");
+  }
+  return 0;
+}
+void modelMixerDefault(uint8_t typ)
+{
+  memset(&g_model.mixData[0],0,sizeof(g_model.mixData));
+  MixData_r0 *md=&g_model.mixData[0];
+  switch (typ){
+    //Simple 4-Ch
+    case 0:
+      // rud ele thr ail
+      for(uint8_t i= 0; i<4; i++){
+        md->destCh = i+1;       md->srcRaw = CM(i)+1;        md->weight = 100;
+        md++;
+      }
+      break;
+    
+      //V-Tail
+    case 1:
+      md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
+      md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight =-100; md++;
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
+      md->destCh = STK_THR+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 100;
+      break;
+
+      //Elevon\\Delta
+    case 2:
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight = 100; md++;
+      md->destCh = STK_THR+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 100; md++;
+      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
+      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight =-100;
+      break;
+
+      //eCCPM
+    case 3:
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 72; md++;
+      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
+      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 36; md++;
+      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight = 62; md++;
+      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
+      md->destCh = 6;           md->srcRaw = CM(STK_ELE)+1;  md->weight = 36; md++;
+      md->destCh = 6;           md->srcRaw = CM(STK_AIL)+1;  md->weight = 62; md++;
+      md->destCh = 6;           md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
+      break;
+  
+  }
+}
 void modelDefault(uint8_t id)
 {
   memset(&g_model,0,sizeof(g_model));
   strcpy_P(g_model.name,PSTR("MODEL     "));
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
-  g_model.mdVers = MDVERS143;
-  for(uint8_t i= 0; i<4; i++){
-    //     0   1   2   3
-    //0 1 rud ele thr ail
-    //1 2 rud thr ele ail
-    //2 3 ail ele thr rud
-    //3 4 ail thr ele rud
-    g_model.mixData[i].destCh = i+1;
-    g_model.mixData[i].srcRaw = i+1;
-    g_model.mixData[i].weight = 100;
-  }
-  if(g_eeGeneral.stickMode & 1){
-    g_model.mixData[1].srcRaw = 3;
-    g_model.mixData[2].srcRaw = 2;
-  }
-  if(g_eeGeneral.stickMode & 2){
-    g_model.mixData[0].srcRaw = 4;
-    g_model.mixData[3].srcRaw = 1;
-  }
+  g_model.mdVers = 0; //MDVERS143;
+  modelMixerDefault(0);
+
+  //for(uint8_t i= 0; i<4; i++){
+  //  //     0   1   2   3
+  //  //0 1 rud ele thr ail
+  //  //1 2 rud thr ele ail
+  //  //2 3 ail ele thr rud
+  //  //3 4 ail thr ele rud
+  //  g_model.mixData[i].destCh = i+1;
+  //  g_model.mixData[i].srcRaw = convertMode(i)+1;
+  //  g_model.mixData[i].weight = 100;
+  //}
+  //if(g_eeGeneral.stickMode & 1){
+  //  g_model.mixData[1].srcRaw = 3;
+  //  g_model.mixData[2].srcRaw = 2;
+  //}
+  //if(g_eeGeneral.stickMode & 2){
+  //  g_model.mixData[0].srcRaw = 4;
+  //  g_model.mixData[3].srcRaw = 1;
+  //}
 }
 void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
 {
@@ -269,6 +331,7 @@ void eeCheck(bool immediately)
     //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
   else if(msk & EE_MODEL){
+    g_model.mdVers = MDVERS143;
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
     {

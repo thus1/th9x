@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
-- thr error wenn invert
++ thr error wenn invert
 + trim entschaerfen i35,39
 + frame length 22.5 statt 25,2 i4,41
 + subtrim wenn invert i40
@@ -29,8 +29,13 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- alte standard kurven als defaults _/ /- \/ 
-- Pi mit switch full
+- switch mode -1 0 disabled
+- mixline mode + - * =
+- neg curves, more curves with parameters?
+- inactivity warning
+- p1-3 calib 
++ alte standard kurven als defaults _/ /- \/ 
++ Pi mit switch full
 + autom switch erkennung bei betaetigung
 + trimbase entfernen
 - thr curve statt expo
@@ -46,7 +51,7 @@ ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
 
 - curr event global var
-- default acro/heli120
++ default acro/heli120
 - pruefung des Schuelersignals
 - format eeprom
 - pcm 
@@ -159,11 +164,23 @@ ModelData_r143 g_model;
 
 
 
+const prog_char APM modn12x3[]=
+  "\x0" "\x1" "\x2" "\x3"
+  "\x0" "\x2" "\x1" "\x3"
+  "\x3" "\x1" "\x2" "\x0"
+  "\x3" "\x2" "\x1" "\x0";
+
 const prog_char APM modi12x3[]=
   "RUD""ELE""THR""AIL"
   "RUD""THR""ELE""AIL"
   "AIL""ELE""THR""RUD"
   "AIL""THR""ELE""RUD";
+
+uint8_t convertMode(uint8_t srcChn)
+{
+  if(srcChn>=4) return srcChn;
+  return   pgm_read_byte(modn12x3+(uint8_t)(g_eeGeneral.stickMode*4+srcChn));
+}
 
 
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
@@ -444,6 +461,7 @@ MenuFuncP lastPopMenu()
 void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){
+    if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
     g_menuStackPtr = uppermost ? 0 : g_menuStackPtr-1;
     beepKey();  
     (*g_menuStack[g_menuStackPtr])(EVT_ENTRY_UP);
@@ -453,12 +471,14 @@ void popMenu(bool uppermost)
 }
 void chainMenu(MenuFuncP newMenu)
 {
+  if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
   g_menuStack[g_menuStackPtr] = newMenu;
   (*newMenu)(EVT_ENTRY);
   beepKey();
 }
 void pushMenu(MenuFuncP newMenu)
 {
+  if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
   g_menuStackPtr++;
   if(g_menuStackPtr >= DIM(g_menuStack))
   {

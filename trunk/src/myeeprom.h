@@ -57,7 +57,7 @@ typedef struct t_EEGeneral_r119 {
   uint8_t   currModel; //0..15
   uint8_t   contrast;
   uint8_t   vBatWarn;
-  int8_t    vBatCalib;  
+  int8_t    vBatCalib; 
   int8_t    lightSw;
   TrainerData_r0 trainer;
   uint8_t   adcFilt:2;     // was view in earlier versions

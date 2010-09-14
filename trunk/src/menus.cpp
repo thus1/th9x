@@ -520,14 +520,15 @@ void genMixTab()
   }
 #endif
 }
-
+uint8_t currMixerLine;
+int32_t currMixerVal;
+int32_t currMixerSum;
 void menuProcMix(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("MIXER");  
   MSTATE_CHECK_V(4,menuTabModel,s_mixMaxSel);
   int8_t  sub    = mstate2.m_posVert;
-
   static uint8_t s_pgOfs;
   MixData_r0 *md=g_model.mixData;
   switch(event)
@@ -578,6 +579,13 @@ void menuProcMix(uint8_t event)
     if(s_mixTab[k].hasDat){ //show data 
       MixData_r0 *md2=&md[s_mixTab[k].editIdx];
       uint8_t attr = sub==s_mixTab[k].selDat ? BLINK : 0; 
+      
+      if(attr) {
+        currMixerLine = s_mixTab[k].editIdx;
+        lcd_outdez(  10*FW, 0, currMixerVal>>9);
+        lcd_outdez(  16*FW, 0, currMixerSum>>9);
+      }
+
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
       lcd_putcAtt(    7*FW+1, y, '%',0);
       putsChnRaw(     9*FW-2, y, md2->srcRaw,0);
@@ -956,87 +964,95 @@ void menuProcModel(uint8_t event)
   static MState2 mstate2;
   uint8_t x=TITLE("SETUP ");  
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
-  MSTATE_TAB = { 1,sizeof(g_model.name),1,3,1};
-  MSTATE_CHECK_VxH(2,menuTabModel,4+1);
-  int8_t  sub    = mstate2.m_posVert;
+  MSTATE_TAB = { 1,sizeof(g_model.name),1,3,1,1};
+  MSTATE_CHECK_VxH(2,menuTabModel,5+1);
+  int8_t  sub    = mstate2.m_posVert-1;
 
   uint8_t subSub = mstate2.m_posHorz+1;
+  static uint8_t s_type;
+  switch(event){
+    case EVT_ENTRY: s_type=0; 
+      break;
+    case EVT_EXIT: 
+      if(! g_model.mdVers )  modelMixerDefault(s_type);
+      break;
+  }
 
-  lcd_putsAtt(    0,    2*FH, PSTR("Name"),sub==1 && subSub==0 ? BLINK:0);
-  lcd_putsnAtt(   6*FW, 2*FH, g_model.name ,sizeof(g_model.name),BSS_NO_INV);
-
-  lcd_putsAtt(    0,    3*FH, PSTR("Proto"),0);//sub==2 ? INVERS:0);
-  lcd_putsnAtt(   6*FW, 3*FH, PSTR(PROT_STR)+PROT_STR_LEN*g_model.protocol,PROT_STR_LEN,
-                 (sub==2 ? BLINK:0));
-
-  lcd_putsAtt(    0,    4*FH, PSTR("Timer"),sub==3 && subSub==0 ? BLINK:0);
-  putsTime(       5*FW, 4*FH, g_model.tmrVal,
-                  (sub==3 && subSub==1 ? BLINK:0),
-                 (sub==3 && subSub==2 ? BLINK:0) );
-  
-  lcd_putsnAtt(  12*FW, 4*FH, PSTR(" OFF ABS THRTHR%")+4*g_model.tmrMode,4,
-                 (sub==3 && subSub==3 ? BLINK:0));
-
-
-  //   lcd_putsAtt( 0,    6*FH, PSTR("Mode"),sub==4?INVERS:0);
-  // lcd_putcAtt( 4*FW, 6*FH, '1'+g_model.stickMode,sub==4?INVERS:0);
-  // for(uint8_t i=0; i<4; i++)
-  // {
-  //   lcd_img(    (6+4*i)*FW, (5)*FH, sticks,i,0);
-  //   putsChnRaw( (6+4*i)*FW, (6)*FH,i+1,sub==4?BLINK:0);
-  // }
-  lcd_putsAtt(    0, (7)*FH, PSTR("RM"),sub==4?BLINK:0);
-  lcd_puts_P(  FW*6, (7)*FH, PSTR("remove [MENU]"));
-
-  switch(sub)
+  uint8_t y=1*FH;
+  for(uint8_t i=0; i<5; i++)
   {
-    case 1:
-      if(subSub) {
-        char v = char2idx(g_model.name[subSub-1]);
-        CHECK_INCDEC_H_MODELVAR_BF( event,v ,0,NUMCHARS-1);
-        v = idx2char(v);
-        g_model.name[subSub-1]=v;
-        lcd_putcAtt((6+subSub-1)*FW, 2*FH, v,BLINK);
-      }
-      break;
-    case 2:
-      CHECK_INCDEC_H_MODELVAR(event,g_model.protocol,0,PROT_MAX);
-      break;
-    case 3:
-      switch(subSub) 
-      {
-        case 1:
-          {
-          int8_t min=g_model.tmrVal/60;
-          CHECK_INCDEC_H_MODELVAR_BF( event,min ,0,59);
-          g_model.tmrVal = g_model.tmrVal%60 + min*60;
-         break;
+    y+=FH;
+    uint8_t attr = sub==i ? BLINK : 0; 
+    lcd_putsn_P(  0,    y,    PSTR("Name ""Proto""Timer""Type ""RM   ")+5*i,5);
+    switch(i){
+      case 0:    
+        //lcd_putsAtt(    0,    2*FH, PSTR("Name"),sub==1 && subSub==0 ? BLINK:0);
+        lcd_putsnAtt(   6*FW, y, g_model.name ,sizeof(g_model.name),BSS_NO_INV);
+        if(attr) {
+          char v = char2idx(g_model.name[subSub-1]);
+          CHECK_INCDEC_H_MODELVAR_BF( event,v ,0,NUMCHARS-1);
+          v = idx2char(v);
+          g_model.name[subSub-1]=v;
+          lcd_putcAtt((6+subSub-1)*FW, y, v,BLINK);
+        }
+        break;
+      case 1:    
+        //lcd_putsAtt(    0,    3*FH, PSTR("Proto"),0);//sub==2 ? INVERS:0);
+        lcd_putsnAtt(   6*FW, y, PSTR(PROT_STR)+PROT_STR_LEN*g_model.protocol,PROT_STR_LEN, attr);
+        if(attr) CHECK_INCDEC_H_MODELVAR(event,g_model.protocol,0,PROT_MAX);
+        break;
+      case 2:
+        //lcd_putsAtt(    0,    4*FH, PSTR("Timer"),sub==3 && subSub==0 ? BLINK:0);
+        putsTime(       5*FW, y, g_model.tmrVal,
+                        ( subSub==1 ? attr:0),
+                        ( subSub==2 ? attr:0) );
+        lcd_putsnAtt(  12*FW, y, PSTR(" OFF ABS THRTHR%")+4*g_model.tmrMode,4,
+                       ( subSub==3 ? attr:0));
+        if(attr) switch(subSub) 
+        {
+          case 1:
+            {
+              int8_t min=g_model.tmrVal/60;
+              CHECK_INCDEC_H_MODELVAR_BF( event,min ,0,59);
+              g_model.tmrVal = g_model.tmrVal%60 + min*60;
+              break;
+            }
+          case 2:
+            {
+              int8_t sec=g_model.tmrVal%60;
+              sec -= checkIncDec_hm( event,sec+2 ,1,62)-2;
+              g_model.tmrVal -= sec ;
+              if((int16_t)g_model.tmrVal < 0) g_model.tmrVal=0;
+              break;
+            }
+          case 3:
+            CHECK_INCDEC_H_MODELVAR_BF( event,g_model.tmrMode ,0,3);
+            break;
+        }
+        break;
+      case 3:
+        if(! g_model.mdVers ){
+          lcd_putsAtt(  FW*6, y, modelMixerDefaultName(s_type),attr);
+          if(attr){
+            checkIncDecGen2(event, &s_type, 0, modelMixerDefaults-1, 0);
           }
-        case 2:
-          {
-          int8_t sec=g_model.tmrVal%60;
-          sec -= checkIncDec_hm( event,sec+2 ,1,62)-2;
-          g_model.tmrVal -= sec ;
-          if((int16_t)g_model.tmrVal < 0) g_model.tmrVal=0;
-          break;
+        }else{
+          lcd_putsAtt(  FW*6, y, PSTR("modif."),attr?INVERS:0);
+        }
+        y+=FH;
+        break;
+      case 4:
+        //lcd_putsAtt(    0, (7)*FH, PSTR("RM"),attr);
+        lcd_putsAtt(  FW*6, y, PSTR("[MENU LONG]"),attr);
+        if(attr){
+          if(event==EVT_KEY_LONG(KEY_MENU)){
+            killEvents(event);
+            EFile::rm(FILE_MODEL(g_eeGeneral.currModel)); //delete file
+            eeLoadModel(g_eeGeneral.currModel); //load default values
+            chainMenu(menuProcModelSelect);
           }
-        case 3:
-          CHECK_INCDEC_H_MODELVAR_BF( event,g_model.tmrMode ,0,3);
-          break;
-
-      }
-      break;
-      // case 4:
-      // CHECK_INCDEC_H_MODELVAR(event,g_model.stickMode,0,3);
-      // break;
-    case 4:
-      if(event==EVT_KEY_LONG(KEY_MENU)){
-        killEvents(event);
-        EFile::rm(FILE_MODEL(g_eeGeneral.currModel)); //delete file
-        eeLoadModel(g_eeGeneral.currModel); //load default values
-        chainMenu(menuProcModelSelect);
-      }
-      break;
+        }       
+    }//switch(i)
   }
 }
 void menuProcModelSelect(uint8_t event)
@@ -1117,38 +1133,41 @@ void menuProcDiagCalib(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("CALIB");
-  MSTATE_CHECK_V(7,menuTabDiag,5);
+  MSTATE_CHECK_V(7,menuTabDiag,4);
   int8_t  sub    = mstate2.m_posVert ;
-  static int16_t midVals[4];
-  static int16_t lowVals[4];
+  static int16_t midVals[7];
+  static int16_t loVals[7];
+  static int16_t hiVals[7];
+
+  for(uint8_t i=0; i<7; i++) { //get low and high vals for sticks and trims
+    int16_t vt = anaIn(i);
+    loVals[i] = min(vt,loVals[i]);
+    hiVals[i] = max(vt,hiVals[i]);
+    if(i>=4) midVals[i] = (loVals[i] + hiVals[i])/2;
+  }
+
   switch(event)
   {
+    case EVT_ENTRY:
+      for(uint8_t i=0; i<7; i++) loVals[i] = 15000;
+      break;
     case EVT_KEY_BREAK(KEY_DOWN): // !! achtung sub schon umgesetzt
       switch(sub)
       {
         case 2: //get mid
-          //for(uint8_t i=0; i<4; i++)midVals[i] = g_anaIns[i];
           for(uint8_t i=0; i<4; i++)midVals[i] = anaIn(i);
           beepKey();
           break;
         case 3: 
-          //for(uint8_t i=0; i<4; i++)lowVals[i] = g_anaIns[i];
-          for(uint8_t i=0; i<4; i++)lowVals[i] = anaIn(i);
-          beepKey();
-          break;
-        case 4: 
 #ifdef SIM
           printf("do calib");
 #endif
-          for(uint8_t i=0; i<4; i++){
+          for(uint8_t i=0; i<4; i++)
+            if(hiVals[i]-loVals[i]>50) {
             g_eeGeneral.calibMid[i]  = midVals[i];
-            //int16_t    dv1 = abs(midVals[i]-lowVals[i]);
-            //            int16_t    dv2 = abs(midVals[i]-(int16_t)anaIn(i));
-            //            sum += g_eeGeneral.calibSpan[i] = min(dv1,dv2);
-            uint16_t v;
-            v = midVals[i]       - lowVals[i];
+              int16_t v = midVals[i] - loVals[i];
             g_eeGeneral.calibSpanNeg[i] = v - v/64;
-            v = anaIn(i)- midVals[i];
+              v = hiVals[i] - midVals[i];
             g_eeGeneral.calibSpanPos[i] = v - v/64;
           }
           int16_t sum=0;
@@ -1160,25 +1179,21 @@ void menuProcDiagCalib(uint8_t event)
       }
       break;
   }
-  for(uint8_t i=1; i<5; i++)
+  for(uint8_t i=1; i<4; i++)
   {
     uint8_t y=i*FH+FH;
-    lcd_putsnAtt( 0, y,PSTR("SetMid SetLow SetHighReady  ")+7*(i-1),7,
-                    sub==i ? BLINK : 0);
+    lcd_putsnAtt( 0, y,PSTR("SetMid MovArndDone   ")+7*(i-1),7,
+                    sub==i ? INVERS : 0);
   }
   for(uint8_t i=0; i<4; i++)
   {
     uint8_t y=i*FH+0;
     lcd_putsn_P( 8*FW,  y,      PSTR("A1A2A3A4")+2*i,2);  
-    //lcd_outhex4(12*FW,  y,      g_anaIns[i]);
     lcd_outhex4(12*FW,  y,      anaIn(i));
-    //lcd_puts_P( 16*FW,  y+4*FH, PSTR(":-"));  
-    //lcd_putsn_P( 8*FW,  y+4*FH, PSTR("C1C2C3C4")+2*i,2);  
-    //lcd_puts_P( 11*FW,  y+4*FH, PSTR("-    +"));  
     lcd_puts_P( 11*FW,  y+4*FH, PSTR("<    >"));  
-    lcd_outhex4( 8*FW-3,y+4*FH, g_eeGeneral.calibSpanNeg[i]);
-    lcd_outhex4(12*FW,  y+4*FH, g_eeGeneral.calibMid[i]);
-    lcd_outhex4(17*FW,  y+4*FH, g_eeGeneral.calibSpanPos[i]);
+    lcd_outhex4( 8*FW-3,y+4*FH, sub==2 ? loVals[i]  :g_eeGeneral.calibSpanNeg[i]);
+    lcd_outhex4(12*FW,  y+4*FH, sub==1 ? anaIn(i) : (sub==2 ? midVals[i] :g_eeGeneral.calibMid[i]));
+    lcd_outhex4(17*FW,  y+4*FH, sub==2 ? hiVals[i]  :g_eeGeneral.calibSpanPos[i]);
   }
 
 }
@@ -1909,11 +1924,15 @@ void perOut(int16_t *chanOut)
           (md.srcRaw <= 4 ||  md.srcRaw > 9) //P1 P2 P3 MAX FUL
           //          md.srcRaw != 8         && //MAX
           //          md.srcRaw != 9            //FUL
-      )
-        continue;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
+      ){
+        currMixerVal=0;
+        goto mixend;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
+      }
 
       int16_t v;
-      v = !getSwitch(md.swtch,1) ? (md.srcRaw == 9 ? -512 : 0) : anas[md.srcRaw-1];
+      v = !getSwitch(md.swtch,1) ? ( //P1 P2 P3     FUL
+        (md.srcRaw == 5 || md.srcRaw == 6 || md.srcRaw == 7 || md.srcRaw == 9 )
+                                    ? -512 : 0) : anas[md.srcRaw-1];
       if(md.weight<0) v=-v;
       if (md.speedUp || md.speedDown)
       {
@@ -1965,36 +1984,20 @@ void perOut(int16_t *chanOut)
         }
         v = act[i];
       }
-//       switch(md.curve){ 
-//         case 0: 
-//           break;
-//         case 1: 
-//           if(md.srcRaw == 9) //FUL
-//           {
-//             if( v<0 ) v=-512;   //x|x>0
-//             else      v=-512+2*v;
-//           }else{
-//             if( v<0 ) v=0;   //x|x>0
-//           }
-//           break;
-//         case 2: 
-//           if(md.srcRaw == 9) //FUL
-//           {
-//             if( v>0 ) v=512;   //x|x<0
-//             else      v=512+2*v;
-//           }else{
-//             if( v>0 ) v=0;   //x|x<0
-//           }
-//           break;
-//         case 3: v = abs(v);      break; //ABS
-//         default:
-//           //if((md.curve >= 4) && (md.curve < 8))
-//           v = intpol(v, md.curve - 4);
-//       }
       if(md.curve) v = intpol(v, md.curve - 1);
 
+    {
       int32_t dv=(int32_t)v*(abs(md.weight)); // 10+1 Bit + 7 = 17+1
+      if(currMixerLine==i){
+        currMixerVal=dv; //for mixer debug
+      }
       chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
+    }
+      mixend:
+      if(currMixerLine==i){
+        currMixerSum=chans[md.destCh-1];
+      }
+      
     }
   }
 
