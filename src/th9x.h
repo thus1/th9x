@@ -135,6 +135,19 @@
 #define INP_G_RF_POW   1
 #define INP_G_RuddDR   0
 
+#define STK_RUD  0
+#define STK_ELE  1
+#define STK_THR  2
+#define STK_AIL  3
+#define STK_P1   4
+#define STK_P2   5
+#define STK_P3   6
+//convert from mode 1 to mode g_eeGeneral.stickMode
+//NOTICE!  =>  1..4 -> 1..4
+uint8_t convertMode(uint8_t srcChn);
+
+#define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
+//#define THRCHN convertMode(STK_THR)
 
 
 enum EnumKeys {
@@ -189,6 +202,7 @@ enum EnumKeys {
 //#define EVT_KEY_DBL(key)   ((key)|0x10)
 #define EVT_ENTRY               (0xff - _MSK_KEY_REPT)
 #define EVT_ENTRY_UP            (0xfe - _MSK_KEY_REPT)
+#define EVT_EXIT                (0xfd - _MSK_KEY_REPT)
 #define EVT_TYPE_MASK            0xf0
 #define EVT_KEY_MASK             0x0f
 
@@ -261,7 +275,6 @@ bool    getSwitch(int8_t swtch, bool nc);
 ///
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att);
 
-#define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
 
 void checkMem();
 void setTHR0pos();
@@ -462,9 +475,19 @@ inline void _beep(uint8_t b) {
 #define beepErr()  _beep(g_beepVal[3])
 
 
-inline int16_t trimExp(uint8_t trim)
+extern uint8_t modelMixerDefaults;
+prog_char* modelMixerDefaultName(uint8_t typ);
+void modelMixerDefault(uint8_t typ);
+
+
+
+inline int16_t trimExp(int8_t trim)
 { 
-  return trim*(abs(trim)+1)/2;
+  int16_t  ret=trim*(abs(trim)+3)/4;
+#ifdef SIM
+  printf("trim=%d,%d\n",trim,ret);
+#endif  
+  return ret;   
 }
 
 

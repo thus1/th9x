@@ -1,0 +1,30 @@
+
+
+
+
+
+trunk-r146
+- mixer debug support
+- trim steps smaller, max range 50%
+- issue 48 negativ trim large steps.
+- 4 model templates
+- issue 38, calibration simplified
+
+trunk-r145
+- issue 47 filesize larger 256
+trunk-r144
+- filesize larger 256
+
+trunk-r143
+
+- issue46 Stick latency adjustable adcfilter 0,1,2,3
+- issue37 THR warning with inverted THR use.
+- issue15 Enhancement: Neue Standard-Kurve
+- BF: checkswitches now works for id0-id2
+- simulation id0-2 with key-4(up) and 5(down)
+- more useful naming of pers. datastructures
+- rearranged model-datastructure (rem.trimDef, added 3*3point curve )
+- key-filter time 40ms
+- sign of weight evaluated before curves
+- 3 Standard-curves replaced by 3 three-point curves
+- introduced Changelog file
