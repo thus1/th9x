@@ -68,6 +68,7 @@ void putEvent(uint8_t evt)
   //#ifdef SIM
   //  printf("putEvent %d %x\n",evt,evt);
   //#endif
+  g_lastKey1s = g_tmr1s;
   s_evt = evt;
 }
 uint8_t getEvent()
@@ -201,12 +202,19 @@ uint8_t getEventDbl(uint8_t event)
 
 //uint16_t g_anaIns[8];
 volatile uint16_t g_tmr10ms;
+volatile uint16_t g_tmr1s;
+uint16_t g_lastKey1s;
 volatile uint8_t  g_blinkTmr10ms;
 
 void per10ms()
 {
   g_tmr10ms++;
   g_blinkTmr10ms++;
+  static int8_t s_hlp1s;
+  if( --s_hlp1s < 0){
+    g_tmr1s++;
+    s_hlp1s=99;
+  }
   uint8_t enuk = KEY_MENU;
   uint8_t    in = ~PINB;
   for(int i=1; i<7; i++)
