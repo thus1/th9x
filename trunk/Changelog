@@ -1,6 +1,10 @@
 
 
+- sim: changed key4<->5
+- sim allow eeprom-file as argument
+- issue 49 'sim calib' template
 
+- pruefung des Schuelersignals
 
 
 trunk-r146

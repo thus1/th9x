@@ -28,6 +28,7 @@ unsigned char pinb,portb,pind;
 unsigned char pine,ping;
 unsigned char dummyport;
 char g_title[80];
+const char *eepromFile = "eeprom.bin";
 
 
 void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
@@ -54,7 +55,7 @@ void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
 
 void eeWriteBlockCmp(const void *i_pointer_ram, void *pointer_eeprom, size_t size)
 {
-  FILE *fp = fopen("eeprom.bin", "r+");
+  FILE *fp = fopen(eepromFile, "r+");
   long ofs = (long) pointer_eeprom;
   const char* pointer_ram= (const char*)i_pointer_ram;
   printf("eeWr p=%10p blk%3d ofs=%2d l=%d",pointer_ram,
@@ -87,7 +88,7 @@ void eeprom_write_blockxx (const void *pointer_ram,
                     size_t size)
 {
   printf("eeprom_write_block p=%p ofs=%d l=%2d\n",pointer_ram,(int)pointer_eeprom,(int)size);
-  FILE *fp=fopen("eeprom.bin", "r+");
+  FILE *fp=fopen(eepromFile, "r+");
   if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
   fwrite(pointer_ram, size, 1,fp);
   fclose(fp);
@@ -97,7 +98,7 @@ void eeprom_read_block (void *pointer_ram,
                    const void *pointer_eeprom,
                    size_t size)
 {
-  FILE *fp=fopen("eeprom.bin", "r");
+  FILE *fp=fopen(eepromFile, "r");
   if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
   fread(pointer_ram, size, 1, fp);
   fclose(fp);
@@ -155,26 +156,41 @@ Th9xSim::Th9xSim(FXApp* a)
   bmp = new FXBitmap(a,&buf2,BITMAP_KEEP,W2,H2);
 
   FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  FXHorizontalFrame *hf0;
+  //FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  FXHorizontalFrame *hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
 
   //rh lv rv lh
   for(int i=0; i<4; i++){
     switch(i)
     {
+#define L LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y
+#define X0 10
+#define Y0 20
       case 0:
-        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_HORIZONTAL,X0+0,Y0+120,100,20);
         break;
       case 1:
-        sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
-        hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
+        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_VERTICAL,X0+100,Y0+20,20,100);
         break;
       case 2:
-        sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
+        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_VERTICAL,X0+120,Y0+20,20,100);
         break;
       case 3:
-        sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_HORIZONTAL,X0+140,Y0+120,100,20);
         break;
+//       case 0:
+//         sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+//         break;
+//       case 1:
+//         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
+//         hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
+//         break;
+//       case 2:
+//         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
+//         break;
+//       case 3:
+//         sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
+//         break;
       default:;
     }
     sliders[i]->setRange(0,1023);
@@ -247,10 +263,11 @@ long Th9xSim::onKeypress(FXObject*,FXSelector,void*v)
 
 void Th9xSim::init2()
 {
-  eeReadAll();
-  checkMem();
-  checkTHR();
-  checkSwitches();
+  init();
+  // eeReadAll();
+  // checkMem();
+  // checkTHR();
+  // checkSwitches();
 }
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
@@ -338,12 +355,12 @@ void Th9xSim::refreshDiplay()
     static FXuint id=0,k4st=0,k5st=0;
     bool ks=getApp()->getKeyState(KEY_4);
     if(ks != k4st){
-      if(ks && id<2) id++;
+      if(ks && id>0) id--;
       k4st = ks;
     }
     ks=getApp()->getKeyState(KEY_5);
     if(ks != k5st){
-      if(ks && id>0) id--;
+      if(ks && id<2) id++;
       k5st = ks;
     }
     switch(id){
@@ -373,6 +390,12 @@ void doFxEvents()
 
 int main(int argc,char **argv)
 {
+  
+  if(argc>=2){
+    eepromFile = argv[1];
+  }
+  printf("eeprom = %s\n",eepromFile);
+
   pine = 0xff & ~(1<<INP_E_ID2);// & ~(1<<INP_E_ElevDR);
   ping = 0xff ^ ( 1<<INP_G_RuddDR);
   // Each FOX GUI program needs one, and only one, application object.

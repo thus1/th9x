@@ -413,63 +413,25 @@ class Reader_V4
     else;
       hlp=CStruct::ModelData_helper.new()
       hlp.fromBin(buf)
+      #p hlp
       if buf.length==CStruct::ModelData_r0.new().sizeof
-	return 			"ModelData_r0  ´#{hlp.name}´",CStruct::ModelData_r0
+	return 			"ModelData_r0  '#{hlp.name}'",CStruct::ModelData_r0
       else
 	case hlp.mdVers
-	when MDVERS84; 	return 	"ModelData_r84 ´#{hlp.name}´",CStruct::ModelData_r84
-	when MDVERS143; return 	"ModelData_r143´#{hlp.name}´",CStruct::ModelData_r143
-	else;     	return 	"ModelData??   ´#{hlp.name}´",nil
+	when MDVERS84; 	return 	"ModelData_r84 '#{hlp.name}'",CStruct::ModelData_r84
+	when MDVERS143; return 	"ModelData_r143'#{hlp.name}'",CStruct::ModelData_r143
+	else;     	return 	"ModelData??   '#{hlp.name}'",nil
 	end
       end
     end
   end
   def infoFileFull(fi)
     cmt,cls = infoFileTyp(fi)
-    puts "--- File #{fi} #{cmt}: ---------------------------------"
+    puts "--- File #{fi} '#{cmt}': ---------------------------------"
     return if !cls
     obj=cls.new
     obj.fromBin(@fbufdec[fi])
     puts obj
-    
-#     return if @fbufdec[fi] == ""
-#     if fi==0
-#       hlp=CStruct::EEGeneral_helper.new()
-#       hlp.fromBin(@fbufdec[fi])
-#       case v=hlp.myVers
-#       when 1  ;   general=CStruct::EEGeneral_r0.new()
-#       when 2  ;   general=CStruct::EEGeneral_r119.new()
-#       else
-# 	raise "bad vers #{v}"
-#       end
-#       general.fromBin(@fbufdec[fi])
-#       puts general
-#     else
-#       buf=@fbufdec[fi]
-#       #if (l1=buf.length) < (l2=CStruct::ModelData_V4.sizeof)
-#       #  puts "bad length #{l1} != #{l2} fill up with zeroes"
-#       #  buf=buf+(0.chr*(l2-l1))
-#       #end
-#       if buf.length==CStruct::ModelData_r0.new().sizeof
-# 	puts "mod_r0"
-#         mod=CStruct::ModelData_r0.new()
-#       else
-# 	hlp=CStruct::ModelData_helper.new()
-# 	hlp.fromBin(buf)
-# 	case hlp.mdVers
-# 	when MDVERS84
-# 	  puts "mod_r84"
-# 	  mod=CStruct::ModelData_r84.new()
-# 	when MDVERS143
-# 	  puts "mod_r143"
-# 	  mod=CStruct::ModelData_r143.new()
-# 	else
-# 	  raise "unknown type #{hlp.mdVers}"
-# 	end
-#       end
-#       mod.fromBin(buf)
-#       puts mod
-#     end
   end
   def infoFile(fi)
     bi  = @eefs.files[fi].startBlk

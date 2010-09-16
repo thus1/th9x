@@ -249,6 +249,9 @@ void    popMenu(bool uppermost=false);
 /// Gibt Alarm Maske auf lcd aus. 
 /// Die Maske wird so lange angezeigt bis eine beliebige Taste gedrueckt wird.
 void    alert(const prog_char * s);
+
+///common init for simu and target
+void    init();
 /// periodisches Hauptprogramm
 void    perMain();
 /// Bearbeitet alle zeitkritischen Jobs.
@@ -450,7 +453,7 @@ extern const PROGMEM char modi12x3[];
 extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
 extern int16_t            g_chans512[NUM_CHNOUT];
-
+extern uint8_t            g_trainerSlaveActive;
 #include "lcd.h"
 extern const char stamp1[];
 extern const char stamp2[];
@@ -485,7 +488,7 @@ inline int16_t trimExp(int8_t trim)
 { 
   int16_t  ret=trim*(abs(trim)+3)/4;
 #ifdef SIM
-  printf("trim=%d,%d\n",trim,ret);
+  //  printf("trim=%d,%d\n",trim,ret);
 #endif  
   return ret;   
 }
