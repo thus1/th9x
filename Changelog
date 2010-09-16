@@ -1,5 +1,8 @@
 
+- issue 51
+- auto-light when keypressed, with timeout
 
+trunk-r146
 - sim: changed key4<->5
 - sim allow eeprom-file as argument
 - issue 49 'sim calib' template

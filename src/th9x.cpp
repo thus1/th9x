@@ -520,12 +520,27 @@ void perMain()
     evalCaptures();
 #endif
   }
+}
+void per10ms_2()
+{
   switch( g_tmr10ms & 0x1f ) { //alle 10ms*32
     case 1:
-      //check light switch
-      if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
-      else                                  PORTB &= ~(1<<OUT_B_LIGHT);
+      {
+      //check light switch in timerint, issue 51
+      int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH;
+      if(mins <= 0){
+        if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
+        else                                  PORTB &= ~(1<<OUT_B_LIGHT);
+      }else{
+        if((g_tmr1s-g_lastKey1s) < (uint16_t)30*mins) {
+          PORTB |=  (1<<OUT_B_LIGHT);
+        }else{
+          PORTB &= ~(1<<OUT_B_LIGHT);
+          g_lastKey1s = g_tmr1s-30*mins;
+        }
+      }
       break;
+      }
 
     case 2:
       {
@@ -565,7 +580,6 @@ void perMain()
 
       break;
   }
-  
 }
 volatile uint16_t captureRing[16];
 volatile uint8_t  captureWr;
@@ -732,6 +746,7 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
     PORTE &= ~(1<<OUT_E_BUZZER);
   }
   per10ms();
+  per10ms_2();
   heartbeat |= HEART_TIMER10ms;
   cli();
   TIMSK |= (1<<OCIE0);

@@ -1408,9 +1408,15 @@ void menuProcSetup0(uint8_t event)
   lcd_puts_P( 4*FW, y,PSTR("V BAT WARNING"));
   y+=FH;
 
-  putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,sub==2 ? BLINK : 0);
-  if(sub==2){
-    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH); //5-10V
+  uint8_t attr=sub==2 ? BLINK : 0;
+  if(g_eeGeneral.lightSw<=MAX_DRSWITCH){
+    putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,attr);
+  }else{
+    lcd_outdezAtt(4*FW,y,(g_eeGeneral.lightSw-MAX_DRSWITCH)*5,(attr)|PREC1);
+    lcd_puts_P(   4*FW,y,PSTR("m"));
+  }
+  if(attr){
+    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH+20);
     CHECK_LAST_SWITCH(g_eeGeneral.lightSw,EE_GENERAL|_FL_POSNEG);
   }
   lcd_puts_P( 6*FW, y,PSTR("LIGHT"));

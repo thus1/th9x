@@ -257,6 +257,7 @@ void    perMain();
 /// Bearbeitet alle zeitkritischen Jobs.
 /// wie z.B. einlesen aller Eingaenge, Entprellung, Key-Repeat..
 void    per10ms();
+void    per10ms_2();
 /// Erzeugt periodisch alle Outputs ausser Bildschirmausgaben.
 void perOut(int16_t *chanOut);
 ///   Liefert den Zustand des Switches 'swtch'. Die Numerierung erfolgt ab 1
@@ -445,6 +446,7 @@ extern uint16_t anaIn(uint8_t chan);
 //extern uint16_t           g_anaIns[8];
 extern uint8_t            g_vbat100mV;
 extern volatile uint16_t  g_tmr10ms;
+extern volatile uint16_t  g_tmr1s;
 extern volatile uint8_t   g_blinkTmr10ms;
 extern uint8_t            g_beepCnt;
 extern uint8_t            g_beepVal[4];
@@ -454,6 +456,7 @@ extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
 extern int16_t            g_chans512[NUM_CHNOUT];
 extern uint8_t            g_trainerSlaveActive;
+extern uint16_t           g_lastKey1s;
 #include "lcd.h"
 extern const char stamp1[];
 extern const char stamp2[];
