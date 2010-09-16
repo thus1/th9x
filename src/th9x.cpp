@@ -29,6 +29,9 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
++ sim calib template
+- slave activity sign
+- standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
 - mixline mode + - * =
 - neg curves, more curves with parameters?
@@ -51,8 +54,7 @@ ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
 
 - curr event global var
-+ default acro/heli120
-- pruefung des Schuelersignals
++ pruefung des Schuelersignals
 - format eeprom
 - pcm 
 - light auto off
@@ -63,6 +65,7 @@ doku
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 - special curve x<0 and x>0 when FUL doku
 done
++ default acro/heli120
 + trim ohne repeat (nur richtung null) i35,39
 + column select mit long click? 
 + trim -> limitoffset (subtrim)
@@ -160,7 +163,8 @@ mode4 ail thr ele rud
 
 EEGeneral_r119 g_eeGeneral;
 ModelData_r143 g_model;
-
+uint16_t       s_trainerLast10ms;
+uint8_t        g_trainerSlaveActive;
 
 
 
@@ -312,11 +316,11 @@ void checkTHR()
 
 
 
-MenuFuncP g_menuStack[5]
-#ifdef SIM
- = {menuProc0};
-#endif
-;
+MenuFuncP g_menuStack[5];
+// #ifdef SIM
+//  = {menuProc0};
+// #endif
+// ;
 uint8_t  g_menuStackPtr = 0;
 uint8_t  g_beepCnt;
 uint8_t  g_beepVal[4];
@@ -554,6 +558,12 @@ void perMain()
           //g_beepVal = BEEP_VAL;
       }
       break;
+    case 4:
+      if((g_tmr10ms - s_trainerLast10ms) > 50 ){
+        g_trainerSlaveActive = 0;
+      }
+
+      break;
   }
   
 }
@@ -763,6 +773,10 @@ void evalCaptures()
     if(ppmInState && ppmInState<=8){
       if(val>800 && val <2200){
         g_ppmIns[ppmInState++ - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
+        if(ppmInState==8){
+          s_trainerLast10ms = g_tmr10ms;
+          g_trainerSlaveActive  = 1;
+        }
       }else{
         ppmInState=0; //not triggered
       }
@@ -776,9 +790,23 @@ void evalCaptures()
 }
 
 
+#endif
+void init() //common init for simu and target
+{
+  g_menuStack[0] =  menuProc0;
+
+  eeReadAll(); //load general setup and selected model
+  checkMem();  //enough eeprom free? 
+#ifndef SIM
+  setupAdc();  //before checkTHR
+#endif
+  checkTHR();
+  checkSwitches();
+}
+
+#ifndef SIM
 extern uint16_t g_timeMain;
 //void main(void) __attribute__((noreturn));
-
 int main(void)
 {
   DDRA = 0xff;  PORTA = 0x00;
@@ -806,13 +834,9 @@ int main(void)
   ETIMSK |= (1<<TICIE3);
 
   sei(); //damit alert in eeReadGeneral() nicht haengt
-  g_menuStack[0] =  menuProc0;
 
-  eeReadAll();
-  checkMem();
-  setupAdc(); //before checkTHR
-  checkTHR();
-  checkSwitches();
+  init();
+
   setupPulses();
   wdt_enable(WDTO_500MS);
 

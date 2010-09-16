@@ -1,4 +1,4 @@
-#define DATE_STR "14.09.2010"
-#define TIME_STR "22:06:17"
-#define SUB_VERS 1613-thus
-#define SVN_VERS "trunk-r146"
+#define DATE_STR "16.09.2010"
+#define TIME_STR "14:40:04"
+#define SUB_VERS 1628-thus
+#define SVN_VERS "trunk-r147"

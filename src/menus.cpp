@@ -1323,17 +1323,19 @@ void menuProcTrainer(uint8_t event)
   edit = (sub==4);
   y    = 7*FH;
   lcd_putsnAtt(  0*FW, y, PSTR("Cal"),3,(sub==4) ? BLINK : 0);
-  for(uint8_t i=0; i<4; i++)
-  {
-    uint8_t x = (i*8+16)*FW/2;
-    lcd_outdezAtt( x , y, (g_ppmIns[i]-g_eeGeneral.trainer.calib[i])*2,PREC1 );
-  }
-  if(edit)
-  {
-    if(event==EVT_KEY_FIRST(KEY_MENU)){
-      memcpy(g_eeGeneral.trainer.calib,g_ppmIns,sizeof(g_eeGeneral.trainer.calib));
-      eeDirty(EE_GENERAL);
-      beepKey();
+  if(g_trainerSlaveActive){
+    for(uint8_t i=0; i<4; i++)
+    {
+      uint8_t x = (i*8+16)*FW/2;
+      lcd_outdezAtt( x , y, (g_ppmIns[i]-g_eeGeneral.trainer.calib[i])*2,PREC1 );
+    }
+    if(edit)
+    {
+      if(event==EVT_KEY_FIRST(KEY_MENU)){
+        memcpy(g_eeGeneral.trainer.calib,g_ppmIns,sizeof(g_eeGeneral.trainer.calib));
+        eeDirty(EE_GENERAL);
+        beepKey();
+      }
     }
   }
   
@@ -1700,7 +1702,9 @@ void menuProc0(uint8_t event)
   uint8_t x=FW*2;
   lcd_putsAtt(x,0,PSTR("Th9x"),sub==0 ? INVERS : 0);
   lcd_putsnAtt(x+ 5*FW,   0*FH, g_model.name ,sizeof(g_model.name),sub==1 ? BSS_INVERS : BSS_NO_INV);
-
+  if(g_trainerSlaveActive){
+    lcd_putsAtt(x,1*FH,PSTR("Stud"), BLINK);
+  }
   lcd_puts_P(  x+ 5*FW,   1*FH,    PSTR("BAT"));
   putsVBat(x+ 8*FW,1*FH, g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0);
 
@@ -1859,7 +1863,7 @@ void perOut(int16_t *chanOut)
                               g_model.expoData[i].expNormWeight+100) / 100;
     v = (int16_t)x;
     TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
-    if(td->mode && getSwitch(td->swtch,1)){
+    if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
         td->studWeight/31;

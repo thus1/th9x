@@ -253,7 +253,7 @@ class Builder
       t=Time.new
       f.puts t.strftime("#define DATE_STR \"%d.%m.%Y\"")
       f.puts t.strftime("#define TIME_STR \"%H:%M:%S\"")
-      f.puts "#define SUB_VERS #{vers}-#{ENV['USER']}"
+      f.puts "#define SUB_VERS #{vers}-#{ENV['USER'].sub(/husteret/,"thus")}"
       f.puts "#define SVN_VERS \"#{svnvers}\""
     }
   end
