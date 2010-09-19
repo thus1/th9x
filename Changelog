@@ -1,8 +1,14 @@
 
+- file version info
+- inactivity timer
+- EEGeneral_r150
+- calib potis
+
+trunk-r148
 - issue 51
 - auto-light when keypressed, with timeout
 
-trunk-r146
+trunk-r147
 - sim: changed key4<->5
 - sim allow eeprom-file as argument
 - issue 49 'sim calib' template

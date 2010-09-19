@@ -33,6 +33,7 @@ typedef struct t_TrainerData_r0 {
   TrainerData1_r0  chanMix[4];
 } __attribute__((packed)) TrainerData_r0; //
 
+#define GENVERS0 1
 typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   myVers;
   int16_t   calibMid[4];
@@ -48,6 +49,8 @@ typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r0;//<r119;
+#define GENVERS119   2
+#define GENVERS119_3 3
 typedef struct t_EEGeneral_r119 {
   uint8_t   myVers;
   int16_t   calibMid[4];
@@ -72,6 +75,33 @@ typedef struct t_EEGeneral_r119 {
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r119;
+#define GENVERS150 4
+typedef struct t_EEGeneral_r150 {
+  uint8_t   myVers;
+  int16_t   calibMid[7];             //ge150 4->7
+  int16_t   calibSpanNeg[7]; //ge119 //ge150 4->7
+  int16_t   calibSpanPos[7]; //ge119 //ge150 4->7
+  //uint16_t  chkSum;
+  uint8_t   inactivityMin;    //ge150
+  uint8_t   resv;             //ge150
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib; 
+  int8_t    lightSw;
+  TrainerData_r0 trainer;
+  uint8_t   adcFilt:2;     // was view in earlier versions
+  uint8_t   reserve:2;     // was view in earlier versions
+  uint8_t   thr0pos:4;     // was view in earlier versions
+#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
+#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
+#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
+#define BEEP_VAL ( g_eeGeneral.beepVal )
+  uint8_t   warnOpts:3; //bitset for several warnings
+  uint8_t   beepVal:2;  //
+  uint8_t   view:3;     //index of subview in main screen
+  uint8_t   stickMode;   // 1
+} __attribute__((packed)) EEGeneral_r150;
 
 
 
@@ -178,7 +208,7 @@ typedef struct t_ModelData_r143 {
 
 
 
-extern EEGeneral_r119 g_eeGeneral;
+extern EEGeneral_r150 g_eeGeneral;
 extern ModelData_r143 g_model;
 
 

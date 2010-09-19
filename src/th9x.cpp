@@ -29,22 +29,22 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- menunavigation ++
+- file-version anzeige
+
++ light auto off
+- timer mit thr-switch
 + sim calib template
-- slave activity sign
++ trainer slave activity sign
 - standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
 - mixline mode + - * =
 - neg curves, more curves with parameters?
 - inactivity warning
-- p1-3 calib 
-+ alte standard kurven als defaults _/ /- \/ 
+- pruefung des Schuelersignals
 + Pi mit switch full
-+ autom switch erkennung bei betaetigung
-+ trimbase entfernen
 - thr curve statt expo
 - thr trim nur am neg ende
-+ sonderfunc als 3pkt userfunc
-+ input invert für querruderdiff mit einer kurve
 - prc-werte dynamisch 64 werte 1-150
 ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
 0 1 2 3 4 5 6 7 8 10 12 14 16 18 20 22 24 27 30 33 36 39 42 45 
@@ -57,14 +57,18 @@ ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 + pruefung des Schuelersignals
 - format eeprom
 - pcm 
-- light auto off
-- timer mit thr-switch
 - fast multiply 8*16 > 32
 doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 - special curve x<0 and x>0 when FUL doku
 done
++ alte standard kurven als defaults _/ /- \/ 
++ p1-3 calib 
++ autom switch erkennung bei betaetigung
++ trimbase entfernen
++ input invert für querruderdiff mit einer kurve
++ sonderfunc als 3pkt userfunc
 + default acro/heli120
 + trim ohne repeat (nur richtung null) i35,39
 + column select mit long click? 
@@ -161,7 +165,7 @@ mode4 ail thr ele rud
 
 
 
-EEGeneral_r119 g_eeGeneral;
+EEGeneral_r150 g_eeGeneral;
 ModelData_r143 g_model;
 uint16_t       s_trainerLast10ms;
 uint8_t        g_trainerSlaveActive;
@@ -335,6 +339,8 @@ void alert(const prog_char * s)
   beepErr();
   while(1)
   {
+    perChecks(); //check light switch in timerint, issue 51
+
     if(IS_KEY_BREAK(getEvent()))   return;  //wait for key release
 #ifdef SIM
 void doFxEvents();
@@ -504,6 +510,7 @@ void evalCaptures();
 
 void perMain()
 {
+  perChecks();
   perOut(g_chans512);
   eeCheck();
 
@@ -521,22 +528,40 @@ void perMain()
 #endif
   }
 }
-void per10ms_2()
+void   perChecks()
 {
-  switch( g_tmr10ms & 0x1f ) { //alle 10ms*32
+  static uint8_t s_rnd;
+  switch( s_rnd++ ) {
+    case 0:
+      {
+        static uint8_t  s_sumAnaLast;
+        if( abs(g_sumAna - s_sumAnaLast) > 20)
+        {
+          s_sumAnaLast = g_sumAna;
+          g_lightAct1s  = g_tmr1s; //retrigger light
+          g_actTime1s  = g_tmr1s; //retrigger inativity alarm
+        }
+        if(g_eeGeneral.inactivityMin)
+        {
+          if((uint16_t)(g_tmr1s - g_actTime1s) > g_eeGeneral.inactivityMin*60u){
+            beepWarn();
+            g_actTime1s+=1;
+          }
+        }
+      }
+      break;
     case 1:
       {
-      //check light switch in timerint, issue 51
       int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH;
       if(mins <= 0){
         if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
         else                                  PORTB &= ~(1<<OUT_B_LIGHT);
       }else{
-        if((g_tmr1s-g_lastKey1s) < (uint16_t)30*mins) {
+        if((g_tmr1s-g_lightAct1s) < (uint16_t)30*mins) {
           PORTB |=  (1<<OUT_B_LIGHT);
         }else{
           PORTB &= ~(1<<OUT_B_LIGHT);
-          g_lastKey1s = g_tmr1s-30*mins;
+          g_lightAct1s = g_tmr1s-30*mins;
         }
       }
       break;
@@ -555,9 +580,9 @@ void per10ms_2()
         g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
 
         static uint8_t s_batCheck;
-        s_batCheck+=32;
-        if(s_batCheck==0 && g_vbat100mV < g_eeGeneral.vBatWarn){
+        if(s_batCheck!=g_tmr1s && g_vbat100mV < g_eeGeneral.vBatWarn){
           beepWarn1();
+          s_batCheck=g_tmr1s;
         }
       }
       break;
@@ -577,8 +602,9 @@ void per10ms_2()
       if((g_tmr10ms - s_trainerLast10ms) > 50 ){
         g_trainerSlaveActive = 0;
       }
-
       break;
+    default:
+      s_rnd=0; //from the beginning
   }
 }
 volatile uint16_t captureRing[16];
@@ -746,7 +772,6 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
     PORTE &= ~(1<<OUT_E_BUZZER);
   }
   per10ms();
-  per10ms_2();
   heartbeat |= HEART_TIMER10ms;
   cli();
   TIMSK |= (1<<OCIE0);

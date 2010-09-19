@@ -272,7 +272,6 @@ void Th9xSim::init2()
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
   per10ms();
-  per10ms_2();
   getApp()->addChore(this,1);
   getApp()->addTimeout(this,2,10);
   return 0;
