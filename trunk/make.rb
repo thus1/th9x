@@ -5,7 +5,7 @@ require "pp"
 
 #TGT=%w(drehzahl.cpp  MCU=attiny26 CFLAGS=)
 #TGT=%w(servo.c  MCU=attiny22     CFLAGS=-xc++)
-TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
+TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
 
 
 

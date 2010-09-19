@@ -32,47 +32,75 @@ EFile theFile2; //sometimes we need two files
 void generalDefault()
 {
   memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
-  g_eeGeneral.myVers   =  3;
+  g_eeGeneral.myVers   =  GENVERS150;
   g_eeGeneral.currModel=  0;
   g_eeGeneral.contrast = 30;
   g_eeGeneral.vBatWarn = 90;
   g_eeGeneral.stickMode=  1;
-  int16_t sum=0;
-  for (int i = 0; i < 4; ++i) {
-    sum += g_eeGeneral.calibMid[i]     = 0x200;
-    sum += g_eeGeneral.calibSpanNeg[i] = 0x180;
-    sum += g_eeGeneral.calibSpanPos[i] = 0x180;
+  //int16_t sum=0;
+  for (int i = 0; i < 7; ++i) {
+    g_eeGeneral.calibMid[i]     = 0x200;
+    g_eeGeneral.calibSpanNeg[i] = 0x180;
+    g_eeGeneral.calibSpanPos[i] = 0x180;
   }
-  g_eeGeneral.chkSum = sum;
+  //g_eeGeneral.chkSum = sum;
 }
 bool eeLoadGeneral()
 {
   theFile.openRd(FILE_GENERAL);
   uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
-  uint16_t sum=0;
-  if( sz == sizeof(EEGeneral_r0) && g_eeGeneral.myVers == 1 ){
+  //uint16_t sum=0;
+  if( sz == sizeof(EEGeneral_r0) && g_eeGeneral.myVers == GENVERS0 ){
 #ifdef SIM
     printf("converting EEGeneral data from < 119\n");
 #endif
-    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r0); //Pointers behind the end
+    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r0);//Pointers behind the end
     char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r119);
     fullCopy(sizeof(EEGeneral_r0)-offsetof(EEGeneral_r0,calibSpan));
-    for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
-    g_eeGeneral.chkSum = sum;
+    //for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+    //g_eeGeneral.chkSum = sum;
     sz = sizeof(EEGeneral_r119);
-    g_eeGeneral.myVers = 2;
+    EEGeneral_r119*p119= (EEGeneral_r119*)&g_eeGeneral;
+    p119->myVers  = GENVERS119;
   }
-  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == 2){
-    g_eeGeneral.adcFilt = 2;
-    g_eeGeneral.thr0pos = 1; //upper 6 bits of adc value
-    g_eeGeneral.myVers  = 3;
-  }
-  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == 3){
-    for(int i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == GENVERS119){
 #ifdef SIM
-    if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
-#endif  
-    return g_eeGeneral.chkSum == sum;
+    printf("converting EEGeneral data from 119 to 119_3\n");
+#endif
+    EEGeneral_r119*p119= (EEGeneral_r119*)&g_eeGeneral;
+    p119->adcFilt = 2;
+    p119->thr0pos = 1; //upper 6 bits of adc value
+    p119->myVers  = GENVERS119_3;
+  }
+  if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == GENVERS119_3){
+#ifdef SIM
+    printf("converting EEGeneral data from 119_3 to 150\n");
+#endif
+    char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r119);//Pters behind the end
+    char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r150);
+    fullCopy(sizeof(EEGeneral_r119)-offsetof(EEGeneral_r119,chkSum));
+    partCopy(7*2,4*2); //calibSpanPos
+    partCopy(7*2,4*2); //calibSpanNeg
+    partCopy(7*2,4*2); //calibMid
+    EEGeneral_r150*p150= (EEGeneral_r150*)&g_eeGeneral;
+    p150->inactivityMin = 0;
+    p150->resv = 0;
+    for(uint8_t i=4; i<7;i++){
+      p150->calibMid[i]     = 0x200;
+      p150->calibSpanNeg[i] = 0x180;
+      p150->calibSpanPos[i] = 0x180;
+    }
+    
+    sz = sizeof(EEGeneral_r150);
+    p150->myVers  = GENVERS150;
+  }
+  if( sz == sizeof(EEGeneral_r150) && g_eeGeneral.myVers == GENVERS150){
+    //    for(int i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+    //#ifdef SIM
+    //    if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
+    //#endif  
+    //    return g_eeGeneral.chkSum == sum;
+    return true;
   }
 #ifdef SIM
   printf("bad g_eeGeneral\n");
@@ -167,11 +195,17 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
     //eeprom_read_block(buf,(void*)modelEeOfs(id),sizeof(g_model.name));
     theFile.openRd(FILE_MODEL(id));
     memset(buf,' ',len);
-    if(theFile.readRlc((uint8_t*)buf,sizeof(g_model.name)) == sizeof(g_model.name) )
+    if(theFile.readRlc((uint8_t*)buf,sizeof(g_model.name)+1) == (sizeof(g_model.name)+1) )
     {
-      uint16_t sz=theFile.size();
+      uint8_t  vers = buf[sizeof(g_model.name)];
+      uint16_t sz   = theFile.size();
+      buf[sizeof(g_model.name)]=' ';
       buf+=len;
-      while(sz){ --buf; *buf='0'+sz%10; sz/=10;}
+      *--buf='0'+vers%10; vers/=10;
+      *--buf='0'+vers%10;
+      *--buf='V';
+        --buf;
+      while(sz){   --buf; *buf='0'+sz%10;   sz/=10;}
     }
   }
 }

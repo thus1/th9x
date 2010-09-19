@@ -257,7 +257,7 @@ void    perMain();
 /// Bearbeitet alle zeitkritischen Jobs.
 /// wie z.B. einlesen aller Eingaenge, Entprellung, Key-Repeat..
 void    per10ms();
-void    per10ms_2();
+void    perChecks();
 /// Erzeugt periodisch alle Outputs ausser Bildschirmausgaben.
 void perOut(int16_t *chanOut);
 ///   Liefert den Zustand des Switches 'swtch'. Die Numerierung erfolgt ab 1
@@ -455,8 +455,10 @@ extern const PROGMEM char modi12x3[];
 extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
 extern int16_t            g_chans512[NUM_CHNOUT];
+extern uint8_t            g_sumAna;
 extern uint8_t            g_trainerSlaveActive;
-extern uint16_t           g_lastKey1s;
+extern uint16_t           g_lightAct1s;
+extern uint16_t           g_actTime1s;
 #include "lcd.h"
 extern const char stamp1[];
 extern const char stamp2[];
@@ -490,9 +492,9 @@ void modelMixerDefault(uint8_t typ);
 inline int16_t trimExp(int8_t trim)
 { 
   int16_t  ret=trim*(abs(trim)+3)/4;
-#ifdef SIM
+  //#ifdef SIM
   //  printf("trim=%d,%d\n",trim,ret);
-#endif  
+  //#endif  
   return ret;   
 }
 

@@ -68,7 +68,8 @@ void putEvent(uint8_t evt)
   //#ifdef SIM
   //  printf("putEvent %d %x\n",evt,evt);
   //#endif
-  g_lastKey1s = g_tmr1s;
+  g_lightAct1s = g_tmr1s;
+  g_actTime1s = g_tmr1s;
   s_evt = evt;
 }
 uint8_t getEvent()
@@ -203,7 +204,8 @@ uint8_t getEventDbl(uint8_t event)
 //uint16_t g_anaIns[8];
 volatile uint16_t g_tmr10ms;
 volatile uint16_t g_tmr1s;
-uint16_t g_lastKey1s;
+uint16_t g_lightAct1s;
+uint16_t g_actTime1s;
 volatile uint8_t  g_blinkTmr10ms;
 
 void per10ms()

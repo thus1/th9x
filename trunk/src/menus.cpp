@@ -21,6 +21,7 @@
 
 static int16_t anaCalib[4];
 int16_t g_chans512[NUM_CHNOUT];
+uint8_t g_sumAna;
 //static TrainerData g_trainer;
 
 //sticks
@@ -1120,7 +1121,7 @@ void menuProcModelSelect(uint8_t event)
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
     lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_editMode ? INVERS : BLINK ) : 0) + LEADING0,2);
-    static char buf[sizeof(g_model.name)+5];
+    static char buf[sizeof(g_model.name)+8];
     eeLoadModelName(k,buf,sizeof(buf));
     lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_editMode ? BLINK : 0 ) : 0));
   }
@@ -1162,7 +1163,7 @@ void menuProcDiagCalib(uint8_t event)
 #ifdef SIM
           printf("do calib");
 #endif
-          for(uint8_t i=0; i<4; i++)
+          for(uint8_t i=0; i<7; i++)
             if(hiVals[i]-loVals[i]>50) {
             g_eeGeneral.calibMid[i]  = midVals[i];
               int16_t v = midVals[i] - loVals[i];
@@ -1170,9 +1171,9 @@ void menuProcDiagCalib(uint8_t event)
               v = hiVals[i] - midVals[i];
             g_eeGeneral.calibSpanPos[i] = v - v/64;
           }
-          int16_t sum=0;
-          for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
-          g_eeGeneral.chkSum = sum;
+          //int16_t sum=0;
+          //for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
+          //g_eeGeneral.chkSum = sum;
           eeDirty(EE_GENERAL); //eeWriteGeneral();
           beepKey();
           break;
@@ -1185,15 +1186,15 @@ void menuProcDiagCalib(uint8_t event)
     lcd_putsnAtt( 0, y,PSTR("SetMid MovArndDone   ")+7*(i-1),7,
                     sub==i ? INVERS : 0);
   }
-  for(uint8_t i=0; i<4; i++)
+  for(uint8_t i=0; i<7; i++)
   {
     uint8_t y=i*FH+0;
-    lcd_putsn_P( 8*FW,  y,      PSTR("A1A2A3A4")+2*i,2);  
-    lcd_outhex4(12*FW,  y,      anaIn(i));
-    lcd_puts_P( 11*FW,  y+4*FH, PSTR("<    >"));  
-    lcd_outhex4( 8*FW-3,y+4*FH, sub==2 ? loVals[i]  :g_eeGeneral.calibSpanNeg[i]);
-    lcd_outhex4(12*FW,  y+4*FH, sub==1 ? anaIn(i) : (sub==2 ? midVals[i] :g_eeGeneral.calibMid[i]));
-    lcd_outhex4(17*FW,  y+4*FH, sub==2 ? hiVals[i]  :g_eeGeneral.calibSpanPos[i]);
+    //lcd_putsn_P( 8*FW,  y,      PSTR("A1A2A3A4")+2*i,2);  
+    //lcd_outhex4(12*FW,  y,      anaIn(i));
+    lcd_puts_P( 11*FW,  y+1*FH, PSTR("<    >"));  
+    lcd_outhex4( 8*FW-3,y+1*FH, sub==2 ? loVals[i]  :g_eeGeneral.calibSpanNeg[i]);
+    lcd_outhex4(12*FW,  y+1*FH, sub==1 ? anaIn(i) : (sub==2 ? midVals[i] :g_eeGeneral.calibMid[i]));
+    lcd_outhex4(17*FW,  y+1*FH, sub==2 ? hiVals[i]  :g_eeGeneral.calibSpanPos[i]);
   }
 
 }
@@ -1210,7 +1211,7 @@ void menuProcDiagAna(uint8_t event)
     lcd_putsn_P( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2);  
     //lcd_outhex4( 8*FW, y,g_anaIns[i]);
     lcd_outhex4( 8*FW, y,anaIn(i));
-    if(i<4){
+    if(i<7){
       //int16_t v = g_anaIns[i];
       int16_t v = anaIn(i) - g_eeGeneral.calibMid[i];
       v =  v*50/max(1, (v > 0 ? g_eeGeneral.calibSpanPos[i] :  g_eeGeneral.calibSpanNeg[i])/2);
@@ -1343,21 +1344,22 @@ void menuProcTrainer(uint8_t event)
 void menuProcSetup1(uint8_t event)
 {
   static MState2 mstate2;
-  TITLE("SETUP OPTS");  
+  TITLE("WARNINGS");  
   MSTATE_CHECK_V(2,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<5; i++){
     uint8_t y=i*FH+2*FH;
     uint8_t attr = sub==i ? BLINK : 0; 
-    lcd_putsnAtt( FW*7,y,PSTR("THR Warn"
-                              "SW  Warn"
-                              "Mem Warn"
-                              "Beeper  "
-                              "AdcFilt.")+i*8,8,0);
+    lcd_putsnAtt( FW*5,y,PSTR("  THR pos "
+                              "  Switches"
+                              "  Mem free"
+                              "V Bat low "
+                              "m Inactive"
+                  )+i*10,10,0);
     switch(i){
-      case 0:
-      case 1:
-      case 2:
+      case 0: //"THR pos "
+      case 1: //"Switches"
+      case 2: //"Mem free"
         {
           uint8_t bit = 1<<i;
           bool    val = !(g_eeGeneral.warnOpts & bit);
@@ -1373,15 +1375,17 @@ void menuProcSetup1(uint8_t event)
 
           break;
         }
-      case 3:
-        lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVal,attr);
-        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVal,0,3);
+      case 3://"Bat low "
+        lcd_outdezAtt(4*FW,y,g_eeGeneral.vBatWarn,attr|PREC1);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 100); //5-10V
+        }
         break;
-        //uint8_t val = g_eeGeneral.beepVal;
-        //if(attr)  g_eeGeneral.beepVal = checkIncDec_hg( event, val, 0, 3); //!! bitfield
-      case 4:
-        lcd_outdezAtt( FW*4, y, g_eeGeneral.adcFilt,attr);
-        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.adcFilt,0,3);
+      case 4://"Inactive"
+        lcd_outdezAtt(4*FW,y,g_eeGeneral.inactivityMin,attr);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.inactivityMin, 0, 30);
+        }
         break;
     }
   }
@@ -1390,48 +1394,59 @@ void menuProcSetup0(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("SETUP BASIC");  
-  MSTATE_CHECK_V(1,menuTabDiag,1+4);
+  MSTATE_CHECK_V(1,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
-  uint8_t y=2*FH;
-  lcd_outdezAtt(4*FW,y,g_eeGeneral.contrast,sub==0 ? BLINK : 0);
-  if(sub==0){
-    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.contrast, 20, 45);
-    lcdSetRefVolt(g_eeGeneral.contrast);
-  }
-  lcd_puts_P( 6*FW, y,PSTR("CONTRAST"));
-  y+=FH;
 
-  lcd_outdezAtt(4*FW,y,g_eeGeneral.vBatWarn,(sub==1 ? BLINK : 0)|PREC1);
-  if(sub==1){
-    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 100); //5-10V
-  }
-  lcd_puts_P( 4*FW, y,PSTR("V BAT WARNING"));
-  y+=FH;
-
-  uint8_t attr=sub==2 ? BLINK : 0;
-  if(g_eeGeneral.lightSw<=MAX_DRSWITCH){
-    putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,attr);
-  }else{
-    lcd_outdezAtt(4*FW,y,(g_eeGeneral.lightSw-MAX_DRSWITCH)*5,(attr)|PREC1);
-    lcd_puts_P(   4*FW,y,PSTR("m"));
-  }
-  if(attr){
-    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH+20);
-    CHECK_LAST_SWITCH(g_eeGeneral.lightSw,EE_GENERAL|_FL_POSNEG);
-  }
-  lcd_puts_P( 6*FW, y,PSTR("LIGHT"));
-
-
-  y+=2*FH;
-  lcd_putsAtt( 1*FW, y, PSTR("Mode"),0);//sub==3?INVERS:0);
-  lcd_putcAtt( 3*FW, y+FH, '1'+g_eeGeneral.stickMode,sub==3?BLINK:0);
-  for(uint8_t i=0; i<4; i++)
-  {
-    lcd_img(    (6+4*i)*FW, y,   sticks,i,0);
-    putsChnRaw( (6+4*i)*FW, y+FH,i+1,0);//sub==3?BLINK:0);
-  }
-  if(sub==3){
-    CHECK_INCDEC_H_GENVAR(event,g_eeGeneral.stickMode,0,3);
+  uint8_t y=1*FH;
+  for(uint8_t i=0; i<5; i++,y += FH){
+    
+    uint8_t attr = sub==i ? BLINK : 0; 
+    if(i<4)lcd_putsnAtt( FW*4,y,PSTR("  Contrast"
+                                     "  AdcFilt."
+                                     "m Light   "
+                                     "  Beep Mod"
+                              )+i*10,10,0);
+    switch(i){
+      case 0: //Contrast
+        lcd_outdezAtt(4*FW,y,g_eeGeneral.contrast,attr);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.contrast, 20, 45);
+          lcdSetRefVolt(g_eeGeneral.contrast);
+        }
+        break;
+      case 1://"AdcFilt."
+        lcd_outdezAtt( FW*4, y, g_eeGeneral.adcFilt,attr);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.adcFilt,0,3);
+        break;
+      case 2://Light
+        if(g_eeGeneral.lightSw<=MAX_DRSWITCH){
+          putsDrSwitches(0*FW,y,g_eeGeneral.lightSw,attr);
+        }else{
+          lcd_outdezAtt(4*FW,y,(g_eeGeneral.lightSw-MAX_DRSWITCH)*5,(attr)|PREC1);
+        }
+        if(attr){
+          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.lightSw, -MAX_DRSWITCH, MAX_DRSWITCH+20);
+          CHECK_LAST_SWITCH(g_eeGeneral.lightSw,EE_GENERAL|_FL_POSNEG);
+        }
+        break;
+      case 3:// "Beeper  "
+        lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVal,attr);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVal,0,3);
+        break;
+      case 4://stick Mode
+        y += FH;
+        lcd_putsAtt( 1*FW, y, PSTR("Mode"),0);//sub==3?INVERS:0);
+        lcd_putcAtt( 3*FW, y+FH, '1'+g_eeGeneral.stickMode,attr);
+        for(uint8_t i=0; i<4; i++)
+        {
+          lcd_img(    (6+4*i)*FW, y,   sticks,i,0);
+          putsChnRaw( (6+4*i)*FW, y+FH,i+1,0);//sub==3?BLINK:0);
+        }
+        if(attr){
+          CHECK_INCDEC_H_GENVAR(event,g_eeGeneral.stickMode,0,3);
+        }
+        break;
+    }
   }
 }
 
@@ -1844,11 +1859,13 @@ void perOut(int16_t *chanOut)
 {
   static int16_t anas     [NUM_XCHNRAW];
 
-  for(uint8_t i=0;i<4;i++){        // calc Sticks
+  g_sumAna=0;
+  for(uint8_t i=0;i<7;i++){        // calc Sticks
 
     //Normierung  [0..1024] ->   [-512..512]
     
     int16_t v= anaIn(i);
+    g_sumAna += (uint8_t)v;
     v -= g_eeGeneral.calibMid[i];
     v  =  v * (int32_t)RESX /  (max((int16_t)100,
                                     (v>0 ? 
@@ -1857,42 +1874,44 @@ void perOut(int16_t *chanOut)
 
     if(v <= -RESX) v = -RESX;
     if(v >=  RESX) v =  RESX;
-    anaCalib[i] = v; //for show in expo
 
-    v  = expo(v,
-              getSwitch(g_model.expoData[i].drSw,0) ?
-              g_model.expoData[i].expDr           :
-              g_model.expoData[i].expNorm
-    );
-    int32_t x = (int32_t)v * (getSwitch(g_model.expoData[i].drSw,0) ? 
-                              g_model.expoData[i].expSwWeight+100 :
-                              g_model.expoData[i].expNormWeight+100) / 100;
-    v = (int16_t)x;
-    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
-    if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
-      uint8_t chStud = td->srcChn;
-      int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
-        td->studWeight/31;
+    if(i<4){
+      anaCalib[i] = v; //for show in expo
+      v  = expo(v,
+                getSwitch(g_model.expoData[i].drSw,0) ?
+                g_model.expoData[i].expDr           :
+                g_model.expoData[i].expNorm
+      );
+      int32_t x = (int32_t)v * (getSwitch(g_model.expoData[i].drSw,0) ? 
+                                g_model.expoData[i].expSwWeight+100 :
+                                g_model.expoData[i].expNormWeight+100) / 100;
+      v = (int16_t)x;
+      TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
+      if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
+        uint8_t chStud = td->srcChn;
+        int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
+          td->studWeight/31;
 
-      switch(td->mode)
-      {
-        case 1: v += vStud;   break; // add-mode
-        case 2: v  = vStud;   break; // subst-mode
+        switch(td->mode)
+        {
+          case 1: v += vStud;   break; // add-mode
+          case 2: v  = vStud;   break; // subst-mode
+        }
       }
+
+      //trace throttle
+      if(THRCHN == i)  //stickMode=0123 -> thr=2121
+        trace((v+512)/32); //trace thr 0..31
+
+      //trim
+      v += trimVal(i); // + g_model.trimData[i].trimDef;
     }
-
-    //trace throttle
-    if(THRCHN == i)  //stickMode=0123 -> thr=2121
-      trace((v+512)/32); //trace thr 0..31
-
-    //trim
-    v += trimVal(i); // + g_model.trimData[i].trimDef;
     anas[i] = v; //10+1 Bit
   }
-  for(uint8_t i=4;i<7;i++){
-    int16_t v= anaIn(i);
-    anas[i] = v-512; // [-512..511]
-  }
+  //for(uint8_t i=4;i<7;i++){
+  //    int16_t v= anaIn(i);
+  //    anas[i] = v-512; // [-512..511]
+  //  }
   anas[7] = 512; //100% für MAX
   anas[8] = 512; //100% für MAX
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
@@ -2029,8 +2048,6 @@ void perOut(int16_t *chanOut)
     sei();
   }
 
-
-
 #ifdef xSIM
   static int s_cnt;
   if(s_cnt++%100==0){
@@ -2046,207 +2063,4 @@ void perOut(int16_t *chanOut)
 }
 
 
-
-/******************************************************************************
-  the functions below are from int-level
-  the functions below are from int-level
-  the functions below are from int-level
-******************************************************************************/
-
-void setupPulses() 
-{
-  switch(g_model.protocol)
-  {
-    case PROTO_PPM:
-      setupPulsesPPM();
-      break;
-    case PROTO_SILV_A:
-    case PROTO_SILV_B:
-    case PROTO_SILV_C:
-      setupPulsesSilver();
-      break;
-    case PROTO_TRACER_CTP1009:
-      setupPulsesTracerCtp1009();
-      break;
-  }
-}
-
-void setupPulsesPPM()
-{
-  //http://www.aerodesign.de/peter/2000/PCM/frame_ppm.gif
-  //22.5 ges   0.3low 8* (0.7-1.7 high 0.3low) high
-  //uint16_t rest=22500u*2;
-  uint16_t rest=(22500u-300u*9)*2; //issue 4, 41
-  uint8_t j=0;
-  for(uint8_t i=0;i<8;i++){ //NUM_CHNOUT
-    int16_t v = g_chans512[i];
-    v = 2*v - v/21 + 1200*2; // 24/512 = 3/64 ~ 1/21
-    rest-=v;//chans[i];
-    pulses2MHz[j++]=300*2;
-    pulses2MHz[j++]=v;
-  }
-  pulses2MHz[j++]=300*2;
-  pulses2MHz[j++]=rest;
-  pulses2MHz[j++]=0;
-
-}
-
-
-uint16_t *pulses2MHzPtr;
-#define BITLEN (600u*2)
-void _send_hilo(uint16_t hi,uint16_t lo)
-{
-  *pulses2MHzPtr++=hi; *pulses2MHzPtr++=lo;
-}
-#define send_hilo_silv( hi, lo) _send_hilo( (hi)*BITLEN,(lo)*BITLEN )
-
-void sendBitSilv(uint8_t val)
-{
-  send_hilo_silv((val)?2:1,(val)?2:1);
-}
-void send2BitsSilv(uint8_t val)
-{
-  sendBitSilv(val&2);sendBitSilv(val&1);
-}
-// _ oder - je 0.6ms  (gemessen 0.7ms)
-//
-//____-----_-_-_--_--_   -_--__  -_-_-_-_  -_-_-_-_  --__--__-_______
-//         trailer        chan     m1         m2      
-//
-//see /home/thus/txt/silverlit/thus.txt
-//m1, m2 most significant bit first |m1-m2| <= 9
-//chan: 01=C 10=B
-//chk = 0 - chan -m1>>2 -m1 -m2>>2 -m2
-//<= 500us Probleme
-//>= 650us Probleme
-//periode orig: 450ms
-void setupPulsesSilver()
-{
-  int8_t chan=1; //chan 1=C 2=B 0=A?
-
-  switch(g_model.protocol)
-  {
-    case PROTO_SILV_A: chan=0; break;
-    case PROTO_SILV_B: chan=2; break;
-    case PROTO_SILV_C: chan=1; break;
-  }
-
-  int8_t m1 = (uint16_t)(g_chans512[0]+512)*4 / 256;
-  int8_t m2 = (uint16_t)(g_chans512[1]+512)*4 / 256;
-  if (m1 < 0)    m1=0;
-  if (m2 < 0)    m2=0;
-  if (m1 > 15)   m1=15;
-  if (m2 > 15)   m2=15;
-  if (m2 > m1+9) m1=m2-9;
-  if (m1 > m2+9) m2=m1-9;
-  //uint8_t i=0;
-  pulses2MHzPtr=pulses2MHz;
-  send_hilo_silv(5,1); //idx 0 erzeugt pegel=0 am Ausgang, wird  als high gesendet
-  send2BitsSilv(0);
-  send_hilo_silv(2,1);
-  send_hilo_silv(2,1);
-
-  send2BitsSilv(chan); //chan 1=C 2=B 0=A?
-  uint8_t sum = 0 - chan;
-  
-  send2BitsSilv(m1>>2); //m1
-  sum-=m1>>2;
-  send2BitsSilv(m1);
-  sum-=m1;
-
-  send2BitsSilv(m2>>2); //m2
-  sum-=m2>>2;
-  send2BitsSilv(m2);
-  sum-=m2;
-
-  send2BitsSilv(sum); //chk
-
-  sendBitSilv(0);
-  pulses2MHzPtr--;
-  send_hilo_silv(50,0); //low-impuls (pegel=1) ueberschreiben
-
-
-}
-
-
-
-/*
-  TRACE CTP-1009  
-   - = send 45MHz  
-   _ = send nix
-    start1       0      1           start2
-  -------__     --_    -__         -----__
-   7ms   2     .8 .4  .4 .8         5   2 
-
- frame:
-  start1  24Bits_1  start2  24_Bits2 
-
- 24Bits_1:
-  7 x Bits  Throttle lsb first
-  1 x 0
-
-  6 x Bits  rotate lsb first
-  1 x Bit   1=rechts
-  1 x 0
-
-  4 x Bits  chk5 = nib2 ^ nib4
-  4 x Bits  chk6 = nib1 ^ nib3
-
- 24Bits_2:
-  7 x Bits  Vorwaets lsb first 0x3f = mid
-  1 x 1
-
-  7 x Bits  0x0e lsb first
-  1 x 1
-
-  4 x Bits  chk5 = nib2 ^ nib4
-  4 x Bits  chk6 = nib1 ^ nib3
-
- */
-
-#define BIT_TRA (400u*2)
-void sendBitTra(uint8_t val)
-{
-  if(val) _send_hilo( BIT_TRA*1 , BIT_TRA*2 );
-  else    _send_hilo( BIT_TRA*2 , BIT_TRA*1 );
-}
-void sendByteTra(uint8_t val)
-{
-  for(uint8_t i=0; i<8; i++, val>>=1) sendBitTra(val&1);
-}
-void setupPulsesTracerCtp1009()
-{
-  pulses2MHzPtr=pulses2MHz;
-  static bool phase;
-  if( (phase=!phase) ){
-    uint8_t thr = min(127u,(uint16_t)(g_chans512[0]+512+4) /  8u);
-    uint8_t rot;
-    if (g_chans512[1] >= 0)
-    {
-      rot = min(63u,(uint16_t)( g_chans512[1]+8) / 16u) | 0x40;
-    }else{
-      rot = min(63u,(uint16_t)(-g_chans512[1]+8) / 16u);
-    }
-#ifdef SIM
-    printf("thr %02x  rot %02x\n",thr,rot);
-#endif
-    sendByteTra(thr);
-    sendByteTra(rot);
-    uint8_t chk=thr^rot;
-    sendByteTra( (chk>>4) | (chk<<4) );
-    _send_hilo( 5000*2, 2000*2 );
-  }else{
-    uint8_t fwd = min(127u,(uint16_t)(g_chans512[2]+512) /  8u) | 0x80;
-#ifdef SIM
-    printf("fwd %02x \n",fwd);
-#endif
-    sendByteTra(fwd);
-    sendByteTra(0x8e);
-    uint8_t chk=fwd^0x8e;
-    sendByteTra( (chk>>4) | (chk<<4) );
-    _send_hilo( 7000*2, 2000*2 );
-  }
-  *pulses2MHzPtr++=0;
-  if((pulses2MHzPtr-pulses2MHz) >= (signed)DIM(pulses2MHz)) alert(PSTR("pulse tab overflow"));
-}
 
