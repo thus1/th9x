@@ -29,20 +29,13 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- menunavigation ++
-- file-version anzeige
-
-+ light auto off
+- speed-werte in sec
++ menunavigation ++
 - timer mit thr-switch
-+ sim calib template
-+ trainer slave activity sign
 - standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
 - mixline mode + - * =
 - neg curves, more curves with parameters?
-- inactivity warning
-- pruefung des Schuelersignals
-+ Pi mit switch full
 - thr curve statt expo
 - thr trim nur am neg ende
 - prc-werte dynamisch 64 werte 1-150
@@ -52,17 +45,23 @@ ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
 ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 33 36 39 42 45 48 51 54 57 60
 64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
-
 - curr event global var
-+ pruefung des Schuelersignals
 - format eeprom
 - pcm 
 - fast multiply 8*16 > 32
 doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
-- special curve x<0 and x>0 when FUL doku
 done
++ template type NONE
++ pruefung des Schuelersignals
++ file-version anzeige
++ light auto off
++ sim calib template
++ trainer slave activity sign
++ inactivity warning
++ pruefung des Schuelersignals
++ Pi mit switch full
 + alte standard kurven als defaults _/ /- \/ 
 + p1-3 calib 
 + autom switch erkennung bei betaetigung
@@ -447,11 +446,11 @@ int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
   checkIncDecGen2(event,&i_val,i_min,i_max,EE_MODEL);
   return i_val;
 }
-//int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
-//{
-//  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
-//  return i_val;
-//}
+int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+{
+  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
+  return i_val;
+}
 int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
 {
   checkIncDecGen2(event,&i_val,i_min,i_max,EE_GENERAL);

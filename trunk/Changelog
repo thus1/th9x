@@ -1,4 +1,10 @@
 
+trunk-r151
+- menucontrol refined
+- FADE->SLOPE
+- new template 'Empty'
+
+trunk-r150
 - file version info
 - inactivity timer
 - EEGeneral_r150
