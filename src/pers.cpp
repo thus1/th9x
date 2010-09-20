@@ -110,16 +110,17 @@ bool eeLoadGeneral()
 #define CM(x) convertMode(x)
 
 
-uint8_t modelMixerDefaults=5;
+uint8_t modelMixerDefaults=6;
 prog_char* modelMixerDefaultName(uint8_t typ)
 {
   switch(typ)
   {
-    case 0: return PSTR("Simple 4-Ch");
-    case 1: return PSTR("V-Tail");
-    case 2: return PSTR("Elevon/Delta");
-    case 3: return PSTR("eCCPM");
-    case 4: return PSTR("Sim Calib");
+    case 0: return PSTR("Empty");
+    case 1: return PSTR("Simple 4-Ch");
+    case 2: return PSTR("V-Tail");
+    case 3: return PSTR("Elevon/Delta");
+    case 4: return PSTR("eCCPM");
+    case 5: return PSTR("Sim Calib");
   }
   return 0;
 }
@@ -130,6 +131,8 @@ void modelMixerDefault(uint8_t typ)
   switch (typ){
     //Simple 4-Ch
     case 0:
+      break;
+    case 1:
       // rud ele thr ail
       for(uint8_t i= 0; i<4; i++){
         md->destCh = i+1;       md->srcRaw = CM(i)+1;        md->weight = 100;
@@ -138,7 +141,7 @@ void modelMixerDefault(uint8_t typ)
       break;
     
       //V-Tail
-    case 1:
+    case 2:
       md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
       md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight =-100; md++;
       md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
@@ -147,7 +150,7 @@ void modelMixerDefault(uint8_t typ)
       break;
 
       //Elevon\\Delta
-    case 2:
+    case 3:
       md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
       md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight = 100; md++;
       md->destCh = STK_THR+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 100; md++;
@@ -156,7 +159,7 @@ void modelMixerDefault(uint8_t typ)
       break;
 
       //eCCPM
-    case 3:
+    case 4:
       md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 72; md++;
       md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
       md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 36; md++;
@@ -166,7 +169,7 @@ void modelMixerDefault(uint8_t typ)
       md->destCh = 6;           md->srcRaw = CM(STK_AIL)+1;  md->weight = 62; md++;
       md->destCh = 6;           md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
       // Sim Calib
-    case 4:
+    case 5:
       for(uint8_t i= 0; i<8; i++){
         md->destCh = i+1;       md->srcRaw = 8;/*MAX*/       md->weight = 100; 
         md->swtch  = 1+SW_ID0-SW_BASE;
@@ -186,7 +189,7 @@ void modelDefault(uint8_t id)
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
   g_model.mdVers = 0; //MDVERS143;
-  modelMixerDefault(0);
+  modelMixerDefault(id==0 ? 1 : 0);
 }
 void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
 {
