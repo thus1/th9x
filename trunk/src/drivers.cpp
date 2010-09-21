@@ -131,22 +131,32 @@ void Key::input(bool val, EnumKeys enuk)
     case KSTATE_START: 
       putEvent(EVT_KEY_FIRST(enuk));
       m_dblcnt++;
-      m_state   = 16;
+      m_state   = 32;
       m_cnt     = 0;
       break;
-    case 16: 
+    case 32: 
       if(m_cnt == 24)        putEvent(EVT_KEY_LONG(enuk));
       //fallthrough
+    case 16: 
     case 8: 
     case 4: 
-    case 2: 
-      if(m_cnt >= 48)  { //3 6 12 24 48 pulses in every 480ms
+      if(m_cnt >= 64)  { //3 6 12 24 48 pulses in every 480ms
         m_state >>= 1;
         m_cnt     = 0;
       }
       //fallthrough
-    case 1: 
-      if( (m_cnt & (m_state-1)) == 0)  putEvent(EVT_KEY_REPT(enuk));
+    case 2: 
+#ifdef xSIM
+        printf(".");
+        fflush(stdout);
+#endif
+      if( (m_cnt & (m_state-1)) == 0) 
+      {
+#ifdef xSIM
+        printf("\n");
+#endif
+        putEvent(EVT_KEY_REPT(enuk));
+      }
       break;
 
     case KSTATE_PAUSE: //pause 
