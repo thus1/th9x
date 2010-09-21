@@ -836,8 +836,13 @@ void editExpoVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, ui
     case 2:
       putsDrSwitches(x,y,g_model.expoData[chn].drSw,invBlk);
       if(edit) {
+        uint8_t prev=g_model.expoData[chn].drSw;
 	CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[chn].drSw,0,MAX_DRSWITCH); 
         CHECK_LAST_SWITCH(g_model.expoData[chn].drSw,EE_MODEL);
+        if( prev==0 && prev!=g_model.expoData[chn].drSw){
+          g_model.expoData[chn].expDr       = g_model.expoData[chn].expNorm;
+          g_model.expoData[chn].expSwWeight = g_model.expoData[chn].expNormWeight;
+        }
       }
       break; 
     case 3:
@@ -890,8 +895,6 @@ void menuProcExpoOne(uint8_t event)
   int8_t   kView  = 0;
   int8_t   wView  = 0;
   if(sub<=1){
-    //CHECK_INCDEC_H_MODELVAR(event,g_model.expoData[s_expoChan].expNorm,-100, 100);
-    // invBlk = BLINK;
     kView  = g_model.expoData[s_expoChan].expNorm;
     wView  = g_model.expoData[s_expoChan].expNormWeight+100;
   }else{
@@ -912,12 +915,6 @@ void menuProcExpoOne(uint8_t event)
     yv = (yv * wView)/100;
     lcd_plot(X0+xv, Y0-yv);
     lcd_plot(X0-xv, Y0+yv);
-    //if((xv&3) == 0){
-//       lcd_plot(X0+xv, Y0+0);//x achse
-//       lcd_plot(X0-xv, Y0+0);
-//       lcd_plot(X0  , Y0+xv);//y achse
-//       lcd_plot(X0  , Y0-xv);
-//     }
   }
   lcd_vline(X0,Y0-WCHART,WCHART*2);
   lcd_hline(X0-WCHART,Y0,WCHART*2);

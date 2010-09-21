@@ -1,4 +1,9 @@
 
+
+trunk-r153
+- duplicate expo and weight when dualrate switch is activated
+- start value key repeat 160ms -> 320ms
+
 trunk-r151
 - menucontrol refined
 - FADE->SLOPE
