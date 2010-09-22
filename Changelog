@@ -1,5 +1,10 @@
 
 
+trunk-r154
+- trim repeat slow
+- inc/dec less fast
+- inc/dec with nicevals when doubleclick
+
 trunk-r153
 - duplicate expo and weight when dualrate switch is activated
 - start value key repeat 160ms -> 320ms

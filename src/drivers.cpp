@@ -85,6 +85,7 @@ class Key
 #define FFVAL          ((1<<FILTERBITS)-1)
 #define KSTATE_OFF      0
   //#define KSTATE_SHORT   96
+#define KSTATE_SLOW    96
 #define KSTATE_START   97
 #define KSTATE_PAUSE   98
 #define KSTATE_KILLED  99
@@ -94,10 +95,11 @@ class Key
   uint8_t m_state;
 public:
   void input(bool val, EnumKeys enuk);
-  bool state()       { return m_vals==FFVAL;                }
-  void pauseEvents() { m_state = KSTATE_PAUSE;  m_cnt   = 0;}
-  void killEvents()  { m_state = KSTATE_KILLED; m_dblcnt=0; }
-  uint8_t getDbl()   { return m_dblcnt;                     }
+  bool state()       { return m_vals==FFVAL;                 }
+  void slowEvents()  { m_state = KSTATE_SLOW;   m_cnt    = 0;}
+  void pauseEvents() { m_state = KSTATE_PAUSE;  m_cnt    = 0;}
+  void killEvents()  { m_state = KSTATE_KILLED; m_dblcnt = 0;}
+  uint8_t getDbl()   { return m_dblcnt;                      }
 };
 
 
@@ -111,7 +113,7 @@ void Key::input(bool val, EnumKeys enuk)
   if(m_state && m_vals==0){  //gerade eben sprung auf 0
     if(m_state!=KSTATE_KILLED) {
       putEvent(EVT_KEY_BREAK(enuk));
-      if(!( m_state == 16 && m_cnt<16)){
+      if(!( m_state == 32 && m_cnt<16)){
         m_dblcnt=0;
       }
         //      }
@@ -123,7 +125,7 @@ void Key::input(bool val, EnumKeys enuk)
     case KSTATE_OFF: 
       if(m_vals==FFVAL){ //gerade eben sprung auf ff
         m_state = KSTATE_START;
-        if(m_cnt>16) m_dblcnt=0; //pause zu lang fuer double
+        if(m_cnt>12) m_dblcnt=0; //pause zu lang fuer double
         m_cnt   = 0;
       }
       break;
@@ -138,14 +140,14 @@ void Key::input(bool val, EnumKeys enuk)
       if(m_cnt == 24)        putEvent(EVT_KEY_LONG(enuk));
       //fallthrough
     case 16: 
-    case 8: 
-    case 4: 
-      if(m_cnt >= 64)  { //3 6 12 24 48 pulses in every 480ms
+      if(m_cnt >= 64)  { //2 4 8 16 32 pulses in every 640ms
         m_state >>= 1;
         m_cnt     = 0;
       }
       //fallthrough
-    case 2: 
+    case 8: 
+      //case 4: 
+      //case 2: 
 #ifdef xSIM
         printf(".");
         fflush(stdout);
@@ -157,6 +159,14 @@ void Key::input(bool val, EnumKeys enuk)
 #endif
         putEvent(EVT_KEY_REPT(enuk));
       }
+      break;
+
+    case KSTATE_SLOW:  //slow
+      if(m_cnt >= 32)  {
+        m_cnt   = 0;
+        putEvent(EVT_KEY_REPT(enuk));
+      }
+      
       break;
 
     case KSTATE_PAUSE: //pause 
@@ -193,6 +203,11 @@ bool keyState(EnumKeys enuk)
   return 0;
 }
 
+void slowEvents(uint8_t event)
+{
+  event=event & EVT_KEY_MASK;
+  if(event < (int)DIM(keys))  keys[event].slowEvents();
+}
 void pauseEvents(uint8_t event)
 {
   event=event & EVT_KEY_MASK;
