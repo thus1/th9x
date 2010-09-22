@@ -190,7 +190,7 @@ enum EnumKeys {
 //#define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
 #define _MSK_KEY_REPT    0x40
 #define _MSK_KEY_FIRST   0x20
-#define _MSK_KEY_DBL     0x10
+//#define _MSK_KEY_DBL     0x10
 #define IS_KEY_BREAK(evt)  (((evt)&0xf0)        ==                 _MSK_KEY_FIRST)
 #define IS_KEY_FIRST(evt)  (((evt)&0xf0)        ==  (_MSK_KEY_REPT|_MSK_KEY_FIRST))
 #define IS_KEY_REPT(evt)   ( (evt)&                  _MSK_KEY_REPT)
@@ -198,7 +198,7 @@ enum EnumKeys {
 #define EVT_KEY_FIRST(key) ((key)|                   _MSK_KEY_REPT|_MSK_KEY_FIRST)
 #define EVT_KEY_REPT(key)  ((key)|                   _MSK_KEY_REPT     )
 #define EVT_KEY_LONG(key)  ((key)|0x80)
-#define EVT_KEY_DBL(key)   ((key)|_MSK_KEY_DBL)
+//#define EVT_KEY_DBL(key)   ((key)|_MSK_KEY_DBL)
 //#define EVT_KEY_DBL(key)   ((key)|0x10)
 #define EVT_ENTRY               (0xff - _MSK_KEY_REPT)
 #define EVT_ENTRY_UP            (0xfe - _MSK_KEY_REPT)
@@ -224,6 +224,7 @@ enum EnumKeys {
 
 typedef void (*MenuFuncP)(uint8_t event);
 
+void slowEvents(uint8_t event);
 /// stoppt alle events von dieser taste bis eine kurze Zeit abgelaufen ist
 void pauseEvents(uint8_t enuk);
 /// liefert die Zahl der schnellen Wiederholungen dieser Taste

@@ -53,7 +53,8 @@ struct MState2
 {
   uint8_t m_posVert;
   uint8_t m_posHorz;
-  void init(){m_posVert=m_posHorz=0;};
+  //void init(){m_posVert=m_posHorz=0;};
+  void init(){m_posVert=0;};
   prog_uint8_t *m_tab;
   static uint8_t event;
   void check_v(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, uint8_t maxrow);
@@ -126,7 +127,7 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
         if(!horzCsr || m_posHorz==0){
           INC(m_posVert,maxrow);
           if(NUMCOL(m_posVert)<0){
-            m_posHorz=0;
+            m_posHorz=0; //auf kopfelement setzen, damit vert navigierbar
           }else{
             m_posHorz=min(m_posHorz,(uint8_t)(NUMCOL(m_posVert)-1));
           }
@@ -137,7 +138,7 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
         if(!horzCsr || m_posHorz==0){
           DEC(m_posVert,maxrow);
           if(NUMCOL(m_posVert)<0){
-            m_posHorz=0;
+            m_posHorz=0; //auf kopfelement setzen, damit vert navigierbar
           }else{
             m_posHorz=min(m_posHorz,(uint8_t)(NUMCOL(m_posVert)-1));
           }
@@ -613,8 +614,9 @@ void menuProcMix(uint8_t event)
       
       if(attr) {
         currMixerLine = s_mixTab[k].editIdx;
-        lcd_outdez(  10*FW, 0, currMixerVal>>9);
-        lcd_outdez(  16*FW, 0, currMixerSum>>9);
+        lcd_outdez(   9*FW, 0, currMixerVal>>9);
+        lcd_putc  (   9*FW, 0, '/');
+        lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
       }
 
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
@@ -1326,18 +1328,25 @@ void menuProcTrainer(uint8_t event)
   static MState2 mstate2;
   TITLE("TRAINER");  
   MSTATE_TAB = { 4,4};
-  MSTATE_CHECK_VxH(3,menuTabDiag,1+4+1);
-  int8_t  sub    = mstate2.m_posVert-1 ;
+  MSTATE_CHECK_VxH(3,menuTabDiag,1+1+4+1);
+  int8_t  sub    = mstate2.m_posVert;//-1 ;
   uint8_t subSub = mstate2.m_posHorz+1;
   uint8_t y;
   bool    edit;
   
-  lcd_puts_P( 3*FW, 1*FH,PSTR("mode prc src swt"));
+  for(uint8_t i=0; i<4; i++){
+    //lcd_puts_P( 3*FW, 1*FH,PSTR("mode prc src swt"));
+    lcd_putsnAtt( 3*FW+i*4*FW, 1*FH,PSTR("mode"" prc"" src"" swt")+i*4,4,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
+  }
+  if(sub==1){
+    checkIncDecGen2(event, &mstate2.m_posHorz, 0, 3, 0);
+  }
+  sub-=2;
   for(uint8_t i=0; i<4; i++){
     y=(i+2)*FH;
     TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
-    putsChnRaw( 0, y,i+1,
-                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
+    putsChnRaw( 0, y,i+1,0);
+                //                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
     edit = (sub==i && subSub==1);
     lcd_putsnAtt(   4*FW, y, PSTR("off += :=")+3*td->mode,3,
                     edit ? BLINK : 0);

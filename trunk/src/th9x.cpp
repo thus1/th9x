@@ -29,8 +29,10 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
++ trim repeat slow
++ inc/dec nicevals with doubleclick
++ inc/dec repeat less fast
 - speed-werte in sec
-+ menunavigation ++
 - timer mit thr-switch
 - standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
@@ -50,9 +52,13 @@ ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 - pcm 
 - fast multiply 8*16 > 32
 doku
+- doku switch select
+- doku dblklick fast menu jump
+- doku dblklick fast inc/dec
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ menunavigation ++
 + template type NONE
 + pruefung des Schuelersignals
 + file-version anzeige
@@ -355,26 +361,33 @@ uint8_t checkTrim(uint8_t event)
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
     bool    up  = k&1;
-    //if(idx==3) dwn=!dwn;
+    int8_t *ptrim = &g_model.trimData[idx].trim;
     if(up){
-      if( (g_model.trimData[idx].trim < 0) ||
-          ((g_model.trimData[idx].trim < 31) &&  IS_KEY_FIRST(event)) //issue 35, 39
-      ){
-        g_model.trimData[idx].trim++;
+      //      if( (*ptrim < 0) ||
+      //          ((*ptrim < 31) &&  IS_KEY_FIRST(event))  //issue 35, 39
+      if(*ptrim >= 0){
+        slowEvents(event);
+      }
+      if(*ptrim < 31){
+        (*ptrim)++;
         STORE_MODELVARS;
         beepKey();
       }
     }else{
-      if( (g_model.trimData[idx].trim > 0) ||
-          ((g_model.trimData[idx].trim > -31) &&  IS_KEY_FIRST(event))
-      ){
-        g_model.trimData[idx].trim--;
+      //if( (*ptrim > 0) ||
+      //          ((*ptrim > -31) &&  IS_KEY_FIRST(event))
+      if(*ptrim <= 0){
+        slowEvents(event);
+      }
+      if(*ptrim > -31){
+        (*ptrim)--;
         STORE_MODELVARS;
         beepKey();
       }
     }
-    if(g_model.trimData[idx].trim==0) {
-      killEvents(event);
+    if(*ptrim==0) {
+      //killEvents(event);
+      pauseEvents(event);
       beepWarn();
     }
     return 0;
@@ -394,19 +407,33 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
-  if(event & _MSK_KEY_DBL){
-    uint8_t hlp=kpl;
-    kpl=kmi;
-    kmi=hlp;
-    event=EVT_KEY_FIRST(EVT_KEY_MASK & event);
-  }
-  if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
+  if(event==EVT_KEY_FIRST(kpl) && getEventDbl(event)==2){
+    int niceVal=-150;
+    while(1){
+      if(newval < niceVal){
+        newval = niceVal;
+        break;
+      }
+      if(niceVal>=i_max) break;
+      niceVal += 50;
+    }
+  }else if(event==EVT_KEY_FIRST(kmi) && getEventDbl(event)==2){
+    int niceVal=150;
+    while(1){
+      if(newval > niceVal){
+        newval = niceVal;
+        break;
+      }
+      if(niceVal<=i_min) break;
+      niceVal -= 50;
+    }
+  }else if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
     newval++; 
-    beepKey();     
+    //beepKey();     
     kother=kmi;
   }else if(event==EVT_KEY_FIRST(kmi) || event== EVT_KEY_REPT(kmi)) {
     newval--; 
-    beepKey();     
+    //beepKey();     
     kother=kpl;
   }
   if((kother != (uint8_t)-1) && keyState((EnumKeys)kother)){
@@ -415,8 +442,9 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     killEvents(kpl);
   }
 
+  if(newval != val) beepKey();     
 
-  if(newval>i_max)
+  if(newval > i_max)
   {
     newval = i_max;
     killEvents(event);
