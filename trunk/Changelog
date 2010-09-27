@@ -1,4 +1,7 @@
-
+trunk-r155
+- show slope-vals in sec
+- leave THR-Alarm with THR-movement
+- show slave-mode in trainer menu
 
 trunk-r154
 - trim repeat slow

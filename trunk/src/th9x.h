@@ -248,8 +248,14 @@ MenuFuncP lastPopMenu();
 /// if uppermost is set true, thenmenu return to uppermost menu in menustack
 void    popMenu(bool uppermost=false);
 /// Gibt Alarm Maske auf lcd aus. 
+/// mode==0:
 /// Die Maske wird so lange angezeigt bis eine beliebige Taste gedrueckt wird.
-void    alert(const prog_char * s);
+/// mode==1:
+/// Die Maske wird angezeigt.
+/// mode==2:
+/// Tastendruck wird geprüft. :
+/// return: false wenn Taste gedrückt wurde.
+bool    alert(const prog_char * s, uint8_t mode=0);
 
 ///common init for simu and target
 void    init();

@@ -18,6 +18,7 @@
 
 
 
+uint16_t slopeFull100ms(uint8_t speed);
 
 static int16_t anaCalib[4];
 int16_t g_chans512[NUM_CHNOUT];
@@ -458,14 +459,27 @@ void menuProcMixOne(uint8_t event)
 	  CHECK_LAST_SWITCH(md2->swtch,EE_MODEL|_FL_POSNEG);
 	}
         break;
-      case 4:   lcd_putcAtt(0*FW+1, y, '<',0);
-        lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
-        if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedDown, 0,15); //!! bitfield
-        break;
-      case 5:   lcd_putcAtt(4*FW+1, y-FH, '>',0);
-        lcd_outdezAtt(FW*7,y-FH,md2->speedUp,attr);
-        if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedUp, 0,15); //!! bitfield
-        break;
+      case 4:   
+        {
+          lcd_puts_P(3*FW, y, "<  s");
+          uint16_t slope = slopeFull100ms(md2->speedDown);
+          if(slope<100)  lcd_outdezAtt(FW*6,y,slope,   attr|PREC1);
+          else           lcd_outdezAtt(FW*6,y,slope/10,attr);
+          //lcd_outdezAtt(FW*3,y,md2->speedDown,attr);
+          if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedDown, 0,15); //!! bitfield
+          break;
+        }
+      case 5:
+        {
+          lcd_puts_P(14*FW, y-FH, ">  s");
+          //lcd_putcAtt(4*FW+1, y-FH, '>',0);
+          uint16_t slope = slopeFull100ms(md2->speedUp);
+          if(slope<100)  lcd_outdezAtt(FW*17,y-FH,slope,   attr|PREC1);
+          else           lcd_outdezAtt(FW*17,y-FH,slope/10,attr);
+          //lcd_outdezAtt(FW*7,y-FH,md2->speedUp,attr);
+          if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2->speedUp, 0,15); //!! bitfield
+          break;
+        }
       case 6:   lcd_putsAtt(  FW*3,y,PSTR("RM"),attr);
                 lcd_puts_P(  FW*6,y,PSTR("remove [Menu]"));
         if(attr && event==EVT_KEY_FIRST(KEY_MENU)){
@@ -1333,6 +1347,12 @@ void menuProcTrainer(uint8_t event)
   uint8_t subSub = mstate2.m_posHorz+1;
   uint8_t y;
   bool    edit;
+
+  if(PING & (1<<INP_G_RF_POW)) // i am the slave
+  {
+    lcd_puts_P(  7*FW,3*FH , PSTR("Slave"));
+    return;
+  }
   
   for(uint8_t i=0; i<4; i++){
     //lcd_puts_P( 3*FW, 1*FH,PSTR("mode prc src swt"));
@@ -1346,7 +1366,7 @@ void menuProcTrainer(uint8_t event)
     y=(i+2)*FH;
     TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
     putsChnRaw( 0, y,i+1,0);
-                //                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
+    //                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
     edit = (sub==i && subSub==1);
     lcd_putsnAtt(   4*FW, y, PSTR("off += :=")+3*td->mode,3,
                     edit ? BLINK : 0);
@@ -1397,7 +1417,7 @@ void menuProcSetup1(uint8_t event)
   MSTATE_CHECK_V(2,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<5; i++){
-    uint8_t y=i*FH+2*FH;
+    uint8_t y=i*FH+1*FH;
     uint8_t attr = sub==i ? BLINK : 0; 
     lcd_putsnAtt( FW*5,y,PSTR("  THR pos "
                               "  Switches"
@@ -1904,6 +1924,38 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
 
 uint16_t pulses2MHz[60];
 
+/*
+  dt=[ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9];dx=[18,13,9,6,4,3,2,3,1,2,1,1,1,1,1]
+  rp=1; 15.times{|i| r=dx[i]*100.0/(dt[i]); printf("%2d: rate=%4d i/s full=%5.1fs %3.1f\n",i+1,r,1024.0/r,rp/r);rp=r}
+ 1: rate=1800 i/s full=  0.6s 0.0
+ 2: rate=1300 i/s full=  0.8s 1.4
+ 3: rate= 900 i/s full=  1.1s 1.4
+ 4: rate= 600 i/s full=  1.7s 1.5
+ 5: rate= 400 i/s full=  2.6s 1.5
+ 6: rate= 300 i/s full=  3.4s 1.3
+ 7: rate= 200 i/s full=  5.1s 1.5
+ 8: rate= 150 i/s full=  6.8s 1.3
+ 9: rate= 100 i/s full= 10.2s 1.5
+10: rate=  66 i/s full= 15.4s 1.5
+11: rate=  50 i/s full= 20.5s 1.3
+12: rate=  33 i/s full= 30.7s 1.5
+13: rate=  25 i/s full= 41.0s 1.3
+14: rate=  16 i/s full= 61.4s 1.5
+15: rate=  11 i/s full= 92.2s 1.5
+*/
+//                                     1  2 3 4 5 6 7 8 9 0 1 2 3 4 5
+//                                                        1 1 1 1 1 1 
+static prog_uint8_t APM s_slopeDlt[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
+static prog_uint8_t APM s_slopeTmr[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
+
+uint16_t slopeFull100ms(uint8_t speed)
+{
+  if(speed==0) return 0;
+  int8_t  delta    = pgm_read_byte(&s_slopeDlt[speed-1]);
+  uint8_t timerend = pgm_read_byte(&s_slopeTmr[speed-1]); // *10ms
+  // 1024* timerend*10ms / delta
+  return (102 * timerend + delta / 2 ) / delta;     
+}
 
 void perOut(int16_t *chanOut)
 {
@@ -2015,35 +2067,12 @@ void perOut(int16_t *chanOut)
       if(md.weight<0) v=-v;
       if (md.speedUp || md.speedDown)
       {
-        /*
-    dt=[ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9];dx=[18,13,9,6,4,3,2,3,1,2,1,1,1,1,1]
-    rp=1; 15.times{|i| r=dx[i]*100.0/(dt[i]); printf("%2d: rate=%4d i/s full=%5.1fs %3.1f\n",i+1,r,1024.0/r,rp/r);rp=r}
- 1: rate=1800 i/s full=  0.6s 0.0
- 2: rate=1300 i/s full=  0.8s 1.4
- 3: rate= 900 i/s full=  1.1s 1.4
- 4: rate= 600 i/s full=  1.7s 1.5
- 5: rate= 400 i/s full=  2.6s 1.5
- 6: rate= 300 i/s full=  3.4s 1.3
- 7: rate= 200 i/s full=  5.1s 1.5
- 8: rate= 150 i/s full=  6.8s 1.3
- 9: rate= 100 i/s full= 10.2s 1.5
-10: rate=  66 i/s full= 15.4s 1.5
-11: rate=  50 i/s full= 20.5s 1.3
-12: rate=  33 i/s full= 30.7s 1.5
-13: rate=  25 i/s full= 41.0s 1.3
-14: rate=  16 i/s full= 61.4s 1.5
-15: rate=  11 i/s full= 92.2s 1.5
-         */
-        //                                                   1 1 1 1 1 1 
-        //                                1  2 3 4 5 6 7 8 9 0 1 2 3 4 5
-        static prog_uint8_t APM dlt_t[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
-        static prog_uint8_t APM tmr_t[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
         int16_t     diff     = v - act[i];
         if(diff){
           uint8_t   speed    = (diff > 0) ? md.speedUp : md.speedDown;
           if(speed){
-            uint8_t timerend = pgm_read_byte(&tmr_t[speed-1]);
-            int8_t  dlt      = pgm_read_byte(&dlt_t[speed-1]);
+            uint8_t timerend = pgm_read_byte(&s_slopeTmr[speed-1]);
+            int8_t  dlt      = pgm_read_byte(&s_slopeDlt[speed-1]);
             dlt              = min((int16_t)dlt, abs(diff)) ;
             if(diff < 0) dlt = -dlt;
 

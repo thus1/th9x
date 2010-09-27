@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
 
 bugs:
++ contrast in alarm?
 + thr error wenn invert
 + trim entschaerfen i35,39
 + frame length 22.5 statt 25,2 i4,41
@@ -29,14 +30,15 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-+ trim repeat slow
-+ inc/dec nicevals with doubleclick
-+ inc/dec repeat less fast
-- speed-werte in sec
++ THR alarm off with throttle
++ speed-werte in sec
+- serial communication
+- limit with scaling, switchable
 - timer mit thr-switch
 - standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
 - mixline mode + - * =
+- potis FUL/HALF
 - neg curves, more curves with parameters?
 - thr curve statt expo
 - thr trim nur am neg ende
@@ -47,6 +49,7 @@ ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
 ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
 0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 33 36 39 42 45 48 51 54 57 60
 64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
+ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'
 - curr event global var
 - format eeprom
 - pcm 
@@ -58,6 +61,9 @@ doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ trim repeat slow
++ inc/dec nicevals with doubleclick
++ inc/dec repeat less fast
 + menunavigation ++
 + template type NONE
 + pruefung des Schuelersignals
@@ -312,14 +318,14 @@ void checkTHR()
 #else
   while(g_tmr10ms<20){} //wait for some ana in
 #endif
-  uint8_t v  = anaIn(THRCHN)>>6; //leave 4 bits
-
   //int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpanNeg[thrchn] +
   //  g_eeGeneral.calibSpanNeg[thrchn]/8;
   //if(v > lowLim)  
-  if(abs(v-g_eeGeneral.thr0pos)>1)  
+  uint8_t mode=1;
+  while((abs(anaIn(THRCHN)>>6)-g_eeGeneral.thr0pos)>1)  
   {
-    alert(PSTR("THR not idle"));
+    if(! alert(PSTR("THR not idle"),mode) ) break;
+    mode=2;
   }
 }
 
@@ -334,24 +340,26 @@ uint8_t  g_menuStackPtr = 0;
 uint8_t  g_beepCnt;
 uint8_t  g_beepVal[4];
 
-void alert(const prog_char * s)
+bool alert(const prog_char * s, uint8_t mode )
 {
-  lcd_clear();
-  lcd_putsAtt(64-5*FW,0*FH,PSTR("ALERT"),DBLSIZE);  
-  lcd_puts_P(0,4*FW,s);  
-  lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
-  refreshDiplay();
-  beepErr();
-  while(1)
-  {
+  if(mode<=1){
+    lcd_clear();
+    lcd_putsAtt(64-5*FW,0*FH,PSTR("ALERT"),DBLSIZE);  
+    lcd_puts_P(0,4*FW,s);  
+    lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
+    refreshDiplay();
+    beepErr();
+  }
+  do {
     perChecks(); //check light switch in timerint, issue 51
 
-    if(IS_KEY_BREAK(getEvent()))   return;  //wait for key release
+    if(IS_KEY_BREAK(getEvent()))   return false;  //wait for key release
 #ifdef SIM
 void doFxEvents();
     doFxEvents();
 #endif    
-  }
+  } while(mode==0);
+  return true;
 }
 uint8_t checkTrim(uint8_t event)
 {
@@ -863,12 +871,13 @@ void init() //common init for simu and target
   g_menuStack[0] =  menuProc0;
 
   eeReadAll(); //load general setup and selected model
-  checkMem();  //enough eeprom free? 
 #ifndef SIM
+  lcdSetRefVolt(g_eeGeneral.contrast);
   setupAdc();  //before checkTHR
 #endif
+  checkMem();  //enough eeprom free? 
   checkTHR();
-  checkSwitches();
+  checkSwitches(); //must be last
 }
 
 #ifndef SIM
@@ -906,8 +915,6 @@ int main(void)
 
   setupPulses();
   wdt_enable(WDTO_500MS);
-
-  lcdSetRefVolt(g_eeGeneral.contrast);
   TIMSK |= (1<<OCIE1A); // Pulse generator enable immediately before mainloop
   while(1){
     uint16_t old10ms=g_tmr10ms;
