@@ -30,8 +30,8 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-+ THR alarm off with throttle
-+ speed-werte in sec
+- outputs as inputs?
+- show curves ref count, curve type
 - serial communication
 - limit with scaling, switchable
 - timer mit thr-switch
@@ -43,13 +43,11 @@ todo
 - thr curve statt expo
 - thr trim nur am neg ende
 - prc-werte dynamisch 64 werte 1-150
-ruby  -e 'x=0; 6.times{|d|8.times{printf("%d ",x); x+=d+1}};puts'
-0 1 2 3 4 5 6 7 8 10 12 14 16 18 20 22 24 27 30 33 36 39 42 45 
-48 52 56 60 64 68 72 76 80 85 90 95 100 105 110 115 120 126 132 138 144 150 156 162 
-ruby  -e 'x=0; 5.times{|d|10.times{printf("%d ",x); x+=d+1}};puts'
-0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 33 36 39 42 45 48 51 54 57 60
-64 68 72 76 80 84 88 92 96 100 105 110 115 120 125 130 135 140 145
-ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'
+ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
+ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
+ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
+ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
+ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
 - curr event global var
 - format eeprom
 - pcm 
@@ -61,6 +59,8 @@ doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ THR alarm off with throttle
++ speed-werte in sec
 + trim repeat slow
 + inc/dec nicevals with doubleclick
 + inc/dec repeat less fast
