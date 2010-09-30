@@ -65,6 +65,7 @@ class Builder
             cmd += " "+ @pars[:INCLUDE]
             cmd += " "+ @pars[:CFLAGS] 
             cmd += " -o #{fobj}"
+            cmd += " -Wno-variadic-macros"
             cmd += " -pedantic-errors"
             cmd += " -MD -c"
             cmd += " -mmcu=#{@pars[:MCU]}"
@@ -78,6 +79,7 @@ class Builder
         cmd  = @pars[:CC] 
         cmd += " ../src/stamp.cpp"
         cmd += " -o #{felf}"
+        cmd += " -Wno-variadic-macros"
         cmd += " -Wl,-Map=#{@projectName}.map,--cref,-v"
         cmd += " -mmcu=#{@pars[:MCU]}"
         cmd += " "+ @pars[:CFLAGS] 

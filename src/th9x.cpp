@@ -30,7 +30,8 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- outputs as inputs?
+- move,dup mixerlines/mixergroups
+- outputs as inputs? calc sequence
 - show curves ref count, curve type
 - serial communication
 - limit with scaling, switchable

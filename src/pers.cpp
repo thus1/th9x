@@ -51,9 +51,7 @@ bool eeLoadGeneral()
   uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
   //uint16_t sum=0;
   if( sz == sizeof(EEGeneral_r0) && g_eeGeneral.myVers == GENVERS0 ){
-#ifdef SIM
     printf("converting EEGeneral data from < 119\n");
-#endif
     char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r0);//Pointers behind the end
     char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r119);
     fullCopy(sizeof(EEGeneral_r0)-offsetof(EEGeneral_r0,calibSpan));
@@ -64,18 +62,14 @@ bool eeLoadGeneral()
     p119->myVers  = GENVERS119;
   }
   if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == GENVERS119){
-#ifdef SIM
     printf("converting EEGeneral data from 119 to 119_3\n");
-#endif
     EEGeneral_r119*p119= (EEGeneral_r119*)&g_eeGeneral;
     p119->adcFilt = 2;
     p119->thr0pos = 1; //upper 6 bits of adc value
     p119->myVers  = GENVERS119_3;
   }
   if( sz == sizeof(EEGeneral_r119) && g_eeGeneral.myVers == GENVERS119_3){
-#ifdef SIM
     printf("converting EEGeneral data from 119_3 to 150\n");
-#endif
     char* pSrc = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r119);//Pters behind the end
     char* pDst = ((char*)&g_eeGeneral) + sizeof(EEGeneral_r150);
     fullCopy(sizeof(EEGeneral_r119)-offsetof(EEGeneral_r119,chkSum));
@@ -102,9 +96,7 @@ bool eeLoadGeneral()
     //    return g_eeGeneral.chkSum == sum;
     return true;
   }
-#ifdef SIM
   printf("bad g_eeGeneral\n");
-#endif  
   return false;
 }
 #define CM(x) convertMode(x)
@@ -249,9 +241,7 @@ void eeLoadModel(uint8_t id)
   }
 
   if( sz == sizeof(ModelData_r84) && g_model.mdVers == MDVERS84) {
-#ifdef SIM
     printf("converting model data from r84 to r143\n");
-#endif
     ModelData_r84  *model84  = (ModelData_r84*)&g_model;
     ModelData_r143 *model143 = (ModelData_r143*)&g_model;
     for(int8_t i=3; i>=0; i--){
@@ -272,9 +262,7 @@ void eeLoadModel(uint8_t id)
     return;
   }
 
-#ifdef SIM
   printf("bad model%d data using default\n",id+1);
-#endif
   modelDefault(id);
 
 }
@@ -350,9 +338,7 @@ void eeCheck(bool immediately)
       if(theFile.errno()==ERR_TMO){
         s_eeDirtyMsk |= EE_GENERAL; //try again
         s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
-#ifdef SIM
         printf("writing aborted GENERAL\n");
-#endif
       }else{
         alert(PSTR("EEPROM overflow"));
       }
@@ -369,9 +355,7 @@ void eeCheck(bool immediately)
       if(theFile.errno()==ERR_TMO){
         s_eeDirtyMsk |= EE_MODEL; //try again
         s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
-#ifdef SIM
         printf("writing aborted MODEL\n");
-#endif
       }else{
         alert(PSTR("EEPROM overflow"));
       }

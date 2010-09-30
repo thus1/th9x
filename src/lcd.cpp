@@ -55,6 +55,16 @@ void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8
   }
 }
 
+void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode)
+{
+  uint8_t   *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
+  bool     inv  = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
+  uint8_t     i = min(DISPLAY_END-p,(int)w);
+  if(inv)  for(; i!=0; i--) *p++ ^= 0xff;
+#ifdef SIM
+  assert(p<=DISPLAY_END);
+#endif
+}
 /// invers: 0 no 1=yes 2=blink
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
@@ -77,10 +87,9 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
       }
     }
   }else{
-    for(char i=5; i!=0; i--){
-      uint8_t b = pgm_read_byte(q++);
-      if(p<DISPLAY_END) *p++ = inv ? ~b : b;
-    }
+    uint8_t i = min(DISPLAY_END-p,5);
+    if(inv) for(; i!=0; i--) *p++ = ~pgm_read_byte(q++);
+    else    for(; i!=0; i--) *p++ =  pgm_read_byte(q++);
     if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
   }
 #ifdef SIM

@@ -559,13 +559,65 @@ void genMixTab()
     s_mixMaxSel =sel;
     mtIdx++;
   }
-#ifdef SIM
-  for(uint8_t i=0; i<DIM(s_mixTab); i++){
-    //MixTab *mt=s_mixTab+i;
-    //printf("chId %2d selCh %2d selDat %2d insIdx %d editIdx %d\n",mt->chId,mt->selCh,mt->selDat,mt->insIdx,mt->editIdx);
+#ifdef xSIM
+  //for(uint8_t i=0; i<DIM(s_mixTab); i++){
+  for(uint8_t i=0; i<14; i++){
+    MixTab *mt=s_mixTab+i;
+    printf("dest %2d wght %2d    "
+           "chId %2d selCh %2d selDat %2d insIdx %d editIdx %d\n",
+           md[i].destCh, md[i].weight,
+           mt->chId,mt->selCh,mt->selDat,mt->insIdx,mt->editIdx);
   }
 #endif
 }
+
+void newLine(uint8_t idx)
+{
+  MixData_r0 *md=g_model.mixData;
+  memmove(&md[idx+1],&md[idx],
+          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
+  md[idx].destCh      = s_currDestCh; //-s_mixTab[sub];
+  md[idx].srcRaw      = s_currDestCh; //1;   //
+  md[idx].weight      = 100;
+  md[idx].swtch       = 0; //no switch
+  md[idx].curve       = 0; //linear
+  md[idx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
+  md[idx].speedDown   = 0; //
+  STORE_MODELVARS;
+  genMixTab();
+}
+void dupLine(uint8_t idx)
+{
+  MixData_r0 *md=g_model.mixData;
+  memmove(&md[idx+1],&md[idx],
+          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
+  STORE_MODELVARS;
+  genMixTab();
+}
+bool moveLine(uint8_t from, uint8_t to, bool insMode)
+{
+  //printf("moveLine(from %d, to %d, ins %d)\n",from,to,insMode);
+  MixData_r0 *md = g_model.mixData;
+  if(insMode){
+    if(from < to)  {//nach hinten
+      if(md[from].destCh >= NUM_XCHNOUT) return false;
+      md[from].destCh++; 
+    }
+    else{
+      if(md[from].destCh <= 1) return false;
+      md[from].destCh--;
+    }
+  }else{
+    if(from==to) return false;
+    MixData_r0 tmp = md[to];
+    md[to]         = md[from];
+    md[from]       = tmp;
+  }
+  STORE_MODELVARS;
+  genMixTab();
+  return true;
+}
+
 uint8_t currMixerLine;
 int32_t currMixerVal;
 int32_t currMixerSum;
@@ -573,32 +625,43 @@ void menuProcMix(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("MIXER");  
+  int8_t subOld  = mstate2.m_posVert;
+  int8_t mixIdOld  = s_currMixIdx;
   MSTATE_CHECK_V(4,menuTabModel,s_mixMaxSel);
   int8_t  sub    = mstate2.m_posVert;
   static uint8_t s_pgOfs;
+  static bool    s_editMode;
   MixData_r0 *md=g_model.mixData;
   switch(event)
   {
     case EVT_ENTRY:
       s_pgOfs=0;
     case EVT_ENTRY_UP:
+      s_editMode=false;
       genMixTab();
       break;
-    case EVT_KEY_FIRST(KEY_MENU):
+    case  EVT_KEY_FIRST(KEY_EXIT):
+      if(s_editMode){
+        s_editMode = false;
+        beepKey();
+        killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
+      }
+      break;
+    case EVT_KEY_LONG(KEY_MENU):
+      if(s_currMixInsMode) break;
+      if(s_editMode)
+      {
+        //duplicate line
+        dupLine(s_currMixIdx);
+        beepKey();
+      }
+      s_editMode=true;
+      killEvents(event); //cut off 
+      break;
+    case EVT_KEY_BREAK(KEY_MENU):
       if(sub<1) break;
 
-      if(s_currMixInsMode) {
-        memmove(&md[s_currMixIdx+1],&md[s_currMixIdx],
-                (MAX_MIXERS-(s_currMixIdx+1))*sizeof(md[0]) );
-        md[s_currMixIdx].destCh      = s_currDestCh; //-s_mixTab[sub];
-        md[s_currMixIdx].srcRaw      = s_currDestCh; //1;   //
-        md[s_currMixIdx].weight      = 100;
-        md[s_currMixIdx].swtch       = 0; //no switch
-        md[s_currMixIdx].curve       = 0; //linear
-        md[s_currMixIdx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
-        md[s_currMixIdx].speedDown   = 0; //
-        STORE_MODELVARS;
-      }
+      if(s_currMixInsMode) newLine(s_currMixIdx);
       pushMenu(menuProcMixOne);
       break;
   }
@@ -625,12 +688,14 @@ void menuProcMix(uint8_t event)
     if(s_mixTab[k].hasDat){ //show data 
       MixData_r0 *md2=&md[s_mixTab[k].editIdx];
       uint8_t attr = sub==s_mixTab[k].selDat ? BLINK : 0; 
+      uint8_t att2 = 0;
       
       if(attr) {
         currMixerLine = s_mixTab[k].editIdx;
         lcd_outdez(   9*FW, 0, currMixerVal>>9);
         lcd_putc  (   9*FW, 0, '/');
         lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
+        if(s_editMode) {attr=0; att2=BLINK;}
       }
 
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
@@ -639,7 +704,11 @@ void menuProcMix(uint8_t event)
       if(md2->swtch)putsDrSwitches( 13*FW-4, y, md2->swtch,0);
       if(md2->curve)lcd_putsnAtt(   17*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
       if(md2->speedDown || md2->speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
-      if(attr == BLINK){ //handle dat is selected
+
+      if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
+      //lcd_putsAtt( 4*FW+1, y, PSTR("                "),att2);
+
+      if(sub==s_mixTab[k].selDat) { //handle dat is selected
         CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
         s_currMixIdx     = s_mixTab[k].editIdx;
         s_currDestCh     = s_mixTab[k].chId;
@@ -658,10 +727,14 @@ void menuProcMix(uint8_t event)
     }    
 
   } //for 7
+  if(s_editMode && subOld != sub) //mixIdOld != s_currMixIdx){
+  {
+    printf("subOld %d sub %d\n",subOld,sub);
+    if(! moveLine(mixIdOld,s_currMixIdx,s_currMixInsMode))
+      s_editMode = false;
+  }
   if( sub!=0 &&  markedIdx==-1) { //versuche die Marke zu finden
-#ifdef SIM
     //printf("find mark sub %d markedIdx %d s_pgOfs %d minSel %d maxSel %d\n",sub,markedIdx,s_pgOfs,minSel,maxSel);
-#endif
     //if(sub < minSel && minSel!=99) s_pgOfs = max(0,s_pgOfs-1);
     if(sub < minSel) s_pgOfs = max(0,s_pgOfs-1);
     if(sub > maxSel) s_pgOfs++;
@@ -1216,9 +1289,7 @@ void menuProcDiagCalib(uint8_t event)
           beepKey();
           break;
         case 3: 
-#ifdef SIM
           printf("do calib");
-#endif
           for(uint8_t i=0; i<7; i++)
             if(hiVals[i]-loVals[i]>50) {
             g_eeGeneral.calibMid[i]  = midVals[i];
@@ -1876,9 +1947,7 @@ static int16_t s_cacheLimitsMax[NUM_CHNOUT];
 void calcLimitCache()
 {
   if(s_limitCacheOk) return;
-#ifdef SIM
   printf("calc limit cache\n");
-#endif  
   s_limitCacheOk = true;
   for(uint8_t i=0; i<NUM_CHNOUT; i++){
     int16_t v = g_model.limitData[i].min-100;
