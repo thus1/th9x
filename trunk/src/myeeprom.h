@@ -153,9 +153,28 @@ typedef struct t_MixData_r0 {
   uint8_t speedUp:4;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
   uint8_t speedDown:4;      // 0 nichts
 } __attribute__((packed)) MixData_r0;
+//more data:
+// destCh 12->16                                +1?
+// srcRaw 13->S1-4,P1-3,ful,s1-4,p1-3,max,ch1-16 32  +1
+// ful/half
+// curve  8->16 ,neg                            +2
+// sw-mode -100,0,disable                       +2
+// mix-mode + 1 * =                             +2
+//
+//  uint8_t destCh:4;
+//  uint8_t curve:4; 
 
+//  uint8_t srcRaw:5;
+//  uint8_t mixmode:2; 
 
+//  int8_t  swtch:5;
+//  int8_t  swtchmode:2;
+//  uint8_t curveNeg:1; 
 
+//  int8_t  weight;
+//  uint8_t speedUp:4;
+//  uint8_t speedDown:4;
+//
 
 
 typedef struct t_ModelData_r0 { //<r84

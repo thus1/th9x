@@ -149,9 +149,7 @@ int8_t EeFsck()
   for(blk = FIRSTBLK; blk < BLOCKS; blk++){
     if(bufp[blk]==0)       //goto err_4; //unused block
     {
-#ifdef SIM
       printf("ERROR fsck -4 blk=%d readding..\n",blk);
-#endif
       EeFsSetLink(blk,eeFs.freeList);
       eeFs.freeList = blk; //chain in front
       EeFsFlushFreelist();

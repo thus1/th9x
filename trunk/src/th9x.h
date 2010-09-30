@@ -23,6 +23,8 @@
   #include "stdio.h"
 #else
 ///opt/cross/avr/include/avr/pgmspace.h
+  #include <stdio.h>
+  #define printf(...)
   #include <stddef.h>
   #include <avr/io.h>
   #define assert(x)
@@ -481,9 +483,7 @@ extern const char stamp4[];
 /// Erzeugt einen beep der laenge b
 inline void _beep(uint8_t b) {
   g_beepCnt=b;
-#ifdef SIM
   printf("beep %d\n",b);
-#endif
 }
 
 /// Erzeugt einen kurzen beep
