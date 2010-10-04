@@ -500,6 +500,7 @@ prog_char* modelMixerDefaultName(uint8_t typ);
 void modelMixerDefault(uint8_t typ);
 
 
+uint16_t getTmr16KHz();
 
 inline int16_t trimExp(int8_t trim)
 { 

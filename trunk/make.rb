@@ -125,6 +125,7 @@ class Builder
       sys "usbprog rdEeprom",@pars[:USBPROG] +" rdEeprom 0 #{pars[:eepromsize]} #{@dt}eeprom"
     }
   end
+  alias be backup_eeprom
   def backup()
     backup_flash()
     backup_eeprom()
