@@ -543,11 +543,20 @@ void pushMenu(MenuFuncP newMenu)
 
 uint8_t  g_vbat100mV;
 void evalCaptures();
+extern uint16_t g_timeMain;
+extern uint16_t g_timePerOut;
 
 void perMain()
 {
   perChecks();
+#ifndef SIM
+  uint16_t t0 = getTmr16KHz();
+#endif
   perOut(g_chans512);
+#ifndef SIM
+  t0 = getTmr16KHz() - t0;
+  g_timePerOut = max(g_timePerOut,t0);
+#endif
   eeCheck();
 
   lcd_clear();
@@ -791,7 +800,7 @@ uint16_t getTmr16KHz()
   while(1){
     uint8_t hb  = g_tmr16KHz;
     uint8_t lb  = TCNT0;
-    if(hb-g_tmr16KHz==0) return (hb<<8)|lb;
+    if((uint8_t)(hb-g_tmr16KHz)==0) return (hb<<8)|lb;
   }
 }
 
@@ -882,7 +891,6 @@ void init() //common init for simu and target
 }
 
 #ifndef SIM
-extern uint16_t g_timeMain;
 //void main(void) __attribute__((noreturn));
 int main(void)
 {

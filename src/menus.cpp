@@ -461,7 +461,7 @@ void menuProcMixOne(uint8_t event)
         break;
       case 4:   
         {
-          lcd_puts_P(3*FW, y, "<  s");
+          lcd_puts_P(3*FW, y, PSTR("<  s"));
           uint16_t slope = slopeFull100ms(md2->speedDown);
           if(slope<100)  lcd_outdezAtt(FW*6,y,slope,   attr|PREC1);
           else           lcd_outdezAtt(FW*6,y,slope/10,attr);
@@ -471,7 +471,7 @@ void menuProcMixOne(uint8_t event)
         }
       case 5:
         {
-          lcd_puts_P(14*FW, y-FH, ">  s");
+          lcd_puts_P(14*FW, y-FH, PSTR(">  s"));
           //lcd_putcAtt(4*FW+1, y-FH, '>',0);
           uint16_t slope = slopeFull100ms(md2->speedUp);
           if(slope<100)  lcd_outdezAtt(FW*17,y-FH,slope,   attr|PREC1);
@@ -489,6 +489,7 @@ void menuProcMixOne(uint8_t event)
             (MAX_MIXERS-(s_currMixIdx+1))*sizeof(MixData_r0));
           memset(&g_model.mixData[MAX_MIXERS-1],0,sizeof(MixData_r0));
           STORE_MODELVARS;
+          killEvents(event);
           popMenu();  
         }
         break;
@@ -800,48 +801,6 @@ void menuProcTrim(uint8_t event)
   }
   lcd_puts_P(FW*6,FH*7,PSTR("-->  Rearrange"));  
 }
-#if 0
-void menuProcTrim(uint8_t event)
-{
-  static MState2 mstate2;
-  TITLE("TRIM");  
-  MSTATE_CHECK_V(4,menuTabModel,4+1);
-  int8_t  sub    = mstate2.m_posVert - 1;
-
-  switch(event)
-  {
-    case  EVT_KEY_FIRST(KEY_LEFT): 
-    case  EVT_KEY_REPT(KEY_LEFT): 
-      if(sub>=0)
-      {
-        g_model.trimData[sub].trimDef = 0;
-        STORE_MODELVARS;
-        beepKey();
-      }
-      break;
-    case  EVT_KEY_FIRST(KEY_RIGHT): 
-    case  EVT_KEY_REPT(KEY_RIGHT): 
-      if(sub>=0)
-      {
-        g_model.trimData[sub].trimDef += trimVal(sub);
-        g_model.trimData[sub].trim     = 0;
-        STORE_MODELVARS;
-        beepKey();
-      }
-      break;
-  }
-  lcd_puts_P( 6*FW, 1*FH,PSTR("Trim  Base"));
-  for(uint8_t i=0; i<4; i++)
-  {
-    uint8_t y=i*FH+16;
-    uint8_t attr = sub==i ? BLINK : 0; 
-    putsChnRaw(0,y,i+1,0);//attr);
-    lcd_outdezAtt( 8*FW, y, trimVal(i), attr );
-    lcd_outdezAtt(14*FW, y, g_model.trimData[i].trimDef, attr );
-  }
-  lcd_puts_P(0,FH*7,PSTR(" -> Balance  <- Clr"));  
-}
-#endif
 
 uint16_t expou(uint16_t x, uint16_t k)
 {
@@ -1695,6 +1654,7 @@ void trace(uint8_t val)
 uint16_t g_tmr1Latency_max;
 uint16_t g_tmr1Latency_min = 0x7ff;
 uint16_t g_timeMain;
+uint16_t g_timePerOut;
 void menuProcStatistic2(uint8_t event)
 {
   TITLE("STAT2");  
@@ -1704,6 +1664,7 @@ void menuProcStatistic2(uint8_t event)
       g_tmr1Latency_min = 0x7ff;
       g_tmr1Latency_max = 0;
       g_timeMain    = 0;
+      g_timePerOut  = 0;
       beepKey();
       break;
     case EVT_KEY_FIRST(KEY_DOWN):
@@ -1720,8 +1681,10 @@ void menuProcStatistic2(uint8_t event)
   lcd_outdez(14*FW , 2*FH, g_tmr1Latency_min/2 );
   lcd_puts_P( 0*FW,  3*FH, PSTR("tmr1 Jitter    us"));
   lcd_outdez(14*FW , 3*FH, (g_tmr1Latency_max - g_tmr1Latency_min) /2 );
-  lcd_puts_P( 0*FW,  4*FH, PSTR("tmain          ms"));
-  lcd_outdez(14*FW , 4*FH, g_timeMain/16 );
+  lcd_puts_P( 0*FW,  4*FH, PSTR("tmain           ms"));
+  lcd_outdezAtt(15*FW , 4*FH, g_timeMain*5/8,PREC1 );
+  lcd_puts_P( 0*FW,  5*FH, PSTR("tperOut         ms"));
+  lcd_outdezAtt(15*FW , 5*FH, g_timePerOut*5/8 ,PREC1);
 }
 
 void menuProcStatistic(uint8_t event)
@@ -2048,15 +2011,17 @@ void perOut(int16_t *chanOut)
 
     if(i<4){
       anaCalib[i] = v; //for show in expo
+      bool expSw=getSwitch(g_model.expoData[i].drSw,0);
       v  = expo(v,
-                getSwitch(g_model.expoData[i].drSw,0) ?
+                expSw ?
                 g_model.expoData[i].expDr           :
                 g_model.expoData[i].expNorm
       );
-      int32_t x = (int32_t)v * (getSwitch(g_model.expoData[i].drSw,0) ? 
-                                g_model.expoData[i].expSwWeight+100 :
-                                g_model.expoData[i].expNormWeight+100) / 100;
-      v = (int16_t)x;
+      //int32_t x = (int32_t)v * (getSwitch(g_model.expoData[i].drSw,0) ? 
+      v = (int32_t)v * (expSw ? 
+                        g_model.expoData[i].expSwWeight+100 :
+                        g_model.expoData[i].expNormWeight+100) / 100;
+      //v = (int16_t)x;
       TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
       if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
         uint8_t chStud = td->srcChn;
@@ -2079,10 +2044,6 @@ void perOut(int16_t *chanOut)
     }
     anas[i] = v; //10+1 Bit
   }
-  //for(uint8_t i=4;i<7;i++){
-  //    int16_t v= anaIn(i);
-  //    anas[i] = v-512; // [-512..511]
-  //  }
   anas[7] = 512; //100% für MAX
   anas[8] = 512; //100% für MAX
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
@@ -2110,13 +2071,14 @@ void perOut(int16_t *chanOut)
 
       static uint8_t timer[MAX_MIXERS];
       static int16_t act  [MAX_MIXERS];
+      uint8_t destCh = md.destCh;
 
       if(stage==1){
-        if(md.destCh<=NUM_CHNOUT) continue; //im ersten durchlauf alle intermediates X1-X4
+        if(destCh<=NUM_CHNOUT) continue; //im ersten durchlauf alle intermediates X1-X4
       }else{
-        if(md.destCh>NUM_CHNOUT) break;     //im zweiten Durchlauf alle outputs CH1-CH8
+        if(destCh>NUM_CHNOUT) break;     //im zweiten Durchlauf alle outputs CH1-CH8
       }
-      if(md.destCh==0) break;
+      if(destCh==0) break;
 
       //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
 
@@ -2167,12 +2129,14 @@ void perOut(int16_t *chanOut)
       int32_t dv=(int32_t)v*(abs(md.weight)); // 10+1 Bit + 7 = 17+1
       if(currMixerLine==i){
         currMixerVal=dv; //for mixer debug
+        //mov32div8to16(currMixerVal,dv);
       }
-      chans[md.destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
+      chans[destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
     }
       mixend:
       if(currMixerLine==i){
         currMixerSum=chans[md.destCh-1];
+        //mov32div8to16(currMixerSum,chans[destCh-1]);
       }
       
     }
