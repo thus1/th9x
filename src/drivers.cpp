@@ -140,13 +140,13 @@ void Key::input(bool val, EnumKeys enuk)
       if(m_cnt == 24)        putEvent(EVT_KEY_LONG(enuk));
       //fallthrough
     case 16: 
+    case 8: 
       if(m_cnt >= 64)  { //2 4 8 16 32 pulses in every 640ms
         m_state >>= 1;
         m_cnt     = 0;
       }
       //fallthrough
-    case 8: 
-      //case 4: 
+    case 4: 
       //case 2: 
 #ifdef xSIM
         printf(".");
@@ -233,6 +233,7 @@ uint16_t g_lightAct1s;
 uint16_t g_actTime1s;
 volatile uint8_t  g_blinkTmr10ms;
 
+volatile uint8_t  g_nextBeep;
 void per10ms()
 {
   g_tmr10ms++;
@@ -267,11 +268,63 @@ void per10ms()
     keys[enuk].input(in & pgm_read_byte(crossTrim+i),(EnumKeys)enuk);
     ++enuk;
   }
-  //  for(int i=0; i<8; i++)
-  //  {
-  //    g_anaIns[i] = anaIn(i);
-  //  }
-#ifndef SIM
-  //  STARTADCONV;            // Analogkanäle lesen
-#endif
+ 
+  static uint8_t s_beepState;
+  static uint8_t s_beepCnt;
+  if(s_beepCnt) s_beepCnt--;
+  static prog_uint8_t APM beepTab[]= {
+    /* volumes: 
+       key,warn1,warn,err */
+    0,      0,    0,   0, //quiet
+    0,      1,   30, 100, //silent
+    1,      1,   30, 100, //normal
+    4,      4,   50, 150, //for motor
+  };
+  switch(s_beepState){
+    case 0: //wait for next job
+      {
+        if(g_nextBeep==0) break;
+        if(g_nextBeep==5){ //double warn1
+          s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+1);
+          s_beepState = 3;
+        }else{
+          s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+g_nextBeep-1);
+          s_beepState = 1;
+        }
+        g_nextBeep  = 0;
+        if(s_beepCnt)
+          PORTE |=  (1<<OUT_E_BUZZER);
+        else    
+          s_beepState = 0;
+      }
+      break;
+    case 1: //beep once
+    case 3: //beep twice
+      printf("."); 
+      if(s_beepCnt==0){
+        PORTE &= ~(1<<OUT_E_BUZZER);
+        s_beepState--;
+        s_beepCnt = 10; //pause for state == 2
+        printf("%d\n",g_tmr10ms); 
+      }
+      break;
+    case 2: //pause betw beep twice
+      if(s_beepCnt==0){
+        s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+1);
+        s_beepState--;
+      }
+      break;
+  }
+
+//   if(g_beepCnt){
+//     g_beepCnt--;
+//     PORTE |=  (1<<OUT_E_BUZZER);
+//     printf("."); 
+//     if(g_beepCnt==0)
+//     {
+//       printf("%d\n",g_tmr10ms); 
+//     }
+//   }else{
+//     PORTE &= ~(1<<OUT_E_BUZZER);
+//   }
 }
