@@ -341,7 +341,12 @@ void menuProcCurve(uint8_t event) {
   }
 }
 
-
+extern uint8_t g_dynvals12255[64];
+int16_t dyn2val(int8_t idx)
+{
+  if(idx<0) return -g_dynvals12255[-idx];
+  return g_dynvals12255[idx];
+}
 
 static bool  s_limitCacheOk;
 #define LIMITS_DIRTY s_limitCacheOk=false
@@ -398,11 +403,15 @@ void menuProcLimits(uint8_t event)
           }
           break;        
         case 3:
-          lcd_outdezAtt( 16*FW, y, (int8_t)(ld->max+100),    attr);
+          //lcd_outdezAtt( 16*FW, y, (int8_t)(ld->max+100),    attr);
+          lcd_outdezAtt( 16*FW, y, dyn2val(ld->max+40),    attr);
           if(attr) {
-            ld->max +=  100;
-            if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
-            ld->max -=  100;
+            // ld->max +=  100;
+            // if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
+            // ld->max -=  100;
+            ld->max +=  40;
+            if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -50,50))  LIMITS_DIRTY; 
+            ld->max -=  40;
           }
           break;        
         case 4:
@@ -1530,8 +1539,8 @@ void menuProcSetup0(uint8_t event)
         }
         break;
       case 3:// "Beeper  "
-        lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVal,attr);
-        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVal,0,3);
+        lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVol,attr);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVol,0,3);
         break;
       case 4://stick Mode
         y += FH;
@@ -1558,7 +1567,7 @@ uint8_t  s_timerState;
 #define TMR_OFF     0
 #define TMR_RUNNING 1
 #define TMR_BEEPING 2
-#define TMR_STOPPED 3
+#define TMR_BEEPSTOPPED 3
 int16_t  s_timerVal;
 void timer(uint8_t val)
 {
@@ -1602,13 +1611,15 @@ void timer(uint8_t val)
       if(g_model.tmrMode != TMRMODE_NONE) s_timerState=TMR_RUNNING;
       break;
     case TMR_RUNNING:
-      if(s_timerVal<=0 && g_model.tmrVal) s_timerState=TMR_BEEPING;
+      //if(s_timerVal<=0 && g_model.tmrVal) s_timerState=TMR_BEEPING;
+      if(s_timerVal<=MAX_ALERT_TIME && g_model.tmrVal) s_timerState=TMR_BEEPING;
       break;
     case TMR_BEEPING:
-      if(s_timerVal <= -MAX_ALERT_TIME)   s_timerState=TMR_STOPPED;
+      //if(s_timerVal <= -MAX_ALERT_TIME)   s_timerState=TMR_STOPPED;
+      if(s_timerVal < 0)                  s_timerState=TMR_BEEPSTOPPED;
       if(g_model.tmrVal == 0)             s_timerState=TMR_RUNNING;
       break;
-    case TMR_STOPPED:
+    case TMR_BEEPSTOPPED:
       break;
   }
 
@@ -1616,7 +1627,10 @@ void timer(uint8_t val)
     static int16_t last_tmr;
     if(last_tmr != s_timerVal){
       last_tmr   = s_timerVal;
-      beepWarn1();
+      if(s_timerVal>20  )       {if((s_timerVal&1)==0)beepTmr();}
+      else if(s_timerVal>10  )  {beepTmr();}
+      else if(s_timerVal>0)     {beepTmrDbl();}
+      else                      {beepTmrLong();}
     }
   }
 }
@@ -1803,7 +1817,7 @@ void menuProc0(uint8_t event)
       break;
     case EVT_KEY_FIRST(KEY_EXIT):
       if(s_timerState==TMR_BEEPING) {
-        s_timerState = TMR_STOPPED;
+        s_timerState = TMR_BEEPSTOPPED;
         beepKey();
       }
       break;
@@ -1836,7 +1850,7 @@ void menuProc0(uint8_t event)
   //if(g_model.tmrMode != TMRMODE_NONE){
   if(s_timerState != TMR_OFF){
     //int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? BLINK : 0);
+    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? (s_timerVal&1 ? INVERS : 0) : 0);
     //putsTime( x+8*FW, FH*2, tmr, att,att);
     putsTime( x+8*FW, FH*2, s_timerVal, att,att);
     lcd_putsnAtt(   x+ 4*FW, FH*2, PSTR(" TME THRTHR%")-4+4*g_model.tmrMode,4,0);

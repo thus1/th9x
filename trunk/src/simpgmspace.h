@@ -40,6 +40,9 @@ typedef const int8_t prog_int8_t;
 #define PORTA dummyport
 #define PORTB portb
 #define PORTC dummyport
+#define PORTD dummyport
+#define PORTE dummyport
+#define PORTF dummyport
 #define PORTG dummyport
 #define DDRA   dummyport
 #define DDRB   dummyport

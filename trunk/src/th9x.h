@@ -213,7 +213,7 @@ enum EnumKeys {
 #define TMRMODE_ABS      1
 #define TMRMODE_THR      2
 #define TMRMODE_THR_REL  3
-#define MAX_ALERT_TIME   60
+#define MAX_ALERT_TIME   30
 
 #define PROTO_PPM        0
 #define PROTO_SILV_A     1
@@ -462,8 +462,9 @@ extern uint8_t            g_vbat100mV;
 extern volatile uint16_t  g_tmr10ms;
 extern volatile uint16_t  g_tmr1s;
 extern volatile uint8_t   g_blinkTmr10ms;
-extern uint8_t            g_beepCnt;
-extern uint8_t            g_beepVal[4];
+// extern uint8_t            g_beepCnt;
+// extern uint8_t            g_beepVal[4];
+extern volatile uint8_t   g_nextBeep;
 extern const PROGMEM char modi12x3[];
 //extern uint16_t           pulses2MHz[9];
 extern uint16_t           pulses2MHz[60];
@@ -481,18 +482,35 @@ extern const char stamp4[];
 #include "myeeprom.h"
 
 /// Erzeugt einen beep der laenge b
+// inline void _beep(uint8_t b) {
+//   g_beepCnt=b;
+//   printf("beep %d\n",b);
+// }
+// 
+// /// Erzeugt einen kurzen beep
+// #define beepKey()   _beep(g_beepVal[0])
+// #define beepWarn1() _beep(g_beepVal[1])
+// /// Erzeugt einen langen beep
+// #define beepWarn() _beep(g_beepVal[2])
+// /// Erzeugt einen sehr langen beep
+// #define beepErr()  _beep(g_beepVal[3])
+
 inline void _beep(uint8_t b) {
-  g_beepCnt=b;
+  g_nextBeep=b;
   printf("beep %d\n",b);
 }
 
 /// Erzeugt einen kurzen beep
-#define beepKey()   _beep(g_beepVal[0])
-#define beepWarn1() _beep(g_beepVal[1])
+#define beepKey()    _beep(1)
+#define beepTmr()    _beep(2)
+#define beepTmrDbl() _beep(5)
+#define beepTmrLong()_beep(3)
+#define beepStore()  _beep(2)
+#define beepBat()    _beep(2)
 /// Erzeugt einen langen beep
-#define beepWarn() _beep(g_beepVal[2])
+#define beepWarn()   _beep(3)
 /// Erzeugt einen sehr langen beep
-#define beepErr()  _beep(g_beepVal[3])
+#define beepErr()    _beep(4)
 
 
 extern uint8_t modelMixerDefaults;

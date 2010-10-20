@@ -69,9 +69,9 @@ typedef struct t_EEGeneral_r119 {
 #define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
 #define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
 #define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VAL ( g_eeGeneral.beepVal )
+#define BEEP_VOL ( g_eeGeneral.beepVol )
   uint8_t   warnOpts:3; //bitset for several warnings
-  uint8_t   beepVal:2;  //
+  uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r119;
@@ -96,9 +96,9 @@ typedef struct t_EEGeneral_r150 {
 #define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
 #define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
 #define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VAL ( g_eeGeneral.beepVal )
+#define BEEP_VOL ( g_eeGeneral.beepVol )
   uint8_t   warnOpts:3; //bitset for several warnings
-  uint8_t   beepVal:2;  //
+  uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r150;

@@ -338,8 +338,8 @@ MenuFuncP g_menuStack[5];
 // #endif
 // ;
 uint8_t  g_menuStackPtr = 0;
-uint8_t  g_beepCnt;
-uint8_t  g_beepVal[4];
+//uint8_t  g_beepCnt;
+//uint8_t  g_beepVal[4];
 
 bool alert(const prog_char * s, uint8_t mode )
 {
@@ -416,7 +416,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
-  if(event==EVT_KEY_FIRST(kpl) && getEventDbl(event)==2){
+  if(event==EVT_KEY_FIRST(kpl) && getEventDbl(event)==3){
     int niceVal=-150;
     while(1){
       if(newval < niceVal){
@@ -426,7 +426,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       if(niceVal>=i_max) break;
       niceVal += 50;
     }
-  }else if(event==EVT_KEY_FIRST(kmi) && getEventDbl(event)==2){
+  }else if(event==EVT_KEY_FIRST(kmi) && getEventDbl(event)==3){
     int niceVal=150;
     while(1){
       if(newval > niceVal){
@@ -466,7 +466,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     beepWarn();
   }
   if(newval != val){
-    if(newval==0) {
+    if((newval%20)==0) {
       pauseEvents(event);
       beepKey(); //beepWarn();
     }
@@ -626,21 +626,21 @@ void   perChecks()
 
         static uint8_t s_batCheck;
         if(s_batCheck!=g_tmr1s && g_vbat100mV < g_eeGeneral.vBatWarn){
-          beepWarn1();
+          beepBat();
           s_batCheck=g_tmr1s;
         }
       }
       break;
     case 3:
       {
-        static prog_uint8_t APM beepTab[]= {
-          0,0, 0,  0, //quiet
-          0,1,30,100, //silent
-          1,1,30,100, //normal
-          4,4,50,150, //for motor
-        };
-        memcpy_P(g_beepVal,beepTab+4*BEEP_VAL,4);
-          //g_beepVal = BEEP_VAL;
+//         static prog_uint8_t APM beepTab[]= {
+//           0,0, 0,  0, //quiet
+//           0,1,30,100, //silent
+//           1,1,30,100, //normal
+//           4,4,50,150, //for motor
+//         };
+//         memcpy_P(g_beepVal,beepTab+4*BEEP_VAL,4);
+//           //g_beepVal = BEEP_VAL;
       }
       break;
     case 4:
@@ -810,12 +810,6 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
   TIMSK &= ~(1<<OCIE0); //stop reentrance 
   sei();
   OCR0 = OCR0 + 156;
-  if(g_beepCnt){
-    g_beepCnt--;
-    PORTE |=  (1<<OUT_E_BUZZER);
-  }else{
-    PORTE &= ~(1<<OUT_E_BUZZER);
-  }
   per10ms();
   heartbeat |= HEART_TIMER10ms;
   cli();
@@ -876,8 +870,15 @@ void evalCaptures()
 
 
 #endif
+uint8_t g_dynvals12255[64];
 void init() //common init for simu and target
 {
+  uint8_t i=0;
+  uint8_t s=0;
+  for(;i<10;i++){ g_dynvals12255[i] = s; s+=1;  }; // 0:0 30:50 40:100 50:150
+  for(;i<30;i++){ g_dynvals12255[i] = s; s+=2;  };
+  for(;i<=50;i++){ g_dynvals12255[i] = s; s+=5;  };
+
   g_menuStack[0] =  menuProc0;
 
   eeReadAll(); //load general setup and selected model
