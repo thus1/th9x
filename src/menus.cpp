@@ -1486,7 +1486,7 @@ void menuProcSetup1(uint8_t event)
       case 3://"Bat low "
         lcd_outdezAtt(4*FW,y,g_eeGeneral.vBatWarn,attr|PREC1);
         if(attr){
-          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 100); //5-10V
+          CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatWarn, 50, 120); //5-10V
         }
         break;
       case 4://"Inactive"
@@ -1994,7 +1994,7 @@ uint16_t pulses2MHz[60];
 static prog_uint8_t APM s_slopeDlt[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
 static prog_uint8_t APM s_slopeTmr[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
 
-uint16_t slopeFull100ms(uint8_t speed)
+uint16_t slopeFull100ms(uint8_t speed) //zeit für anstieg von -512 bis 512 in 100ms
 {
   if(speed==0) return 0;
   int8_t  delta    = pgm_read_byte(&s_slopeDlt[speed-1]);
