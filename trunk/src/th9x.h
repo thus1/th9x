@@ -374,12 +374,12 @@ extern bool    checkIncDec_Ret;//global helper vars
 #define DIM(arr) (sizeof((arr))/sizeof((arr)[0]))
 
 /// liefert Betrag des Arguments
-template<class t> inline t abs(t a){ return a>0?a:-a; }
+template<class t> inline t abs(t a){ return a >  0 ? a : (t)-a; }
 /// liefert das Minimum der Argumente
 template<class t> inline t min(t a, t b){ return a<b?a:b; }
 /// liefert das Maximum der Argumente
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
-template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? -1 : 0); }
+template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? (t)-1 : (t)0); }
 
 
 #define EE_GENERAL 1
