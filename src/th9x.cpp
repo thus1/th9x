@@ -30,7 +30,15 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- move,dup mixerlines/mixergroups
+- issue 57 chan recursion
+- issue 59 more output chans, soft switches
+- limit scaling/cutoff issue 55
++ vbat blinks issue 60
+- subtrim before limits? issue 61
+- dual rate interface issue62
+- instant trim issue63
+- timer beep mit vorwarnung issue 65
++ move,dup mixerlines/mixergroups
 - outputs as inputs? calc sequence
 - show curves ref count, curve type
 - serial communication
@@ -319,11 +327,8 @@ void checkTHR()
 #else
   while(g_tmr10ms<20){} //wait for some ana in
 #endif
-  //int16_t lowLim = g_eeGeneral.calibMid[thrchn] - g_eeGeneral.calibSpanNeg[thrchn] +
-  //  g_eeGeneral.calibSpanNeg[thrchn]/8;
-  //if(v > lowLim)  
   uint8_t mode=1;
-  while((abs(anaIn(THRCHN)>>6)-g_eeGeneral.thr0pos)>1)  
+  while(abs( (int8_t) ((anaIn(THRCHN)>>6)-g_eeGeneral.thr0pos) ) > 1)  
   {
     if(! alert(PSTR("THR not idle"),mode) ) break;
     mode=2;
@@ -333,10 +338,6 @@ void checkTHR()
 
 
 MenuFuncP g_menuStack[5];
-// #ifdef SIM
-//  = {menuProc0};
-// #endif
-// ;
 uint8_t  g_menuStackPtr = 0;
 //uint8_t  g_beepCnt;
 //uint8_t  g_beepVal[4];
@@ -573,14 +574,15 @@ void perMain()
 #endif
   }
 }
-void   perChecks()
+void   perChecks() //ca 10ms
 {
   static uint8_t s_rnd;
-  switch( s_rnd++ ) {
+  s_rnd++;
+  switch( s_rnd & 0xf ) { //16*10ms = 160ms
     case 0:
       {
         static uint8_t  s_sumAnaLast;
-        if( abs(g_sumAna - s_sumAnaLast) > 20)
+        if( abs(g_sumAna - s_sumAnaLast) > 50)
         {
           s_sumAnaLast = g_sumAna;
           g_lightAct1s  = g_tmr1s; //retrigger light
@@ -597,41 +599,21 @@ void   perChecks()
       break;
     case 1:
       {
-      int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH;
-      if(mins <= 0){
-        if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
-        else                                  PORTB &= ~(1<<OUT_B_LIGHT);
-      }else{
-        if((g_tmr1s-g_lightAct1s) < (uint16_t)30*mins) {
-          PORTB |=  (1<<OUT_B_LIGHT);
+        int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH;
+        if(mins <= 0){
+          if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
+          else                                  PORTB &= ~(1<<OUT_B_LIGHT);
         }else{
-          PORTB &= ~(1<<OUT_B_LIGHT);
-          g_lightAct1s = g_tmr1s-30*mins;
+          if((g_tmr1s-g_lightAct1s) < (uint16_t)30*mins) {
+            PORTB |=  (1<<OUT_B_LIGHT);
+          }else{
+            PORTB &= ~(1<<OUT_B_LIGHT);
+            g_lightAct1s = g_tmr1s-30*mins;
+          }
         }
+        break;
       }
-      break;
-      }
-
     case 2:
-      {
-        //check v-bat
-        //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
-        //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
-        //0.137176291331963    k=((2.65+5.07)/2.65*5/1024)*10*9.74/10.1
-        // g_vbat100mV=g_anaIns[7]*35/256; //34/239;
-        // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
-        //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
-        uint16_t ab = anaIn(7);
-        g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
-
-        static uint8_t s_batCheck;
-        if(s_batCheck!=g_tmr1s && g_vbat100mV < g_eeGeneral.vBatWarn){
-          beepBat();
-          s_batCheck=g_tmr1s;
-        }
-      }
-      break;
-    case 3:
       {
 //         static prog_uint8_t APM beepTab[]= {
 //           0,0, 0,  0, //quiet
@@ -643,14 +625,37 @@ void   perChecks()
 //           //g_beepVal = BEEP_VAL;
       }
       break;
-    case 4:
+    case 3:
       if((g_tmr10ms - s_trainerLast10ms) > 50 ){
         g_trainerSlaveActive = 0;
       }
       break;
-    default:
-      s_rnd=0; //from the beginning
-  }
+    case 4:
+      {
+        static uint8_t s_batCheck;
+        if(s_batCheck!=g_tmr1s && g_vbat100mV < g_eeGeneral.vBatWarn){
+          beepBat();
+          s_batCheck=g_tmr1s;
+        }
+      }
+      break;
+    case 15:
+      switch( (s_rnd>>4) & 0xf ) { //256*10ms = 2.5s
+        case 0: 
+          {
+            //check v-bat
+            //14.2246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*1000  mV
+            //0.142246465682983   -> 10.7 V  ((2.65+5.07)/2.65*5/1024)*10    1/10 V
+            //0.137176291331963    k=((2.65+5.07)/2.65*5/1024)*10*9.74/10.1
+            // g_vbat100mV=g_anaIns[7]*35/256; //34/239;
+            // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
+            //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
+            uint16_t ab = anaIn(7);
+            g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
+            break;
+          }     
+      } //2.5s
+  } //160ms
 }
 volatile uint16_t captureRing[16];
 volatile uint8_t  captureWr;
@@ -767,25 +772,6 @@ void setupAdc(void)
   STARTADCONV;
 }
 
-//ISR(ADC_vect, ISR_NOBLOCK)
-//{
-//  static uint8_t  chan;
-//  static uint16_t s_ana[8];
-//
-//  uint8_t k = chan & 0x7;
-//  ADMUX = k | (1<<REFS0);      // Multiplexer frueh stellen kann nie schaden
-//  if(! keyState(SW_ThrCt)){
-//    s_ana[k]   += ADC - s_ana[k] / 4; // Index ist immer 1 weniger als Kanal
-//  }
-//  ++chan;
-//  if(chan & 0x20)
-//  {
-//    chan = 0;       // letzter Kanal war 6
-//    ADCSRA &= ~(1 << ADIE);
-//  }
-//  else
-//    STARTADCONV;
-//}
 
 
 volatile uint8_t g_tmr16KHz;
