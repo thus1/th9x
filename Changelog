@@ -1,4 +1,21 @@
 
+
+trunk-r162
+- abs-func more performant with 8-bit types
+trunk-r161
+- larger stick zero limit
+- issue68 thr-alert sign-bug
+- issue60, vbat blinks
+
+trunk-r160
+- max batwarn 12V
+
+trunk-r159
+- issue64 tripple click
+- new timer double beep 
+- fast autorepeat stops each 20 incs
+- inc-dec dynamic test 12255
+
 trunk-r158
 - issue 58
 - measuring output calculation time
