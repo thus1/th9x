@@ -300,16 +300,17 @@ void per10ms()
       break;
     case 1: //beep once
     case 3: //beep twice
-      printf("."); 
+      //printf("."); 
       if(s_beepCnt==0){
         PORTE &= ~(1<<OUT_E_BUZZER);
         s_beepState--;
         s_beepCnt = 10; //pause for state == 2
-        printf("%d\n",g_tmr10ms); 
+        //printf("%d\n",g_tmr10ms); 
       }
       break;
     case 2: //pause betw beep twice
       if(s_beepCnt==0){
+        PORTE |=  (1<<OUT_E_BUZZER);
         s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+1);
         s_beepState--;
       }
