@@ -113,7 +113,7 @@ void Key::input(bool val, EnumKeys enuk)
   if(m_state && m_vals==0){  //gerade eben sprung auf 0
     if(m_state!=KSTATE_KILLED) {
       putEvent(EVT_KEY_BREAK(enuk));
-      if(!( m_state == 32 && m_cnt<16)){
+      if(!( m_state == 32 && m_cnt<12)){
         m_dblcnt=0;
       }
         //      }
@@ -125,7 +125,7 @@ void Key::input(bool val, EnumKeys enuk)
     case KSTATE_OFF: 
       if(m_vals==FFVAL){ //gerade eben sprung auf ff
         m_state = KSTATE_START;
-        if(m_cnt>12) m_dblcnt=0; //pause zu lang fuer double
+        if(m_cnt>10) m_dblcnt=0; //pause zu lang fuer double
         m_cnt   = 0;
       }
       break;
@@ -274,21 +274,21 @@ void per10ms()
   if(s_beepCnt) s_beepCnt--;
   static prog_uint8_t APM beepTab[]= {
     /* volumes: 
-       key,warn1,warn,err */
-    0,      0,    0,   0, //quiet
-    0,      1,   30, 100, //silent
-    1,      1,   30, 100, //normal
-    4,      4,   50, 150, //for motor
+    trim key,warn1,warn,err */
+    0,   0,   0,    0,   0, //quiet
+    1,   0,   1,   30, 100, //silent
+    1,   1,   1,   30, 100, //normal
+    4,   4,   4,   50, 150, //for motor
   };
   switch(s_beepState){
     case 0: //wait for next job
       {
         if(g_nextBeep==0) break;
-        if(g_nextBeep==5){ //double warn1
-          s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+1);
+        if(g_nextBeep==6){ //double warn1
+          s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+2);
           s_beepState = 3;
         }else{
-          s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+g_nextBeep-1);
+          s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+g_nextBeep-1);
           s_beepState = 1;
         }
         g_nextBeep  = 0;
@@ -311,7 +311,7 @@ void per10ms()
     case 2: //pause betw beep twice
       if(s_beepCnt==0){
         PORTE |=  (1<<OUT_E_BUZZER);
-        s_beepCnt   = pgm_read_byte(beepTab+4*BEEP_VOL+1);
+        s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+2);
         s_beepState--;
       }
       break;

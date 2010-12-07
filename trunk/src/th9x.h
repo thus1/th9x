@@ -13,6 +13,9 @@
 #ifndef th9x_h
 #define th9x_h
 
+
+// #define WITH_ADC_STAT
+
 #define VERS 1
 
 #include <inttypes.h>
@@ -150,6 +153,10 @@ uint8_t convertMode(uint8_t srcChn);
 
 #define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
 //#define THRCHN convertMode(STK_THR)
+int16_t idx2val12255(int8_t idx);
+int8_t  val2idx12255(int16_t val);
+
+
 
 
 enum EnumKeys {
@@ -474,6 +481,14 @@ extern uint8_t            g_sumAna;
 extern uint8_t            g_trainerSlaveActive;
 extern uint16_t           g_lightAct1s;
 extern uint16_t           g_actTime1s;
+extern uint16_t g_badAdc,g_allAdc;
+#ifdef WITH_ADC_STAT
+extern uint16_t g_rawVals[7];
+extern uint8_t  g_rawPos;
+extern uint8_t  g_rawChan;
+#endif
+
+
 #include "lcd.h"
 extern const char stamp1[];
 extern const char stamp2[];
@@ -481,36 +496,23 @@ extern const char stamp3[];
 extern const char stamp4[];
 #include "myeeprom.h"
 
-/// Erzeugt einen beep der laenge b
-// inline void _beep(uint8_t b) {
-//   g_beepCnt=b;
-//   printf("beep %d\n",b);
-// }
-// 
-// /// Erzeugt einen kurzen beep
-// #define beepKey()   _beep(g_beepVal[0])
-// #define beepWarn1() _beep(g_beepVal[1])
-// /// Erzeugt einen langen beep
-// #define beepWarn() _beep(g_beepVal[2])
-// /// Erzeugt einen sehr langen beep
-// #define beepErr()  _beep(g_beepVal[3])
-
 inline void _beep(uint8_t b) {
   g_nextBeep=b;
   printf("beep %d\n",b);
 }
 
 /// Erzeugt einen kurzen beep
-#define beepKey()    _beep(1)
-#define beepTmr()    _beep(2)
-#define beepTmrDbl() _beep(5)
-#define beepTmrLong()_beep(3)
-#define beepStore()  _beep(2)
-#define beepBat()    _beep(2)
+#define beepTrim()   _beep(1)
+#define beepKey()    _beep(2)
+#define beepTmr()    _beep(3)
+#define beepTmrLong()_beep(4)
+#define beepTmrDbl() _beep(6)
+#define beepStore()  _beep(3)
+#define beepBat()    _beep(3)
 /// Erzeugt einen langen beep
-#define beepWarn()   _beep(3)
+#define beepWarn()   _beep(4)
 /// Erzeugt einen sehr langen beep
-#define beepErr()    _beep(4)
+#define beepErr()    _beep(5)
 
 
 extern uint8_t modelMixerDefaults;

@@ -259,6 +259,17 @@ void eeLoadModel(uint8_t id)
   }
   
   if( sz == sizeof(ModelData_r143) && g_model.mdVers == MDVERS143) {
+    ModelData_r143 *model143 = (ModelData_r143*)&g_model;
+    ModelData_r167 *model167 = (ModelData_r167*)&g_model;
+    for(int8_t i=0; i<NUM_CHNOUT; i++){
+      model167->limitData[i].min   = val2idx12255(model143->limitData[i].min);
+      model167->limitData[i].scale = 0;
+      model167->limitData[i].max   = val2idx12255(model143->limitData[i].max);
+      model167->limitData[i].resv  = 0;
+    }
+    model143->mdVers = MDVERS167;
+  }
+  if( sz == sizeof(ModelData_r167) && g_model.mdVers == MDVERS167) {
     return;
   }
 
@@ -346,7 +357,7 @@ void eeCheck(bool immediately)
     //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
   else if(msk & EE_MODEL){
-    g_model.mdVers = MDVERS143;
+    g_model.mdVers = MDVERS167;
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
     {
