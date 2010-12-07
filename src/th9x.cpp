@@ -30,19 +30,17 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
+- expo menu multiline
 - issue 57 chan recursion
 - issue 59 more output chans, soft switches
-- limit scaling/cutoff issue 55
-+ vbat blinks issue 60
++ limit scaling/cutoff issue 55
 - subtrim before limits? issue 61
 - dual rate interface issue62
 - instant trim issue63
-- timer beep mit vorwarnung issue 65
-+ move,dup mixerlines/mixergroups
++ timer beep mit vorwarnung issue 65
 - outputs as inputs? calc sequence
 - show curves ref count, curve type
 - serial communication
-- limit with scaling, switchable
 - timer mit thr-switch
 - standard mixer in slave mode (own model number?)
 - switch mode -1 0 disabled
@@ -55,9 +53,9 @@ todo
 ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
 ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
 ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
-ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
+>>ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
 ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
-- curr event global var
+- curr event global var saves 340Bytes
 - format eeprom
 - pcm 
 - fast multiply 8*16 > 32
@@ -68,6 +66,8 @@ doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ vbat blinks issue 60
++ move,dup mixerlines/mixergroups
 + THR alarm off with throttle
 + speed-werte in sec
 + trim repeat slow
@@ -186,9 +186,15 @@ mode4 ail thr ele rud
 
 
 EEGeneral_r150 g_eeGeneral;
-ModelData_r143 g_model;
+ModelData_r167 g_model;
 uint16_t       s_trainerLast10ms;
 uint8_t        g_trainerSlaveActive;
+uint16_t  g_badAdc,g_allAdc;
+#ifdef WITH_ADC_STAT
+uint16_t  g_rawVals[7];
+uint8_t   g_rawPos;
+uint8_t   g_rawChan;
+#endif
 
 
 
@@ -381,7 +387,7 @@ uint8_t checkTrim(uint8_t event)
       if(*ptrim < 31){
         (*ptrim)++;
         STORE_MODELVARS;
-        beepKey();
+        beepTrim();
       }
     }else{
       //if( (*ptrim > 0) ||
@@ -392,7 +398,7 @@ uint8_t checkTrim(uint8_t event)
       if(*ptrim > -31){
         (*ptrim)--;
         STORE_MODELVARS;
-        beepKey();
+        beepTrim();
       }
     }
     if(*ptrim==0) {
@@ -741,6 +747,7 @@ uint16_t anaIn(uint8_t chan)
 
 ISR(ADC_vect, ISR_NOBLOCK)
 {
+  static uint16_t lastVal[8];
   static uint8_t  chan;
   //static uint16_t s_ana[8];
   static uint8_t s_filtBuf[8*4*2];
@@ -751,17 +758,28 @@ ISR(ADC_vect, ISR_NOBLOCK)
   // s_ana[chan]    += ADC - s_anaFilt[chan]; //
 
   uint16_t v=ADC;
-
-  uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(chan*4*2));
-  for(uint8_t i=g_eeGeneral.adcFilt; i>0; i--,filt++){
-    uint16_t vn = *filt / 4; //0,16,23,28 vals to 99%
-    *filt += v - vn; // *3/4
-    v=vn;
+#ifdef WITH_ADC_STAT
+  if(g_rawPos<DIM(g_rawVals)){
+    if(chan==g_rawChan){ g_rawVals[g_rawPos++] = v;}
   }
-  asm("":::"memory"); //barrier saves 6 asm-instructions
-  s_anaFilt[chan] = v;
-
-  chan    = (chan + 1) & 0x7;
+#endif
+  g_allAdc++;
+  if( (v-lastVal[chan]+1)<=2 ){
+    lastVal[chan]=v;
+    
+    uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(chan*4*2));
+    for(uint8_t i=g_eeGeneral.adcFilt; i>0; i--,filt++){
+      uint16_t vn = *filt / 4; //0,16,23,28 vals to 99%
+      *filt += v - vn; // *3/4
+      v=vn;
+    }
+    asm("":::"memory"); //barrier saves 6 asm-instructions
+    s_anaFilt[chan] = v;
+    chan    = (chan + 1) & 0x7;
+  }else{
+    lastVal[chan]=v;
+    g_badAdc++;
+  }
   ADMUX   =  chan | (1<<REFS0);  // Multiplexer stellen
   STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec
 }
@@ -856,14 +874,41 @@ void evalCaptures()
 
 
 #endif
-uint8_t g_dynvals12255[64];
+
+
+int16_t idx2val12255(int8_t idx)
+{
+  // idx  0  10  30   50
+  // val  0  10  50  150
+  uint8_t i   = abs(idx);
+  uint8_t uval= i;
+  asm(""::"r" (uval));
+  if(i>10){
+    if(i<=30) uval = 2*(i-5); // (i-10)*2 + 10
+    else      uval = 5*(i-20);             // (i-30)*5 + 50
+  }
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx12255(int16_t val)
+{
+  uint8_t uval = val < 0 ? (uint8_t)-val : val;
+  int8_t  i;
+  if(uval>50)      i = (uint8_t)(uval-50)/5 + 30;
+  else if(uval>10) i = (uint8_t)(uval+10)/2;
+  else             i = uval;
+  return val < 0 ? -i : i;
+}
+
+
+//uint8_t g_dynvals12255[64];
+
 void init() //common init for simu and target
 {
-  uint8_t i=0;
-  uint8_t s=0;
-  for(;i<10;i++){ g_dynvals12255[i] = s; s+=1;  }; // 0:0 30:50 40:100 50:150
-  for(;i<30;i++){ g_dynvals12255[i] = s; s+=2;  };
-  for(;i<=50;i++){ g_dynvals12255[i] = s; s+=5;  };
+  //  uint8_t i=0;
+  //uint8_t s=0;
+  //for(;i<10;i++){ g_dynvals12255[i] = s; s+=1;  }; // 0:0 30:50 40:100 50:150
+  //for(;i<30;i++){ g_dynvals12255[i] = s; s+=2;  };
+  //for(;i<=50;i++){ g_dynvals12255[i] = s; s+=5;  };
 
   g_menuStack[0] =  menuProc0;
 

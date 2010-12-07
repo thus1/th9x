@@ -122,6 +122,17 @@ typedef struct t_ExpoData_r84 {
   int8_t  expSwWeight;
 } __attribute__((packed)) ExpoData_r84;
 
+/*
+  5*4=20
+  int8_t  exp;
+  int8_t  weight;
+  1: pos
+  1: neg
+  5: sw
+  2: chan
+
+*/
+
 typedef struct t_TrimData_r0 {
   int8_t  trim;    //quadratisch
   int16_t trimDef_lt133;
@@ -143,6 +154,14 @@ typedef struct t_LimitData_r84 {
   bool    revert:1;
   int8_t  offset:7;
 } __attribute__((packed)) LimitData_r84;
+typedef struct t_LimitData_r167 {
+  int8_t  min:7;
+  bool    scale:1;
+  int8_t  max:7; 
+  bool    resv:1;
+  bool    revert:1;
+  int8_t  offset:7;
+} __attribute__((packed)) LimitData_r167;
 
 typedef struct t_MixData_r0 {
   uint8_t destCh:4; //        1..NUM_CHNOUT,X1-X4
@@ -225,10 +244,26 @@ typedef struct t_ModelData_r143 {
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
 } __attribute__((packed)) ModelData_r143; //211
 
+#define MDVERS167 3
+typedef struct t_ModelData_r167 {
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[NUM_CHNOUT];// 4*8
+  ExpoData_r84  expoData[4];          // 5*4
+  MixData_r0   mixData[MAX_MIXERS];  //0 4*25
+  int8_t    curves3[3][3];        // 9  new143
+  int8_t    curves5[2][5];        // 10
+  int8_t    curves9[2][9];        // 18
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+} __attribute__((packed)) ModelData_r167; //211
 
 
 extern EEGeneral_r150 g_eeGeneral;
-extern ModelData_r143 g_model;
+extern ModelData_r167 g_model;
 
 
 

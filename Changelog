@@ -1,5 +1,13 @@
 
 
+trunk-r167
+- issue69: only trim beep in mode silent
+- issue64: faster tripple click
+- isuue55 limit with scaling-option, 12255 steps 
+- adc-peak-filter, show adc-errors
+- optional adc-statistic
+trunk-r166
+- bugfix double beep
 trunk-r162
 - abs-func more performant with 8-bit types
 trunk-r161
@@ -12,7 +20,7 @@ trunk-r160
 
 trunk-r159
 - issue64 tripple click
-- new timer double beep 
+- issue65 new timer double beep 
 - fast autorepeat stops each 20 incs
 - inc-dec dynamic test 12255
 

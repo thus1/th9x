@@ -15,7 +15,14 @@
 
 #include "th9x.h"
 
-
+int8_t add7Bit(int8_t a,int8_t b){ 
+  a  = (a+b) & 0x7f;
+  if(a & 0x40) a|=0x80;
+  return a;
+}
+int16_t lim2val(int8_t limidx,int8_t dlt){ 
+  return idx2val12255(add7Bit(limidx,dlt));
+}
 
 
 uint16_t slopeFull100ms(uint8_t speed);
@@ -341,20 +348,13 @@ void menuProcCurve(uint8_t event) {
   }
 }
 
-extern uint8_t g_dynvals12255[64];
-int16_t dyn2val(int8_t idx)
-{
-  if(idx<0) return -g_dynvals12255[-idx];
-  return g_dynvals12255[idx];
-}
-
 static bool  s_limitCacheOk;
 #define LIMITS_DIRTY s_limitCacheOk=false
 void menuProcLimits(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("LIMITS");  
-  MSTATE_TAB = { 4,4};
+  MSTATE_TAB = { 5,5};
   MSTATE_CHECK_VxH(6,menuTabModel,8+1+1);
 
   int8_t  sub    = mstate2.m_posVert;// - 1;
@@ -369,19 +369,24 @@ void menuProcLimits(uint8_t event)
       s_pgOfs = 0;
       break;
   }
-  for(uint8_t i=0; i<4; i++){
+  for(uint8_t i=0; i<5; i++){
     //lcd_puts_P( 4*FW, 1*FH,PSTR("subT min  max inv"));
-    lcd_putsnAtt( 4*FW+i*4*FW, 1*FH,PSTR("subT"" min"" max"" inv")+i*4,4,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
+    uint8_t    x=5*FW+i*(3*FW+2);
+    uint8_t    l=3;
+    prog_char* adr=PSTR("min""scl""max""inv")+(i-1)*3;
+    if(i==0){l=4; adr=PSTR("subT"); x-=FW;}
+    lcd_putsnAtt(x , 1*FH,adr,l,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
   }
   if(sub==1){
-    checkIncDecGen2(event, &mstate2.m_posHorz, 0, 3, 0);
+    checkIncDecGen2(event, &mstate2.m_posHorz, 0, 4, 0);
   }
   sub-=2;
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
-    LimitData_r84 *ld = &g_model.limitData[k];
-    for(uint8_t j=0; j<=4;j++){
+    uint8_t v;
+    LimitData_r167 *ld = &g_model.limitData[k];
+    for(uint8_t j=0; j<=5;j++){
       uint8_t attr = ((sub==k && subSub==j) ? BLINK : 0);
       switch(j)
       {
@@ -395,27 +400,41 @@ void menuProcLimits(uint8_t event)
           }
           break;        
         case 2:
-          lcd_outdezAtt(  12*FW, y, (int8_t)(ld->min-100),   attr);
+          //lcd_outdezAtt(  12*FW, y, (int8_t)(ld->min-100),   attr);
+          //ld->min -=  40;
+          v = add7Bit(ld->min,-40);
+          lcd_outdezAtt(  12*FW, y, idx2val12255(v),   attr);
           if(attr) {
-            ld->min -=  100;
-            if(CHECK_INCDEC_H_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
-            ld->min +=  100;
+            //ld->min -=  100;
+            //if(CHECK_INCDEC_H_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
+            //ld->min +=  100;
+            if(CHECK_INCDEC_H_MODELVAR( event, v, -50,50))  LIMITS_DIRTY; 
           }
+          //ld->min +=  40;
+          ld->min = add7Bit(v,40);
           break;        
         case 3:
+          lcd_putsnAtt(   13*FW, y, PSTR(" ""*")+ld->scale*1,1,attr);
+          if(attr) {
+            CHECK_INCDEC_H_MODELVAR_BF( event, ld->scale,    0,1);
+          }
+          break;
+        case 4:
           //lcd_outdezAtt( 16*FW, y, (int8_t)(ld->max+100),    attr);
-          lcd_outdezAtt( 16*FW, y, dyn2val(ld->max+40),    attr);
+          v = add7Bit(ld->max,+40);
+          //ld->max +=  40;
+          lcd_outdezAtt( 18*FW, y, idx2val12255(v),    attr);
           if(attr) {
             // ld->max +=  100;
             // if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
             // ld->max -=  100;
-            ld->max +=  40;
-            if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -50,50))  LIMITS_DIRTY; 
-            ld->max -=  40;
+            if(CHECK_INCDEC_H_MODELVAR_BF( event, v, -50,50))  LIMITS_DIRTY; 
           }
+          ld->max = add7Bit(v,-40);
+          //ld->max -=  40;
           break;        
-        case 4:
-          lcd_putsnAtt(   17*FW, y, PSTR(" - INV")+ld->revert*3,3,attr);
+        case 5:
+          lcd_putsnAtt(   18*FW, y, PSTR(" - INV")+ld->revert*3,3,attr);
           if(attr) {
             CHECK_INCDEC_H_MODELVAR_BF( event, ld->revert,    0,1);
           }
@@ -1297,30 +1316,40 @@ void menuProcDiagAna(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("ANA");  
-  MSTATE_CHECK_V(6,menuTabDiag,2);
-  int8_t  sub    = mstate2.m_posVert ;
-
+  MSTATE_CHECK_V(6,menuTabDiag,9);
+  int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<8; i++)
   {
     uint8_t y=i*FH;
-    lcd_putsn_P( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2);  
+    lcd_putsnAtt( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2,sub==i ? INVERS : 0);  
     //lcd_outhex4( 8*FW, y,g_anaIns[i]);
-    lcd_outhex4( 8*FW, y,anaIn(i));
+    lcd_outhex4( 7*FW, y,anaIn(i));
     if(i<7){
       //int16_t v = g_anaIns[i];
       int16_t v = anaIn(i) - g_eeGeneral.calibMid[i];
       v =  v*50/max(1, (v > 0 ? g_eeGeneral.calibSpanPos[i] :  g_eeGeneral.calibSpanNeg[i])/2);
-      lcd_outdez(17*FW, y, v);
+      lcd_outdez(15*FW, y, v);
         //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
-      putsVBat(13*FW,y,sub==1 ? BLINK : 0);
+      putsVBat(11*FW,y,sub==7 ? BLINK : 0);
     }
   }
-  if(sub==1){
+  if(sub==7){
    CHECK_INCDEC_H_GENVAR(event, g_eeGeneral.vBatCalib, -127, 127);
   }
-
+#ifdef WITH_ADC_STAT
+  switch(event)
+    {
+    case EVT_KEY_FIRST(KEY_MENU):
+      g_rawPos=0;
+      break;
+    }
+  g_rawChan=sub;
+  for(uint8_t j=0; j<DIM(g_rawVals); j++){
+    lcd_outdez(20*FW+2 , (j+1)*FH, g_rawVals[j]);
+  }
+#endif
 }
 
 void menuProcDiagKeys(uint8_t event)
@@ -1679,6 +1708,7 @@ void menuProcStatistic2(uint8_t event)
       g_tmr1Latency_max = 0;
       g_timeMain    = 0;
       g_timePerOut  = 0;
+      g_badAdc=g_allAdc=0;
       beepKey();
       break;
     case EVT_KEY_FIRST(KEY_DOWN):
@@ -1695,10 +1725,20 @@ void menuProcStatistic2(uint8_t event)
   lcd_outdez(14*FW , 2*FH, g_tmr1Latency_min/2 );
   lcd_puts_P( 0*FW,  3*FH, PSTR("tmr1 Jitter    us"));
   lcd_outdez(14*FW , 3*FH, (g_tmr1Latency_max - g_tmr1Latency_min) /2 );
-  lcd_puts_P( 0*FW,  4*FH, PSTR("tmain           ms"));
-  lcd_outdezAtt(15*FW , 4*FH, g_timeMain*5/8,PREC1 );
-  lcd_puts_P( 0*FW,  5*FH, PSTR("tperOut         ms"));
-  lcd_outdezAtt(15*FW , 5*FH, g_timePerOut*5/8 ,PREC1);
+  lcd_puts_P( 0*FW,  4*FH, PSTR("tmain          ms"));
+  lcd_outdezAtt(14*FW , 4*FH, g_timeMain*5/8,PREC1 );
+  lcd_puts_P( 0*FW,  5*FH, PSTR("tperOut        ms"));
+  lcd_outdezAtt(14*FW , 5*FH, g_timePerOut*5/8 ,PREC1);
+  
+  lcd_puts_P( 0*FW,  6*FH, PSTR("adc err        %"));
+
+  if(g_allAdc > 300 ){
+    g_allAdc /= 4;
+    g_badAdc /= 4;
+  }
+  if(g_allAdc) lcd_outdez(14*FW , 6*FH, g_badAdc*100/g_allAdc );
+
+  
 }
 
 void menuProcStatistic(uint8_t event)
@@ -1730,6 +1770,8 @@ void menuProcStatistic(uint8_t event)
   uint8_t x=5;
   uint8_t y=60;
   lcd_hline(x-3,y,120+3+3);
+  lcd_hlineStip(x-3,y-16,120+3+3,0x11);
+  lcd_hlineStip(x-3,y-32,120+3+3,0x11);
   lcd_vline(x,y-32,32+3);
 
   for(uint8_t i=0; i<120; i+=6)
@@ -1921,15 +1963,19 @@ void menuProc0(uint8_t event)
 
 static int16_t s_cacheLimitsMin[NUM_CHNOUT];
 static int16_t s_cacheLimitsMax[NUM_CHNOUT];
+
 void calcLimitCache()
 {
   if(s_limitCacheOk) return;
   printf("calc limit cache\n");
   s_limitCacheOk = true;
   for(uint8_t i=0; i<NUM_CHNOUT; i++){
-    int16_t v = g_model.limitData[i].min-100;
+    //int16_t v = idx2val12255(g_model.limitData[i].min-40);
+    int16_t v;
+    v = lim2val(g_model.limitData[i].min,-40);
     s_cacheLimitsMin[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
-    v = g_model.limitData[i].max+100;
+    //v = idx2val12255(g_model.limitData[i].max+40);
+    v = lim2val(g_model.limitData[i].max,+40);
     s_cacheLimitsMax[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
   }
 }
@@ -1994,7 +2040,7 @@ uint16_t pulses2MHz[60];
 static prog_uint8_t APM s_slopeDlt[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
 static prog_uint8_t APM s_slopeTmr[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
 
-uint16_t slopeFull100ms(uint8_t speed) //zeit für anstieg von -512 bis 512 in 100ms
+uint16_t slopeFull100ms(uint8_t speed) //zeit fuer anstieg von -512 bis 512 in 100ms
 {
   if(speed==0) return 0;
   int8_t  delta    = pgm_read_byte(&s_slopeDlt[speed-1]);
@@ -2058,13 +2104,13 @@ void perOut(int16_t *chanOut)
     }
     anas[i] = v; //10+1 Bit
   }
-  anas[7] = 512; //100% für MAX
-  anas[8] = 512; //100% für MAX
+  anas[7] = 512; //100% fuer MAX
+  anas[8] = 512; //100% fuer MAX
 /* In anaNoTrim stehen jetzt die Werte ohne Trimmung implementiert -512..511
    in anas mit Trimmung */
 
-  static int32_t chans[NUM_XCHNOUT];          // Ausgänge + intermidiates
-  memset(chans,0,sizeof(chans));		// Alle Ausgänge auf 0
+  static int32_t chans[NUM_XCHNOUT];          // Ausgaenge + intermidiates
+  memset(chans,0,sizeof(chans));		// Alle Ausgaenge auf 0
 
   //mixer loop
   for(uint8_t stage=1; stage<=2; stage++){
@@ -2159,8 +2205,14 @@ void perOut(int16_t *chanOut)
   //limit + revert loop
   calcLimitCache();
   for(uint8_t i=0;i<NUM_CHNOUT;i++){
-    int16_t v = 0;
-    if(chans[i]) v = (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+    int32_t v32 = chans[i];
+    int16_t v   = 0;
+    if(g_model.limitData[i].scale){
+      if(v32>0)      v = v32 * s_cacheLimitsMax[i] / 51200;
+      else if(v32<0) v = -v32 * s_cacheLimitsMin[i] / 51200;
+    }else{
+      if(v32) v = (v32 + (v32 > 0 ? 100/2 : -100/2)) / 100;
+    }
 
     v = max(s_cacheLimitsMin[i],v);
     v = min(s_cacheLimitsMax[i],v);
