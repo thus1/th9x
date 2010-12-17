@@ -124,12 +124,14 @@ typedef struct t_ExpoData_r84 {
 
 /*
   5*4=20
+  2: chan
+  2: 0=always, 1=pos, 2=neg
+  1: reverse
+  1: trimassym
+  5: when sw
+  3: curve
   int8_t  exp;
   int8_t  weight;
-  1: pos
-  1: neg
-  5: sw
-  2: chan
 
 */
 

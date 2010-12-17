@@ -524,6 +524,281 @@ void menuProcMixOne(uint8_t event)
     }
   }
 }
+
+
+
+
+
+
+
+#if 1
+
+//ch selChn  dat selDat
+// 1  _0    
+// 2          21  *1
+//            22  *2
+//    _4      23  *3
+// 3  _5    
+// 4  _6    
+// 5  _7    
+// 6  _8    
+// 7  _9    
+// 8  _10    
+class FoldList
+{
+public:
+  struct Line{
+    bool   showCh:1;// show the dest chn
+    bool   showDat:1;// show the data info
+    int8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
+    int8_t seqCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+    int8_t seqDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+    int8_t idx;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
+    //int8_t insIdx;  //:5  0..MAX_MIXERS-1        insert index into mix data tab
+    //int8_t editIdx; //:5  0..MAX_MIXERS-1        edit   index into mix data tab
+  };
+  static Line s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
+  static uint8_t s_currCh,s_currLine,s_currSeq,s_currIdx; //for construction of s_lines
+  static Line* getLine(uint8_t line){return &s_lines[line];};
+  static int8_t numSeqs(){return s_currSeq;};
+  static void init()
+  {
+    s_currCh  = 0;
+    s_currLine= 0;
+    s_currSeq = 1;
+    s_currIdx =-1;
+    memset(s_lines,0,sizeof(s_lines));
+  }
+  static bool fill(uint8_t ch) //helper func for construction
+  {
+    if(ch > s_currCh) {
+      while(1){
+        if(s_currLine>0) s_lines[s_currLine-1].seqCh=s_currSeq++;
+        s_currCh++;
+        if(s_currCh>=ch) break;
+        s_lines[s_currLine].showCh = true;
+        s_lines[s_currLine].chId   = s_currCh;
+        s_lines[s_currLine].idx    = s_currIdx; //insert behind
+        s_currLine++;
+        assert(s_currLine<=DIM(s_lines));
+      }
+      return true;
+    }else{
+      return false;
+    }
+  }
+  static void addDat(uint8_t ch, uint8_t idx)
+  {
+    if(fill(ch))
+      s_lines[s_currLine].showCh = true;
+    s_lines[s_currLine].chId     = s_currCh;
+    s_lines[s_currLine].idx      = s_currIdx = idx;
+    s_lines[s_currLine].showDat  = true;
+    s_lines[s_currLine].seqDat   = s_currSeq++;
+    s_currLine++;
+  }
+
+};
+FoldList::Line FoldList::s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
+uint8_t FoldList::s_currCh,FoldList::s_currLine,FoldList::s_currSeq,FoldList::s_currIdx; //for construction of
+
+void genMixTab()
+{
+  MixData_r0 *md=g_model.mixData;
+  FoldList::init();
+  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
+  {
+    FoldList::addDat(md[i].destCh,i);
+  }
+  FoldList::fill(NUM_XCHNOUT+1);
+#ifdef SIM
+  //for(uint8_t i=0; i<DIM(s_mixTab); i++){
+  for(uint8_t i=0; i<14; i++){
+    //MixTab *mt=s_mixTab+i;
+    FoldList::Line* line=FoldList::getLine(i);
+    printf("dest %2d wght %4d    "
+           "chId %2d %cseqCh %2d %cseqDat %2d idx %d\n",
+           md[i].destCh, md[i].weight,
+           line->chId,
+           line->showCh?'*':' ', line->seqCh,
+           line->showDat?'*':' ', line->seqDat,
+           line->idx);
+  }
+#endif
+}
+void newLine(uint8_t idx)
+{
+  MixData_r0 *md=g_model.mixData;
+  memmove(&md[idx+1],&md[idx],
+          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
+  md[idx].destCh      = s_currDestCh; //-s_mixTab[sub];
+  md[idx].srcRaw      = s_currDestCh; //1;   //
+  md[idx].weight      = 100;
+  md[idx].swtch       = 0; //no switch
+  md[idx].curve       = 0; //linear
+  md[idx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
+  md[idx].speedDown   = 0; //
+  STORE_MODELVARS;
+  genMixTab();
+}
+void dupLine(uint8_t idx)
+{
+  MixData_r0 *md=g_model.mixData;
+  memmove(&md[idx+1],&md[idx],
+          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
+  STORE_MODELVARS;
+  genMixTab();
+}
+bool moveLine(uint8_t from, uint8_t to, bool insMode)
+{
+  //printf("moveLine(from %d, to %d, ins %d)\n",from,to,insMode);
+  MixData_r0 *md = g_model.mixData;
+  if(insMode){
+    if(from < to)  {//nach hinten
+      if(md[from].destCh >= NUM_XCHNOUT) return false;
+      md[from].destCh++; 
+    }
+    else{
+      if(md[from].destCh <= 1) return false;
+      md[from].destCh--;
+    }
+  }else{
+    if(from==to) return false;
+    MixData_r0 tmp = md[to];
+    md[to]         = md[from];
+    md[from]       = tmp;
+  }
+  STORE_MODELVARS;
+  genMixTab();
+  return true;
+}
+
+uint8_t currMixerLine;
+int32_t currMixerVal;
+int32_t currMixerSum;
+void menuProcMix(uint8_t event)
+{
+  static MState2 mstate2;
+  TITLE("MIXER");  
+  int8_t subOld  = mstate2.m_posVert;
+  int8_t mixIdOld  = s_currMixIdx;
+  MSTATE_CHECK_V(4,menuTabModel,FoldList::numSeqs());
+  int8_t  sub    = mstate2.m_posVert;
+  static uint8_t s_pgOfs;
+  static bool    s_editMode;
+  MixData_r0 *md=g_model.mixData;
+  switch(event)
+  {
+    case EVT_ENTRY:
+      s_pgOfs=0;
+    case EVT_ENTRY_UP:
+      s_editMode=false;
+      genMixTab();
+      break;
+    case  EVT_KEY_FIRST(KEY_EXIT):
+      if(s_editMode){
+        s_editMode = false;
+        beepKey();
+        killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
+      }
+      break;
+    case EVT_KEY_LONG(KEY_MENU):
+      if(s_currMixInsMode) break;
+      if(s_editMode)
+      {
+        //duplicate line
+        dupLine(s_currMixIdx);
+        beepKey();
+      }
+      s_editMode=true;
+      killEvents(event); //cut off 
+      break;
+    case EVT_KEY_BREAK(KEY_MENU):
+      if(sub<1) break;
+
+      if(s_currMixInsMode) newLine(s_currMixIdx);
+      pushMenu(menuProcMixOne);
+      break;
+  }
+
+  int8_t markedIdx=-1;
+  uint8_t i;
+  int8_t minSel=99;
+  int8_t maxSel=-1;
+  for(i=0; i<7; i++){
+    uint8_t y = i * FH + FH;
+    uint8_t k = i + s_pgOfs;
+    FoldList::Line* line=FoldList::getLine(k);
+    if(!line->showCh && !line->showDat ) break;
+
+    if(line->showCh){  
+      putsChn(0,y,line->chId,0); // show CHx
+    }
+    if(sub>0 && sub==line->seqCh) { //handle CHx is selected (other line)
+      if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
+      s_currMixIdx     = line->idx+1;
+      s_currDestCh     = line->chId;
+      s_currMixInsMode = true;
+      markedIdx        = i;
+    }
+    if(line->showDat){ //show data 
+      MixData_r0 *md2=&md[line->idx];
+      uint8_t attr = sub==line->seqDat ? BLINK : 0; 
+      uint8_t att2 = 0;
+      
+      if(attr) {
+        currMixerLine = line->idx;
+        lcd_outdez(   9*FW, 0, currMixerVal>>9);
+        lcd_putc  (   9*FW, 0, '/');
+        lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
+        if(s_editMode) {attr=0; att2=BLINK;}
+      }
+
+      lcd_outdezAtt(  7*FW, y, md2->weight,attr);
+      lcd_putcAtt(    7*FW+1, y, '%',0);
+      putsChnRaw(     9*FW-2, y, md2->srcRaw,0);
+      if(md2->swtch)putsDrSwitches( 13*FW-4, y, md2->swtch,0);
+      if(md2->curve)lcd_putsnAtt(   17*FW+2, y, PSTR(CURV_STR)+md2->curve*3,3,0);
+      if(md2->speedDown || md2->speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
+
+      if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
+      //lcd_putsAtt( 4*FW+1, y, PSTR("                "),att2);
+
+      if(sub==line->seqDat) { //handle dat is selected
+        CHECK_INCDEC_H_MODELVAR( event, md2->weight, -125,125);
+        s_currMixIdx     = line->idx;
+        s_currDestCh     = line->chId;
+        s_currMixInsMode = false;
+        markedIdx        = i;
+      }
+    }
+    //welche sub-indize liegen im sichtbaren bereich?
+    if(line->seqCh){
+      minSel = min(minSel,line->seqCh);
+      maxSel = max(maxSel,line->seqCh);
+    }
+    if(line->seqDat){
+      minSel = min(minSel,line->seqDat);
+      maxSel = max(maxSel,line->seqDat);
+    }    
+
+  } //for 7
+  if(s_editMode && subOld != sub) //mixIdOld != s_currMixIdx){
+  {
+    printf("subOld %d sub %d\n",subOld,sub);
+    if(! moveLine(mixIdOld,s_currMixIdx,s_currMixInsMode))
+      s_editMode = false;
+  }
+  if( sub!=0 &&  markedIdx==-1) { //versuche die Marke zu finden
+    if(sub < minSel) s_pgOfs = max(0,s_pgOfs-1);
+    if(sub > maxSel) s_pgOfs++;
+  }
+  else if(markedIdx<=1)              s_pgOfs = max(0,s_pgOfs-1);
+  else if(markedIdx>=5 && i>=7)      s_pgOfs++;
+}
+
+
+#else
 //  i   destCh          ch1 
 //                      ch2
 //  0   3               ch3     info0        
@@ -533,8 +808,6 @@ void menuProcMixOne(uint8_t event)
 //  4   0               
 //  5   0               
 //
-
-
 struct MixTab{
   bool   showCh:1;// show the dest chn
   bool   hasDat:1;// show the data info
@@ -763,14 +1036,21 @@ void menuProcMix(uint8_t event)
       s_editMode = false;
   }
   if( sub!=0 &&  markedIdx==-1) { //versuche die Marke zu finden
-    //printf("find mark sub %d markedIdx %d s_pgOfs %d minSel %d maxSel %d\n",sub,markedIdx,s_pgOfs,minSel,maxSel);
-    //if(sub < minSel && minSel!=99) s_pgOfs = max(0,s_pgOfs-1);
     if(sub < minSel) s_pgOfs = max(0,s_pgOfs-1);
     if(sub > maxSel) s_pgOfs++;
   }
   else if(markedIdx<=1)              s_pgOfs = max(0,s_pgOfs-1);
   else if(markedIdx>=5 && i>=7)      s_pgOfs++;
 }
+#endif
+
+
+
+
+
+
+
+
 
 int16_t trimVal(uint8_t idx)
 {
@@ -1625,6 +1905,7 @@ void timer(uint8_t val)
       return;
     case TMRMODE_THR_REL:
       s_timerVal -= s_timeCum16ThrP/16;
+      //s_timerVal  = s_timerVal * (s_timeCumAbs+10)/(s_timeCum16ThrP/16+10);
       break;
     case TMRMODE_THR:     
       s_timerVal -= s_timeCumThr;
@@ -1892,7 +2173,7 @@ void menuProc0(uint8_t event)
   //if(g_model.tmrMode != TMRMODE_NONE){
   if(s_timerState != TMR_OFF){
     //int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? (s_timerVal&1 ? INVERS : 0) : 0);
+    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? (s_timerVal&1 ? 0 : INVERS) : 0);
     //putsTime( x+8*FW, FH*2, tmr, att,att);
     putsTime( x+8*FW, FH*2, s_timerVal, att,att);
     lcd_putsnAtt(   x+ 4*FW, FH*2, PSTR(" TME THRTHR%")-4+4*g_model.tmrMode,4,0);
