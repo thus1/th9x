@@ -554,8 +554,6 @@ public:
     int8_t seqCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t seqDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t idx;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
-    //int8_t insIdx;  //:5  0..MAX_MIXERS-1        insert index into mix data tab
-    //int8_t editIdx; //:5  0..MAX_MIXERS-1        edit   index into mix data tab
   };
   static Line s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
   static uint8_t s_prepCurrCh,s_prepCurrLine,s_prepCurrSeq,s_prepCurrIdx; //for construction of s_lines
@@ -567,7 +565,11 @@ public:
   static uint8_t s_iterMin, s_markedIdx;
   static bool    s_isSelectedCh;
   static bool    s_isSelectedDat;
+  static bool    s_editMode;
+  static int8_t  s_mixIdOld;
+  //static bool    dirty;
   static Line* firstLine(int8_t sub){
+    s_mixIdOld  = s_currMixIdx;
     s_iterSub = sub;
     s_iterPos = s_iterPgOfs;
     Line *l=&s_lines[s_iterPos];
@@ -655,7 +657,7 @@ public:
     //for(uint8_t i=0; i<DIM(s_mixTab); i++){
     for(uint8_t i=0; i<14; i++){
       //MixTab *mt=s_mixTab+i;
-      FoldList::Line* line=s_lines[i];
+      FoldList::Line* line=&s_lines[i];
       printf( "chId %2d seqCh%c%2d seqDat%c%2d idx %d\n",
              line->chId,
              line->showCh?'*':' ', line->seqCh,
@@ -664,6 +666,10 @@ public:
     }
 #endif
   }
+#define FoldListDup   1
+#define FoldListNew   2
+#define FoldListMove  3
+  static uint8_t doEvent(uint8_t event);
 
 };
 FoldList::Line FoldList::s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
@@ -679,19 +685,72 @@ uint8_t FoldList::s_iterSub;
 uint8_t FoldList::s_iterMin, FoldList::s_markedIdx;
 bool    FoldList::s_isSelectedCh;
 bool    FoldList::s_isSelectedDat;
+bool    FoldList::s_editMode;
+int8_t  FoldList::s_mixIdOld;
+//bool    FoldList::dirty;
 
-void genMixTab()
+//void genMixTab()
+//{
+//  MixData_r0 *md=g_model.mixData;
+//  FoldList::init();
+//  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
+//  {
+//    FoldList::addDat(md[i].destCh,i);
+//  }
+//  FoldList::fill(NUM_XCHNOUT+1);
+//  //FoldList::show();
+//  //FoldList::dirty=false;
+//}
+uint8_t FoldList::doEvent(uint8_t event)
 {
-  MixData_r0 *md=g_model.mixData;
-  FoldList::init();
-  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
+  switch(event)
   {
-    FoldList::addDat(md[i].destCh,i);
+    case EVT_ENTRY:
+      FoldList::s_iterPgOfs=0;
+    case EVT_ENTRY_UP:
+      s_editMode=false;
+      //genMixTab();
+      break;
+    case  EVT_KEY_FIRST(KEY_EXIT):
+      if(s_editMode){
+        s_editMode = false;
+        beepKey();
+        killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
+      }
+      break;
+    case EVT_KEY_LONG(KEY_MENU):
+      if(s_currMixInsMode) break;
+      killEvents(event); //cut off 
+      if(s_editMode)
+      {
+        beepKey();
+        return FoldListDup;
+        //dupMixLine(s_currMixIdx);
+      }
+      s_editMode=true;
+      break;
+    case EVT_KEY_BREAK(KEY_MENU):
+      if(s_iterSub<1) break;
+      return FoldListNew;
+      //if(s_currMixInsMode) newMixLine(s_currMixIdx);
+      //      pushMenu(menuProcMixOne);
+      //break;
   }
-  FoldList::fill(NUM_XCHNOUT+1);
-  FoldList::show();
+
+  if(s_editMode) // && s_mixIdOld != s_currMixIdx)
+  {
+    //printf("subOld %d sub %d\n",subOld,sub);
+    //if(! moveMixLine(mixIdOld,s_currMixIdx,s_currMixInsMode))
+      //      s_editMode = false;
+    return FoldListMove;
+  }
+  
+
+  return 0;
+  
 }
-void newLine(uint8_t idx)
+
+void newMixLine(uint8_t idx)
 {
   MixData_r0 *md=g_model.mixData;
   memmove(&md[idx+1],&md[idx],
@@ -704,19 +763,21 @@ void newLine(uint8_t idx)
   md[idx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
   md[idx].speedDown   = 0; //
   STORE_MODELVARS;
-  genMixTab();
+  //FoldList::dirty=true;
+  //genMixTab();
 }
-void dupLine(uint8_t idx)
+void dupMixLine(uint8_t idx)
 {
   MixData_r0 *md=g_model.mixData;
   memmove(&md[idx+1],&md[idx],
           (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
   STORE_MODELVARS;
-  genMixTab();
+  //FoldList::dirty=true;
+  //genMixTab();
 }
-bool moveLine(uint8_t from, uint8_t to, bool insMode)
+bool moveMixLine(uint8_t from, uint8_t to, bool insMode)
 {
-  //printf("moveLine(from %d, to %d, ins %d)\n",from,to,insMode);
+  printf("moveLine(from %d, to %d, ins %d)\n",from,to,insMode);
   MixData_r0 *md = g_model.mixData;
   if(insMode){
     if(from < to)  {//nach hinten
@@ -728,13 +789,15 @@ bool moveLine(uint8_t from, uint8_t to, bool insMode)
       md[from].destCh--;
     }
   }else{
+    if(md[from].destCh==0) return false;
     if(from==to) return false;
     MixData_r0 tmp = md[to];
     md[to]         = md[from];
     md[from]       = tmp;
   }
   STORE_MODELVARS;
-  genMixTab();
+  //FoldList::dirty=true;
+  //genMixTab();
   return true;
 }
 
@@ -746,45 +809,17 @@ void menuProcMix(uint8_t event)
   static MState2 mstate2;
   TITLE("MIXER");  
   int8_t subOld  = mstate2.m_posVert;
-  int8_t mixIdOld  = s_currMixIdx;
   MSTATE_CHECK_V(4,menuTabModel,FoldList::numSeqs());
   int8_t  sub    = mstate2.m_posVert;
-  //static uint8_t s_pgOfs;
-  static bool    s_editMode;
-  MixData_r0 *md=g_model.mixData;
-  switch(event)
+  MixData_r0  *md= g_model.mixData;
+  FoldList::init();
+  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
   {
-    case EVT_ENTRY:
-      FoldList::s_iterPgOfs=0;
-    case EVT_ENTRY_UP:
-      s_editMode=false;
-      genMixTab();
-      break;
-    case  EVT_KEY_FIRST(KEY_EXIT):
-      if(s_editMode){
-        s_editMode = false;
-        beepKey();
-        killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
-      }
-      break;
-    case EVT_KEY_LONG(KEY_MENU):
-      if(s_currMixInsMode) break;
-      if(s_editMode)
-      {
-        //duplicate line
-        dupLine(s_currMixIdx);
-        beepKey();
-      }
-      s_editMode=true;
-      killEvents(event); //cut off 
-      break;
-    case EVT_KEY_BREAK(KEY_MENU):
-      if(sub<1) break;
-
-      if(s_currMixInsMode) newLine(s_currMixIdx);
-      pushMenu(menuProcMixOne);
-      break;
+    FoldList::addDat(md[i].destCh,i);
   }
+  FoldList::fill(NUM_XCHNOUT+1);
+
+
 
   uint8_t y = FH;
   for(FoldList::Line* line=FoldList::firstLine(sub);
@@ -809,7 +844,7 @@ void menuProcMix(uint8_t event)
         lcd_putc  (   9*FW, 0, '/');
        
         lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
-        if(s_editMode) {attr=0; att2=BLINK;}
+        if(FoldList::s_editMode) {attr=0; att2=BLINK;}
       }
 
       lcd_outdezAtt(  7*FW, y, md2->weight,attr);
@@ -826,11 +861,20 @@ void menuProcMix(uint8_t event)
       }
     }
   } //for 7
-  if(s_editMode && subOld != sub)
+  switch(FoldList::doEvent(event))
   {
-    printf("subOld %d sub %d\n",subOld,sub);
-    if(! moveLine(mixIdOld,s_currMixIdx,s_currMixInsMode))
-      s_editMode = false;
+    case FoldListDup:
+      dupMixLine(s_currMixIdx);
+      break;
+    case FoldListNew:
+      if(s_currMixInsMode) newMixLine(s_currMixIdx);
+      pushMenu(menuProcMixOne);
+      break;
+    case FoldListMove:
+      if(subOld != sub)
+        moveMixLine(FoldList::s_mixIdOld,s_currMixIdx,s_currMixInsMode);
+      break;
+    default:;
   }
 }
 
