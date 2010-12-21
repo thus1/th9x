@@ -446,8 +446,8 @@ void menuProcLimits(uint8_t event)
 
 
 
-static int8_t s_currMixIdx;
-static int8_t s_currDestCh;
+static uint8_t s_currMixIdx;
+static uint8_t s_currDestCh;
 static bool   s_currMixInsMode;
 void menuProcMixOne(uint8_t event)
 {
@@ -556,8 +556,10 @@ public:
     int8_t idx;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
   };
   static Line s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
-  static uint8_t s_prepCurrCh,s_prepCurrLine,s_prepCurrSeq,s_prepCurrIdx; //for construction of s_lines
-  //static Line* getLine(uint8_t line){return &s_lines[line];};
+  static uint8_t s_prepCurrCh; //for construction of s_lines
+  static uint8_t s_prepCurrLine;
+  static uint8_t s_prepCurrSeq;
+  static uint8_t s_prepCurrIdx;
 
   static uint8_t s_iterPgOfs;
   static uint8_t s_iterPos;
@@ -566,110 +568,24 @@ public:
   static bool    s_isSelectedCh;
   static bool    s_isSelectedDat;
   static bool    s_editMode;
-  static int8_t  s_mixIdOld;
-  //static bool    dirty;
-  static Line* firstLine(int8_t sub){
-    s_mixIdOld  = s_currMixIdx;
-    s_iterSub = sub;
-    s_iterPos = s_iterPgOfs;
-    Line *l=&s_lines[s_iterPos];
-    s_iterMin = l->seqDat ? l->seqDat : l->seqCh;
-    s_markedIdx = 0;
-    return nextLine();
-  }
-  static Line* nextLine(){
-    Line  *l = &s_lines[s_iterPos];
-    int8_t i = s_iterPos-s_iterPgOfs;
-    if(i>=7  || !(l->showCh || l->showDat) ) {
-      Line *l=&s_lines[s_iterPos-1];
-      uint8_t iterMax = l->seqCh ? l->seqCh : l->seqDat;
+  static uint8_t  s_mixIdOld;
 
-      //printf("s_iterSub%d,s_iterPgOfs%d,s_markedIdx%d,s_iterMin%d,iterMax%d\n",s_iterSub,s_iterPgOfs,s_markedIdx,s_iterMin,iterMax);
-      if( s_iterSub!=0 &&  s_markedIdx==0) { //versuche die Marke zu finden
-        if(s_iterSub < s_iterMin)      s_iterPgOfs = max(0,s_iterPgOfs-1);
-        if(s_iterSub > iterMax)      s_iterPgOfs++;
-      }
-      else if(s_markedIdx<=2)          s_iterPgOfs = max(0,s_iterPgOfs-1);
-      else if(s_markedIdx>=6 && i>=7)  s_iterPgOfs++;
-      return 0;
-    }
-    s_isSelectedCh  = s_iterSub > 0 && s_iterSub == l->seqCh; 
-    s_isSelectedDat = s_iterSub > 0 && s_iterSub == l->seqDat; 
+  static void init();
+  static void addDat(uint8_t ch, uint8_t idx);
+  static void show();
+  static bool fill(uint8_t ch); //helper func for construction
 
-    if(s_isSelectedCh){ //handle CHx is selected 
-      s_currMixIdx     = l->idx+1;
-      s_currMixInsMode = true;
-      s_currDestCh     = l->chId;
-      s_markedIdx      = i+1;
-      // printf("s_currMixIdx=%d\n",s_currMixIdx);
-    }
-    if(s_isSelectedDat){ //handle dat is selected 
-      s_currMixIdx     = l->idx;
-      s_currMixInsMode = false;
-      s_currDestCh     = l->chId;
-      s_markedIdx      = i+1;
-      // printf("s_currMixIdx=%d\n",s_currMixIdx);
-    }
-    s_iterPos++;
-    return l;
-  }
+  static Line* firstLine(int8_t sub);
+  static Line* nextLine();
 
   static int8_t numSeqs(){return s_prepCurrSeq;};
-  static void init()
-  {
-    s_prepCurrCh  = 0;
-    s_prepCurrLine= 0;
-    s_prepCurrSeq = 1;
-    s_prepCurrIdx =-1;
-    memset(s_lines,0,sizeof(s_lines));
-    // s_iterPgOfs   = 0; only on entry
-  }
-  static bool fill(uint8_t ch) //helper func for construction
-  {
-    if(ch > s_prepCurrCh) {
-      while(1){
-        if(s_prepCurrLine>0) s_lines[s_prepCurrLine-1].seqCh=s_prepCurrSeq++;
-        s_prepCurrCh++;
-        if(s_prepCurrCh>=ch) break;
-        s_lines[s_prepCurrLine].showCh = true;
-        s_lines[s_prepCurrLine].chId   = s_prepCurrCh;
-        s_lines[s_prepCurrLine].idx    = s_prepCurrIdx; //insert behind
-        s_prepCurrLine++;
-        assert(s_prepCurrLine<=DIM(s_lines));
-      }
-      return true;
-    }else{
-      return false;
-    }
-  }
-  static void addDat(uint8_t ch, uint8_t idx)
-  {
-    if(fill(ch))
-      s_lines[s_prepCurrLine].showCh = true;
-    s_lines[s_prepCurrLine].chId     = s_prepCurrCh;
-    s_lines[s_prepCurrLine].idx      = s_prepCurrIdx = idx;
-    s_lines[s_prepCurrLine].showDat  = true;
-    s_lines[s_prepCurrLine].seqDat   = s_prepCurrSeq++;
-    s_prepCurrLine++;
-  }
-  static void show(){
-#ifdef SIM
-    //for(uint8_t i=0; i<DIM(s_mixTab); i++){
-    for(uint8_t i=0; i<14; i++){
-      //MixTab *mt=s_mixTab+i;
-      FoldList::Line* line=&s_lines[i];
-      printf( "chId %2d seqCh%c%2d seqDat%c%2d idx %d\n",
-             line->chId,
-             line->showCh?'*':' ', line->seqCh,
-             line->showDat?'*':' ', line->seqDat,
-             line->idx);
-    }
-#endif
-  }
-#define FoldListDup   1
-#define FoldListNew   2
-#define FoldListMove  3
-  static uint8_t doEvent(uint8_t event);
+#define FoldListDup      1
+#define FoldListEdit     2
+#define FoldListNew      3
+#define FoldListSwap     4
+#define FoldListCntUp    5
+#define FoldListCntDown  6
+  static uint8_t doEvent(uint8_t event, bool subChanged, void*array,uint8_t dimArr, uint8_t szeElt);
 
 };
 FoldList::Line FoldList::s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
@@ -686,23 +602,109 @@ uint8_t FoldList::s_iterMin, FoldList::s_markedIdx;
 bool    FoldList::s_isSelectedCh;
 bool    FoldList::s_isSelectedDat;
 bool    FoldList::s_editMode;
-int8_t  FoldList::s_mixIdOld;
-//bool    FoldList::dirty;
+uint8_t FoldList::s_mixIdOld;
 
-//void genMixTab()
-//{
-//  MixData_r0 *md=g_model.mixData;
-//  FoldList::init();
-//  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
-//  {
-//    FoldList::addDat(md[i].destCh,i);
-//  }
-//  FoldList::fill(NUM_XCHNOUT+1);
-//  //FoldList::show();
-//  //FoldList::dirty=false;
-//}
-uint8_t FoldList::doEvent(uint8_t event)
+void FoldList::init()
 {
+  s_prepCurrCh  = 0;
+  s_prepCurrLine= 0;
+  s_prepCurrSeq = 1;
+  s_prepCurrIdx =-1;
+  memset(s_lines,0,sizeof(s_lines));
+  // s_iterPgOfs   = 0; only on entry
+}
+void FoldList::addDat(uint8_t ch, uint8_t idx)
+{
+  if(fill(ch))
+    s_lines[s_prepCurrLine].showCh = true;
+  s_lines[s_prepCurrLine].chId     = s_prepCurrCh;
+  s_lines[s_prepCurrLine].idx      = s_prepCurrIdx = idx;
+  s_lines[s_prepCurrLine].showDat  = true;
+  s_lines[s_prepCurrLine].seqDat   = s_prepCurrSeq++;
+  s_prepCurrLine++;
+}
+void FoldList::show(){
+#ifdef SIM
+  //for(uint8_t i=0; i<DIM(s_mixTab); i++){
+  for(uint8_t i=0; i<14; i++){
+    //MixTab *mt=s_mixTab+i;
+    FoldList::Line* line=&s_lines[i];
+    printf( "chId %2d seqCh%c%2d seqDat%c%2d idx %d\n",
+            line->chId,
+            line->showCh?'*':' ', line->seqCh,
+            line->showDat?'*':' ', line->seqDat,
+            line->idx);
+  }
+#endif
+}
+bool FoldList::fill(uint8_t ch) //helper func for construction
+{
+  if(ch > s_prepCurrCh) {
+    while(1){
+      if(s_prepCurrLine>0) s_lines[s_prepCurrLine-1].seqCh=s_prepCurrSeq++;
+      s_prepCurrCh++;
+      if(s_prepCurrCh>=ch) break;
+      s_lines[s_prepCurrLine].showCh = true;
+      s_lines[s_prepCurrLine].chId   = s_prepCurrCh;
+      s_lines[s_prepCurrLine].idx    = s_prepCurrIdx; //insert behind
+      s_prepCurrLine++;
+      assert(s_prepCurrLine<=DIM(s_lines));
+    }
+    return true;
+  }else{
+    return false;
+  }
+}
+FoldList::Line* FoldList::firstLine(int8_t sub){
+  s_mixIdOld  = s_currMixIdx;
+  s_iterSub = sub;
+  s_iterPos = s_iterPgOfs;
+  Line *l=&s_lines[s_iterPos];
+  s_iterMin = l->seqDat ? l->seqDat : l->seqCh;
+  s_markedIdx = 0;
+  return nextLine();
+}
+FoldList::Line* FoldList::nextLine(){
+  int8_t i = s_iterPos-s_iterPgOfs;
+  Line  *l  = &s_lines[s_iterPos];
+  if(i>=7  || !(l->showCh || l->showDat) ) {
+    //Line *l=&s_lines[s_iterPos-1];
+    l--;
+    uint8_t iterMax = l->seqCh ? l->seqCh : l->seqDat;
+
+    //printf("s_iterSub%d,s_iterPgOfs%d,s_markedIdx%d,s_iterMin%d,iterMax%d\n",s_iterSub,s_iterPgOfs,s_markedIdx,s_iterMin,iterMax);
+    if( s_iterSub!=0 &&  s_markedIdx==0) { //versuche die Marke zu finden
+      if(s_iterSub < s_iterMin)      s_iterPgOfs = max(0,s_iterPgOfs-1);
+      if(s_iterSub > iterMax)      s_iterPgOfs++;
+    }
+    else if(s_markedIdx<=2)          s_iterPgOfs = max(0,s_iterPgOfs-1);
+    else if(s_markedIdx>=6 && i>=7)  s_iterPgOfs++;
+    return 0;
+  }
+  s_isSelectedCh  = s_iterSub > 0 && s_iterSub == l->seqCh; 
+  s_isSelectedDat = s_iterSub > 0 && s_iterSub == l->seqDat; 
+
+  if(s_isSelectedCh){ //handle CHx is selected 
+    s_currMixIdx     = l->idx+1;
+    s_currMixInsMode = true;
+    s_currDestCh     = l->chId;
+    s_markedIdx      = i+1;
+    // printf("s_currMixIdx=%d\n",s_currMixIdx);
+  }
+  if(s_isSelectedDat){ //handle dat is selected 
+    s_currMixIdx     = l->idx;
+    s_currMixInsMode = false;
+    s_currDestCh     = l->chId;
+    s_markedIdx      = i+1;
+    // printf("s_currMixIdx=%d\n",s_currMixIdx);
+  }
+  s_iterPos++;
+  return l;
+}
+
+uint8_t FoldList::doEvent(uint8_t event, bool subChanged, void*array,uint8_t dimArr, uint8_t szeElt)
+{
+  uint8_t ret=0;
   switch(event)
   {
     case EVT_ENTRY:
@@ -724,84 +726,62 @@ uint8_t FoldList::doEvent(uint8_t event)
       if(s_editMode)
       {
         beepKey();
-        return FoldListDup;
+        ret = FoldListDup;
+        goto ret_dup;
         //dupMixLine(s_currMixIdx);
       }
       s_editMode=true;
       break;
     case EVT_KEY_BREAK(KEY_MENU):
       if(s_iterSub<1) break;
-      return FoldListNew;
+      if(s_currMixInsMode){
+        ret=FoldListNew;
+        goto ret_dup;
+      }
+      return FoldListEdit;
       //if(s_currMixInsMode) newMixLine(s_currMixIdx);
       //      pushMenu(menuProcMixOne);
       //break;
   }
 
-  if(s_editMode) // && s_mixIdOld != s_currMixIdx)
+  if(s_editMode && subChanged) // && s_mixIdOld != s_currMixIdx)
   {
     //printf("subOld %d sub %d\n",subOld,sub);
     //if(! moveMixLine(mixIdOld,s_currMixIdx,s_currMixInsMode))
       //      s_editMode = false;
-    return FoldListMove;
-  }
-  
-
-  return 0;
-  
-}
-
-void newMixLine(uint8_t idx)
-{
-  MixData_r0 *md=g_model.mixData;
-  memmove(&md[idx+1],&md[idx],
-          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
-  md[idx].destCh      = s_currDestCh; //-s_mixTab[sub];
-  md[idx].srcRaw      = s_currDestCh; //1;   //
-  md[idx].weight      = 100;
-  md[idx].swtch       = 0; //no switch
-  md[idx].curve       = 0; //linear
-  md[idx].speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
-  md[idx].speedDown   = 0; //
-  STORE_MODELVARS;
-  //FoldList::dirty=true;
-  //genMixTab();
-}
-void dupMixLine(uint8_t idx)
-{
-  MixData_r0 *md=g_model.mixData;
-  memmove(&md[idx+1],&md[idx],
-          (MAX_MIXERS-(idx+1))*sizeof(md[0]) );
-  STORE_MODELVARS;
-  //FoldList::dirty=true;
-  //genMixTab();
-}
-bool moveMixLine(uint8_t from, uint8_t to, bool insMode)
-{
-  printf("moveLine(from %d, to %d, ins %d)\n",from,to,insMode);
-  MixData_r0 *md = g_model.mixData;
-  if(insMode){
-    if(from < to)  {//nach hinten
-      if(md[from].destCh >= NUM_XCHNOUT) return false;
-      md[from].destCh++; 
+    STORE_MODELVARS;
+    if(s_currMixInsMode){
+      return s_mixIdOld <  s_currMixIdx ? FoldListCntUp : FoldListCntDown;
+    }else{
+      //swap
+      if( (s_mixIdOld<=s_prepCurrIdx) && (s_currMixIdx<=s_prepCurrIdx)){
+        printf("swap %d %d %d\n",s_mixIdOld,s_currMixIdx,s_prepCurrIdx);
+        char* p=(char*)array + (uint8_t)(szeElt * (s_currMixIdx));
+        char* q=(char*)array + (uint8_t)(szeElt * (s_mixIdOld));
+        for(uint8_t i=szeElt; i>0; i--,p++,q++){
+          char c = *p; *p=*q; *q=c;
+        }
+        return FoldListSwap;
+      }else{
+        s_editMode=false;
+      }
     }
-    else{
-      if(md[from].destCh <= 1) return false;
-      md[from].destCh--;
-    }
-  }else{
-    if(md[from].destCh==0) return false;
-    if(from==to) return false;
-    MixData_r0 tmp = md[to];
-    md[to]         = md[from];
-    md[from]       = tmp;
   }
+  return 0; 
+  
+  ret_dup:
+  memmove(
+    (char*)array + (uint8_t)(szeElt * (uint8_t)(s_currMixIdx+1)),
+    (char*)array + (uint8_t)(szeElt *  s_currMixIdx),
+    (uint8_t)(szeElt * (uint8_t)(dimArr-s_currMixIdx-1))
+  );
   STORE_MODELVARS;
-  //FoldList::dirty=true;
-  //genMixTab();
-  return true;
+  return ret;
+
 }
 
-uint8_t currMixerLine;
+
+uint8_t currMixerLine; //for debuginfo: mixer line values
 int32_t currMixerVal;
 int32_t currMixerSum;
 void menuProcMix(uint8_t event)
@@ -811,8 +791,9 @@ void menuProcMix(uint8_t event)
   int8_t subOld  = mstate2.m_posVert;
   MSTATE_CHECK_V(4,menuTabModel,FoldList::numSeqs());
   int8_t  sub    = mstate2.m_posVert;
-  MixData_r0  *md= g_model.mixData;
+
   FoldList::init();
+  MixData_r0  *md= g_model.mixData;
   for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
   {
     FoldList::addDat(md[i].destCh,i);
@@ -861,20 +842,41 @@ void menuProcMix(uint8_t event)
       }
     }
   } //for 7
-  switch(FoldList::doEvent(event))
+  switch(FoldList::doEvent(event,subOld != sub,g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0])))
   {
-    case FoldListDup:
-      dupMixLine(s_currMixIdx);
-      break;
     case FoldListNew:
-      if(s_currMixInsMode) newMixLine(s_currMixIdx);
+      {
+        MixData_r0  *md = &g_model.mixData[s_currMixIdx];
+        md->destCh      = s_currDestCh; //-s_mixTab[sub];
+        md->srcRaw      = s_currDestCh; //1;   //
+        md->weight      = 100;
+        md->swtch       = 0; //no switch
+        md->curve       = 0; //linear
+        md->speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
+        md->speedDown   = 0; //
+      }
+      //fallthrough
+    case FoldListEdit:
       pushMenu(menuProcMixOne);
       break;
-    case FoldListMove:
-      if(subOld != sub)
-        moveMixLine(FoldList::s_mixIdOld,s_currMixIdx,s_currMixInsMode);
+    case   FoldListCntUp:
+      {
+        MixData_r0  *md = &g_model.mixData[FoldList::s_mixIdOld];
+        if(md->destCh < NUM_XCHNOUT) md->destCh++; 
+        else FoldList::s_editMode=false;
+      }
       break;
+    case   FoldListCntDown:   
+      {
+        MixData_r0  *md = &g_model.mixData[FoldList::s_mixIdOld];
+        if(md->destCh > 1) md->destCh--; 
+        else FoldList::s_editMode=false;
+      }
+      break;
+    case FoldListDup:
+    case FoldListSwap:
     default:;
+      break;
   }
 }
 

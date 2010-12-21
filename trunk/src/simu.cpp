@@ -58,22 +58,22 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *pointer_eeprom, size_t siz
   FILE *fp = fopen(eepromFile, "r+");
   long ofs = (long) pointer_eeprom;
   const char* pointer_ram= (const char*)i_pointer_ram;
-  printf("eeWr p=%10p blk%3d ofs=%2d l=%d",pointer_ram,
-         (int)pointer_eeprom/16,
-         (int)pointer_eeprom%16,
-         (int)size);
+  //printf("eeWr p=%10p blk%3d ofs=%2d l=%d",pointer_ram,
+  //       (int)pointer_eeprom/16,
+  //       (int)pointer_eeprom%16,
+  //       (int)size);
   while(size){
     if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
     char buf[1];
     fread(buf, 1, 1,fp);
 
     if(buf[0] !=  pointer_ram[0]){
-      printf("X");
+      //printf("X");
       g_tmr10ms++;
       if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
       fwrite(pointer_ram, 1, 1,fp);
     }else{
-      printf(".");
+      //printf(".");
     }
 
     size--;
@@ -81,7 +81,7 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *pointer_eeprom, size_t siz
     (const char*)pointer_ram++;
   }
   fclose(fp);
-  puts("");
+  //puts("");
 }
 void eeprom_write_blockxx (const void *pointer_ram,
                     void *pointer_eeprom,
