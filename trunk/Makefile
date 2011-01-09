@@ -1,6 +1,6 @@
 
 
-SRC= simu.cpp th9x.cpp menus.cpp pulses.cpp pers.cpp file.cpp lcd.cpp drivers.cpp 
+SRC= simu.cpp th9x.cpp menus.cpp foldedlist.cpp pulses.cpp pers.cpp file.cpp lcd.cpp drivers.cpp 
 SRC:=$(foreach f,$(SRC),src/$(f))
 
 

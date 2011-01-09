@@ -126,7 +126,7 @@ void modelMixerDefault(uint8_t typ)
       break;
     case 1:
       // rud ele thr ail
-      for(uint8_t i= 0; i<4; i++){
+      for(uint8_t i= 0; i<4; i++){ // !!!stickMode!!!srcRaw
         md->destCh = i+1;       md->srcRaw = CM(i)+1;        md->weight = 100;
         md++;
       }
@@ -221,10 +221,9 @@ void eeLoadModel(uint8_t id)
   theFile.openRd(FILE_MODEL(id));
   uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
 
+#if 0
   if( sz == sizeof(ModelData_r0) ){
-#ifdef SIM
     printf("converting model data t0 r84\n");
-#endif
     char* pSrc = ((char*)&g_model) + sizeof(ModelData_r0); //Pointers behind the end
     char* pDst = ((char*)&g_model) + sizeof(ModelData_r84);
     ModelData_r84 *model84 = (ModelData_r84*)&g_model;
@@ -239,7 +238,7 @@ void eeLoadModel(uint8_t id)
     sz = sizeof(ModelData_r84);
     model84->mdVers = MDVERS84;
   }
-
+#endif  
   if( sz == sizeof(ModelData_r84) && g_model.mdVers == MDVERS84) {
     printf("converting model data from r84 to r143\n");
     ModelData_r84  *model84  = (ModelData_r84*)&g_model;
@@ -257,8 +256,8 @@ void eeLoadModel(uint8_t id)
     sz = sizeof(ModelData_r143);
     model84->mdVers = MDVERS143;
   }
-  
   if( sz == sizeof(ModelData_r143) && g_model.mdVers == MDVERS143) {
+    printf("converting model data from r143 to r167\n");
     ModelData_r143 *model143 = (ModelData_r143*)&g_model;
     ModelData_r167 *model167 = (ModelData_r167*)&g_model;
     for(int8_t i=0; i<NUM_CHNOUT; i++){
@@ -270,6 +269,50 @@ void eeLoadModel(uint8_t id)
     model143->mdVers = MDVERS167;
   }
   if( sz == sizeof(ModelData_r167) && g_model.mdVers == MDVERS167) {
+    printf("converting model data from r167 to r171\n");
+    ModelData_r167 *model167 = (ModelData_r167*)&g_model;
+    ModelData_r171 *model171 = (ModelData_r171*)&g_model;
+    ExpoData_r84   *hlpExp   = (ExpoData_r84*) 
+      ((char*)&model171->expoTab
+       +sizeof(model171->expoTab)
+       -sizeof(model167->expoData));
+    // old:20B new:45B
+    // move old to end
+    // clr unused start 25B
+    // interpret old to new <= 3*8=24B
+    // clr old at end 20B
+    //
+    memmove(hlpExp, 
+	    &model167->expoData,
+	    sizeof(ModelData_r167)-offsetof(ModelData_r167,expoData));
+    memset(model171->expoTab, 0, 
+	   sizeof(model171->expoTab)
+	   -sizeof(model167->expoData));
+    
+    for(int8_t i=0,j=0; i<4; i++){
+      if(hlpExp[i].expNorm || hlpExp[i].expNormWeight){
+        model171->expoTab[j].drSw    = hlpExp[i].drSw ? -hlpExp[i].drSw : 0;
+        model171->expoTab[j].chn     = i;
+        model171->expoTab[j].mode3   = 3;
+        model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expNorm);
+        model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expNormWeight+100);
+        j++;
+      }
+
+      if(hlpExp[i].drSw && (hlpExp[i].expDr || hlpExp[i].expSwWeight)){
+	model171->expoTab[j].drSw    = hlpExp[i].drSw;
+	model171->expoTab[j].chn     = i;
+	model171->expoTab[j].mode3   = 3;
+	model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expDr);
+	model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expSwWeight+100);
+        j++;
+      }
+    }
+    memset(hlpExp, 0, sizeof(model167->expoData));
+    sz = sizeof(ModelData_r171);
+    model167->mdVers = MDVERS171;
+  }
+  if( sz == sizeof(ModelData_r171) && g_model.mdVers == MDVERS171) {
     return;
   }
 
@@ -357,7 +400,7 @@ void eeCheck(bool immediately)
     //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
   else if(msk & EE_MODEL){
-    g_model.mdVers = MDVERS167;
+    g_model.mdVers = MDVERS171;
     if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
     {

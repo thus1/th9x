@@ -30,7 +30,7 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- expo menu multiline
++ expo menu multiline
 - issue 57 chan recursion
 - issue 59 more output chans, soft switches
 + limit scaling/cutoff issue 55
@@ -47,14 +47,16 @@ todo
 - mixline mode + - * =
 - potis FUL/HALF
 - neg curves, more curves with parameters?
-- thr curve statt expo
-- thr trim nur am neg ende
++ thr curve statt expo
++ thr trim nur am neg ende
 - prc-werte dynamisch 64 werte 1-150
 ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
 ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
 ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
 >>ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
 ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
+ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
+ruby  -e 'x=0; [10,5,5].each{|d| 5.times{ print(" #{x}");x+=d} }'
 - curr event global var saves 340Bytes
 - format eeprom
 - pcm 
@@ -186,7 +188,7 @@ mode4 ail thr ele rud
 
 
 EEGeneral_r150 g_eeGeneral;
-ModelData_r167 g_model;
+ModelData_r171 g_model;
 uint16_t       s_trainerLast10ms;
 uint8_t        g_trainerSlaveActive;
 uint16_t  g_badAdc,g_allAdc;
@@ -257,11 +259,11 @@ void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)//, bool nc)
 {
   switch(idx1){
-    case  0:            lcd_putsAtt(x+FW,y,PSTR("  -"),att);return; 
+    case  0:            lcd_putsAtt(x+FW,y,PSTR("   "),att);return; 
     case  MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR(" ON"),att);return; 
     case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
   }
-  lcd_putcAtt(x,y, idx1<0 ? '!' : ' ',att);  
+  lcd_putcAtt(x+2,y, idx1<0 ? '!' : ' ',att);  
   lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*(abs(idx1)-1),3,att);  
 }
 bool getSwitch(int8_t swtch, bool nc)
@@ -876,13 +878,60 @@ void evalCaptures()
 #endif
 
 
+int8_t idx2val15_100(int8_t idx)
+{
+  // idx  0  1       5      15
+  // val  0 10 .10. 50 .5. 100
+  uint8_t i   = abs(idx);
+  uint8_t uval;
+  if(i>=5)    uval = 5*(i+5); //
+  else        uval = 10*i;
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx15_100(int8_t val)
+{
+  // idx  0  1       5      15
+  // val  0 10 .10. 50 .5. 100
+  uint8_t uval = abs(val);
+  uint8_t i;
+  if(uval>50) i = (uint8_t)(uval)/5 -  5;
+  else        i = (uint8_t)(uval)/10;
+  return val < 0 ? -i : i;
+}
+
+int8_t idx2val30_100(int8_t idx)
+{
+  // idx  0 1 2     16      30
+  // val  0 1 2 .2. 30 .5. 100
+  uint8_t i   = abs(idx);
+  uint8_t uval= i;
+  if(i>=16){
+    uval = 5*(i-10); //
+  }else{
+    if(i>2){
+      uval = 2*(i-1);
+    }    
+  }
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx30_100(int8_t val)
+{
+  // idx  0 1 2     16      30
+  // val  0 1 2 .2. 30 .5. 100
+  uint8_t uval = abs(val);
+  uint8_t i;
+  if(uval>30)      i = (uint8_t)(uval)/5 + 10;
+  else if(uval>2)  i = (uint8_t)(uval)/2 +  1;
+  else             i = uval;
+  return val < 0 ? -i : i;
+}
 int16_t idx2val12255(int8_t idx)
 {
+  // ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'
   // idx  0  10  30   50
   // val  0  10  50  150
   uint8_t i   = abs(idx);
   uint8_t uval= i;
-  asm(""::"r" (uval));
   if(i>10){
     if(i<=30) uval = 2*(i-5); // (i-10)*2 + 10
     else      uval = 5*(i-20);             // (i-30)*5 + 50

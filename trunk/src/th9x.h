@@ -153,6 +153,10 @@ uint8_t convertMode(uint8_t srcChn);
 
 #define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
 //#define THRCHN convertMode(STK_THR)
+int8_t  idx2val15_100(int8_t idx);
+int8_t  val2idx15_100(int8_t val);
+int8_t  idx2val30_100(int8_t idx);
+int8_t  val2idx30_100(int8_t val);
 int16_t idx2val12255(int8_t idx);
 int8_t  val2idx12255(int16_t val);
 
@@ -228,8 +232,8 @@ enum EnumKeys {
 #define PROTO_SILV_C     3
 #define PROTO_TRACER_CTP1009 4
 #define PROT_MAX         4
-#define PROT_STR "PPM   SILV_ASILV_BSILV_CTRAC09"
-#define PROT_STR_LEN     6
+#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\t"
+//#define PROT_STR_LEN     6
 
 typedef void (*MenuFuncP)(uint8_t event);
 
@@ -423,10 +427,6 @@ void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
 void putsVBat(uint8_t x,uint8_t y,uint8_t att);
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2);
 
-//#define SUB_MODE_V     1
-//#define SUB_MODE_H     2
-//#define SUB_MODE_H_DBL 3
-//uint8_t checkSubGen(uint8_t event,uint8_t num, uint8_t sub, uint8_t mode);
 
 void menuProcLimits(uint8_t event);
 void menuProcMixOne(uint8_t event);
