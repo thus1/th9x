@@ -109,16 +109,32 @@ void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mo
     len--;
   }
 }
-void lcd_putsn_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t len)
+void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t mode)
 {
-  lcd_putsnAtt( x,y,s,len,false);
+  while(skip){
+    while(1){
+      char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
+      if(c<0x20) break;
+    }
+    skip--;
+  }
+  lcd_putsAtt(x,y,s,mode);
+}
+// void lcd_putsn_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t len)
+// {
+//   lcd_putsnAtt( x,y,s,len,0);
+// }
+void lcd_putsm_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip)
+{
+  lcd_putsmAtt( x,y,s,skip,0);
 }
 uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
 {
   //while(char c=pgm_read_byte(s++)) {
   while(1) {
     char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
-    if(!c) break;
+    if(c<0x20) break;
+    //if(!c) break;
     lcd_putcAtt(x,y,c,mode);
     x+=FW;
     if(mode&DBLSIZE) x+=FW;
