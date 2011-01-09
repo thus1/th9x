@@ -3,22 +3,47 @@ require "pp"
 
 
 
+
+
+PARDEF={}
+#PARDEF[:PROG]     = "USBPROG"
+PARDEF[:PROG]     = "AVRDUDE"
+PARDEF[:TC]       = "TC_PAR1"
+
+
 #TGT=%w(drehzahl.cpp  MCU=attiny26 CFLAGS=)
 #TGT=%w(servo.c  MCU=attiny22     CFLAGS=-xc++)
-TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
+TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp foldedlist.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
 
 
 
-MCU_PAR={
-  :atmega64 => {:flashsize,0x10000, :eepromsize,0x800},
-}
 
 TC_PAR1=%w(
   AVR_PATH=/opt/cross
-   USBPROG=usbprog.rb
-   OBJCOPY=avr-objcopy
-        CC=avr-gcc
+  USBPROG=usbprog.rb
+  AVRDUDE=avrdude
+  OBJCOPY=avr-objcopy
+  CC=avr-gcc
 )
+
+def readAvrdudeConf
+  buf=File.read("/etc/avrdude.conf")
+  #  buf.gsub!(/#.*?\n/,"") #remove cmt
+  mp={}
+  buf.split(/\npart/).each{|m| 
+    m=~/id\s*=\s*\"(.+?)\"/m; id=$1
+    m=~/desc\s*=\s*\"(.+?)\"/m; desc=$1
+    m=~/flash.*?\bsize\s*=\s*(\d+);/m; flash_size=$1
+    m=~/eeprom.*?\bsize\s*=\s*(\d+);/m; eeprom_size=$1
+    mp[desc.downcase.to_sym] = {:id,id,:flashsize,flash_size, :eepromsize,eeprom_size}
+  }
+  #pp mp
+  mp
+end
+#MCU_PAR={
+ # :atmega64 => {:flashsize,0x10000, :eepromsize,0x800},
+#}
+MCU_PAR=readAvrdudeConf
 
 
 class Builder
@@ -107,29 +132,61 @@ class Builder
 
     fbin,felf = bin()
     Dir.indir("OBJS"){
-      sys "usbprog eraseChip",@pars[:USBPROG] +" eraseChip"
-      sleep 1
-      sys "usbprog wrFlash",@pars[:USBPROG] +" wrFlash #{fbin}"
+      case @pars[:PROG] 
+      when "USBPROG"
+        sys "usbprog eraseChip",@pars[:USBPROG] +" eraseChip"
+        sleep 1
+        sys "usbprog wrFlash",@pars[:USBPROG] +" wrFlash #{fbin}"
+      when "AVRDUDE"
+        typ = MCU_PAR[@pars[:MCU].to_sym][:id]
+        #{"attiny22" => "2343",
+        #       "attiny45" => "t45",
+        #       "attiny13" => "t13",
+        #}[@pars[:MCU]]
+        sys "avrdude wrFlash",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U flash:w:#{fbin}:r"
+      when "USBTINY"
+	typ = @pars[:MCU]
+	typ=="attiny10" or raise "unknown typ"
+        sys "usbtiny.rb eraseFlash",@pars[:USBTINY] +" eraseFlash"
+        sys "usbtiny.rb wrFlash",@pars[:USBTINY] +" wrFlash #{fbin}"
+      else
+        raise "bad progrmmer"
+      end
     }
   end
   alias l load
-  def backup_flash()
-    pars=MCU_PAR[@pars[:MCU].to_sym]
+  def backup_gen(size,uspact,avdact)
+    mpars=MCU_PAR[@pars[:MCU].to_sym]
+    fn=@dt+avdact
     Dir.indir("BACKUP"){
-      sys "usbprog rdFlash", @pars[:USBPROG] +" rdFlash 0 #{pars[:flashsize]} #{@dt}flash"
+      case @pars[:PROG] 
+      when "USBPROG"
+        sys "usbprog #{uspact}", @pars[:USBPROG] +" #{uspact} 0 #{size} #{fn}"
+      when "AVRDUDE"
+        typ = mpars[:id]
+        sys "avrdude #{uspact}",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U #{avdact}:r:#{fn}:r"
+      else
+        raise "bad progrmmer"
+      end
     }
+  end
+  def backup_flash()
+    backup_gen(MCU_PAR[@pars[:MCU].to_sym][:flashsize],"rdFlash","flash")
   end
   def backup_eeprom()
-    pars=MCU_PAR[@pars[:MCU].to_sym]
-    Dir.indir("BACKUP"){
-      sys "usbprog rdEeprom",@pars[:USBPROG] +" rdEeprom 0 #{pars[:eepromsize]} #{@dt}eeprom"
-    }
+    backup_gen(MCU_PAR[@pars[:MCU].to_sym][:eepromsize],"rdEeprom","eeprom")
+    #pars=MCU_PAR[@pars[:MCU].to_sym]
+    #Dir.indir("BACKUP"){
+    #  sys "usbprog rdEeprom",@pars[:USBPROG] +" rdEeprom 0 #{pars[:eepromsize]} #{@dt}eeprom"
+    #}
   end
-  alias be backup_eeprom
   def backup()
     backup_flash()
     backup_eeprom()
   end
+  alias be backup_eeprom
+  alias bf backup_flash
+  alias b  backup
   def dump
     fbin,felf = bin()
     Dir.indir("OBJS"){
@@ -143,10 +200,10 @@ class Builder
   def setup()
     return if @pars
     #ueberschreibbare default parameter
-    @pars={}
+    @pars=PARDEF
     @pars[:SOURCES]  = ""
-    @pars[:TC]       = "TC_PAR1"
-    @pars[:DIR]      = "."
+    # @pars[:TC]       = "TC_PAR1"
+    # @pars[:PROG]     = "USBPROG" # alt: AVRDUDE
     #zuerst alle user specs eintragen, einschl TC
     TGT.each{|expr|
       case expr
@@ -232,7 +289,7 @@ class Builder
     opts.parse!
     @dt=Time.new.strftime("%y%m%d_%H%M%S")
     setup()
-    send ARGV[0]
+    send ARGV[0] || "bin"
   end
   def mkStamp(stf)
     vers=0
