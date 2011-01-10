@@ -1,6 +1,19 @@
+/*
+ * Author	Thomas Husterer <thus1@t-online.de>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
 
-#ifndef FOLDEDLIST_H
-#define FOLDEDLIST_H
+ */
+#ifndef foldedlist_h
+#define foldedlist_h
+
 
 #include "th9x.h"
 
@@ -48,11 +61,16 @@ public:
   static bool    s_currInsMode;  // *
 
 
+  
+  /// iterate one time to fill the list (init loop)
+  /// init(); addDat addDat addDat ..
   static void init();
   static void addDat(uint8_t ch, uint8_t idx);
-  static void show();
+  static void show();           //helper func for debug
   static bool fill(uint8_t ch); //helper func for construction
 
+  /// iterate one time through the filled list (show loop)
+  /// with firstLine,nextLine nextLine ..
   static Line* firstLine(int8_t sub);
   static Line* nextLine(uint8_t lines);
 
@@ -68,3 +86,4 @@ public:
 };
 
 #endif
+
