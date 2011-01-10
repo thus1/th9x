@@ -797,7 +797,7 @@ void menuProcExpoOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn+1,0);
+  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn+1,0);//!!!stickMode
   //bool withDr=g_model.expoData[FoldedList::s_currIDT].drSw!=0;
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
@@ -1787,7 +1787,7 @@ void menuProc0(uint8_t event)
     static uint8_t vert[4] = {0,1,1,0};
     uint8_t xm,ym;
     xm=x[i];
-    int8_t val = max((int8_t)-(TL+1),min((int8_t)(TL+1),g_model.trimData[i].trim));
+    int8_t val = max((int8_t)-(TL+1),min((int8_t)(TL+1),g_model.trimData[convertMode(i)].trim));
     if(vert[i]){
       ym=31;
       lcd_vline(xm,   ym-TL, TL*2);
@@ -1939,20 +1939,20 @@ void perOut(int16_t *chanOut)
   g_sumAna=0;
   //Normierung  [0..1024] ->   [-512..512]
   //  anaIn(hw7) ->    anas[hw7]   anaCalib[hw4]
-  for(uint8_t i=0;i<7;i++){        // calc Sticks
-    int16_t v= anaIn(i);
+  for(uint8_t iHw=0;iHw<7;iHw++){        // calc Sticks
+    int16_t v= anaIn(iHw);
     g_sumAna += (uint8_t)v;
-    v -= g_eeGeneral.calibMid[i];
+    v -= g_eeGeneral.calibMid[iHw];
     v  =  v * (int32_t)RESX /  (max((int16_t)100,
                                     (v>0 ? 
-                                     g_eeGeneral.calibSpanPos[i] : 
-                                     g_eeGeneral.calibSpanNeg[i])));
+                                     g_eeGeneral.calibSpanPos[iHw] : 
+                                     g_eeGeneral.calibSpanNeg[iHw])));
 
     if(v <= -RESX) v = -RESX;
     if(v >=  RESX) v =  RESX;
-    //j=modefrom(i)
-    anas[i] = v; //10+1 Bit  !!!stickMode!!!
-    if(i<4)anaCalib[i] = v; //for show in expo !!!stickMode!!!
+    uint8_t iLog = convertMode(iHw);
+    anas[iLog] = v; //10+1 Bit  !!!stickMode!!!
+    if(iHw<4)anaCalib[iLog] = v; //for show in expo !!!stickMode!!!
   }
   anas[7] = 512; //100% fuer MAX
   anas[8] = 512; //100% fuer MAX
@@ -1963,12 +1963,12 @@ void perOut(int16_t *chanOut)
     if(ed.mode3==0) break; //end of list
     if(ed.mode3==4) trimAssym[ed.chn]=true; //!!!stickMode!!!
     if(getSwitch(ed.drSw,1)) {
-      int16_t v = anas[ed.chn];
+      int16_t v = anas[ed.chn];//!!!stickMode!!!
       if((v<0 && ed.mode3&1) || (v>0 && ed.mode3&2)){
 	v = expo(v,idx2val15_100(ed.exp5));
 	if(ed.curve) v = intpol(v, ed.curve - 1);
 	v = v * (int32_t)(idx2val30_100(ed.weight6)) / 100;
-	anas[ed.chn] = v; 
+	anas[ed.chn] = v; //!!!stickMode!!!
       }
     }
   }
@@ -1976,10 +1976,10 @@ void perOut(int16_t *chanOut)
   //Trainer,   anas[hw4] -> anas[hw4]
   //Trace THR
   //Trim
-  for(uint8_t i=0;i<4;i++){        // calc Sticks
-    int16_t v = anas[i];
+  for(uint8_t iLog=0;iLog<4;iLog++){        // calc Sticks
+    int16_t v = anas[iLog];
 
-    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];// !!!stickMode!!!
+    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[iLog];// !!!stickMode
     if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
@@ -1993,16 +1993,17 @@ void perOut(int16_t *chanOut)
     }
 
     //trace throttle
-    if(THRCHN == i)  //stickMode=0123 -> thr=2121  !!!stickMode!!!
+    //if(THRCHN == i)  //stickMode=0123 -> thr=2121  !!!stickMode!!!
+    if(iLog == STK_THR)  //stickMode=0123 -> thr=2121  !!!stickMode!!!
       trace((v+512)/32); //trace thr 0..31
 
     //trim
-    if(trimAssym[i]){                        // !!!stickMode!!!
-      v += trimVal(i)*(int32_t)(512-v)/1024; //260*1024 !!!stickMode!!!
+    if(trimAssym[iLog]){                        // !!!stickMode!!!
+      v += trimVal(iLog)*(int32_t)(512-v)/1024; //260*1024 !!!stickMode!!!
     }else{
-      v += trimVal(i);
+      v += trimVal(iLog);
     }
-    anas[i] = v; //10+1 Bit
+    anas[iLog] = v; //10+1 Bit
   }
   // In anas stehen jetzt die Werte mit Trimmung -512..511
 

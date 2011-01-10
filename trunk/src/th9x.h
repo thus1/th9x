@@ -472,7 +472,7 @@ extern volatile uint8_t   g_blinkTmr10ms;
 // extern uint8_t            g_beepCnt;
 // extern uint8_t            g_beepVal[4];
 extern volatile uint8_t   g_nextBeep;
-extern const PROGMEM char modi12x3[];
+//extern const PROGMEM char modi12x3[];
 //extern uint16_t           pulses2MHz[9];
 extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
@@ -532,6 +532,8 @@ inline int16_t trimExp(int8_t trim)
 }
 
 
+
+void memswap(void *dest,const void*src,uint8_t len);
 
 #endif
 
