@@ -26,24 +26,38 @@ TC_PAR1=%w(
   CC=avr-gcc
 )
 
-def readAvrdudeConf
-  buf=File.read("/etc/avrdude.conf")
-  #  buf.gsub!(/#.*?\n/,"") #remove cmt
-  mp={}
-  buf.split(/\npart/).each{|m| 
-    m=~/id\s*=\s*\"(.+?)\"/m; id=$1
-    m=~/desc\s*=\s*\"(.+?)\"/m; desc=$1
-    m=~/flash.*?\bsize\s*=\s*(\d+);/m; flash_size=$1
-    m=~/eeprom.*?\bsize\s*=\s*(\d+);/m; eeprom_size=$1
-    mp[desc.downcase.to_sym] = {:id,id,:flashsize,flash_size, :eepromsize,eeprom_size}
-  }
-  #pp mp
-  mp
+
+class McuParReader
+  def [](i)
+    @mcuPar||=readAvrdudeConf
+    @mcuPar[i]
+  end
+  def readAvrdudeConf
+    begin
+      fn=["/etc/avrdude.conf",
+        "/etc/avrdude/avrdude.conf"
+      ].find{|fn| File.exists?(fn)}
+      buf=File.read(fn)
+      #  buf.gsub!(/#.*?\n/,"") #remove cmt
+      mp={}
+      buf.split(/\npart/).each{|m| 
+        m=~/id\s*=\s*\"(.+?)\"/m; id=$1
+        m=~/desc\s*=\s*\"(.+?)\"/m; desc=$1
+        m=~/flash.*?\bsize\s*=\s*(\d+);/m; flash_size=$1
+        m=~/eeprom.*?\bsize\s*=\s*(\d+);/m; eeprom_size=$1
+        mp[desc.downcase.to_sym] = {:id,id,:flashsize,flash_size, :eepromsize,eeprom_size}
+      }
+      #pp mp
+    rescue
+      puts "WARNING fallback MCU_PAR"
+      mp={
+        :atmega64 => {:flashsize,0x10000, :eepromsize,0x800},
+      }
+    end
+    mp
+  end
 end
-#MCU_PAR={
- # :atmega64 => {:flashsize,0x10000, :eepromsize,0x800},
-#}
-MCU_PAR=readAvrdudeConf
+MCU_PAR=McuParReader.new #readAvrdudeConf
 
 
 class Builder
@@ -139,10 +153,6 @@ class Builder
         sys "usbprog wrFlash",@pars[:USBPROG] +" wrFlash #{fbin}"
       when "AVRDUDE"
         typ = MCU_PAR[@pars[:MCU].to_sym][:id]
-        #{"attiny22" => "2343",
-        #       "attiny45" => "t45",
-        #       "attiny13" => "t13",
-        #}[@pars[:MCU]]
         sys "avrdude wrFlash",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U flash:w:#{fbin}:r"
       when "USBTINY"
 	typ = @pars[:MCU]
