@@ -192,11 +192,14 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged, void*array,uint8_t d
       //swap
       if( (s_currIDTOld<=s_prepCurrIDT) && (s_currIDT<=s_prepCurrIDT)){
         printf("swap %d %d %d\n",s_currIDTOld,s_currIDT,s_prepCurrIDT);
-        char* p=(char*)array + (uint8_t)(szeElt * (s_currIDT));
-        char* q=(char*)array + (uint8_t)(szeElt * (s_currIDTOld));
-        for(uint8_t i=szeElt; i>0; i--,p++,q++){
-          char c = *p; *p=*q; *q=c;
-        }
+        //        char* p=(char*)array + (uint8_t)(szeElt * (s_currIDT));
+        //        char* q=(char*)array + (uint8_t)(szeElt * (s_currIDTOld));
+        //        for(uint8_t i=szeElt; i>0; i--,p++,q++){
+        //          char c = *p; *p=*q; *q=c;
+        //        }
+        memswap((char*)array + (uint8_t)(szeElt * (s_currIDT)),
+                (char*)array + (uint8_t)(szeElt * (s_currIDTOld)),
+                szeElt);
         return FoldedListSwap;
       }else{
         s_editMode=false;
