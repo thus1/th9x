@@ -133,6 +133,7 @@ private:
 public:
   FXSlider      *sliders[8];
   FXKnob        *knobs[8];
+  FXKnob        *knobsppm[8];
 };
 // Message Map
 FXDEFMAP(Th9xSim) Th9xSimMap[]={
@@ -155,6 +156,8 @@ Th9xSim::Th9xSim(FXApp* a)
   for(int i=0; i<(W2*H2/8); i++) buf2[i]=0;//rand();
   bmp = new FXBitmap(a,&buf2,BITMAP_KEEP,W2,H2);
 
+  FXHorizontalFrame *hf00=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf01=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FILL_X);
   //FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
   FXHorizontalFrame *hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
@@ -178,31 +181,24 @@ Th9xSim::Th9xSim(FXApp* a)
       case 3:
         sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_HORIZONTAL,X0+140,Y0+120,100,20);
         break;
-//       case 0:
-//         sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
-//         break;
-//       case 1:
-//         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_LEFT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
-//         hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
-//         break;
-//       case 2:
-//         sliders[i]=new FXSlider(hf1,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_VERTICAL,0,0,20,100);
-//         break;
-//       case 3:
-//         sliders[i]=new FXSlider(hf2,NULL,0,LAYOUT_RIGHT|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|SLIDER_HORIZONTAL,0,0,100,20);
-//         break;
       default:;
     }
-    sliders[i]->setRange(0,1023);
+    sliders[i]->setRange(0+i*50,1023);
     sliders[i]->setTickDelta(7);
-    sliders[i]->setValue(i==1 ? 200 : 512);
+    sliders[i]->setValue(i==1 ? 200 : 512+i*25);
   }
   for(int i=4; i<8; i++){
     knobs[i]= new FXKnob(hf0,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
   }
-  
+  for(int i=0; i<4; i++){
+    knobsppm[i]= new FXKnob(i<4 ? hf00 : hf01,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    knobsppm[i]->setRange(1000,2000);
+    knobsppm[i]->setValue(1500+i*20);
+  }
+
+
   bmf = new FXBitmapFrame(this,bmp,0,0,0,0,0,0,0,0,0);
   bmf->setOnColor(FXRGB(0,0,0));
 
@@ -269,8 +265,15 @@ void Th9xSim::init2()
   // checkTHR();
   // checkSwitches();
 }
+extern uint16_t       s_trainerLast10ms;
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
+  for(int i=0; i<4; i++){
+    g_ppmIns[i]=knobsppm[i]->getValue()-1500;
+  }
+  g_trainerSlaveActive = 1;
+  s_trainerLast10ms    = g_tmr10ms;
+
   per10ms();
   getApp()->addChore(this,1);
   getApp()->addTimeout(this,2,10);

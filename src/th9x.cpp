@@ -242,9 +242,10 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 //   if((idx1>=1) && (idx1 <=4)) 
 //   {
     //lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att); // !!!stickMode
+  if((idx1 < NUM_XCHNRAW)) 
     lcd_putsmAtt(x,y,PSTR("RUD\t""ELE\t""THR\t""AIL\t"
                           " P1\t"" P2\t"" P3\t""MAX\t""FUL\t"
-                          " X1\t"" X2\t"" X3\t"" X4"),idx1-1,att);
+                          " X1\t"" X2\t"" X3\t"" X4"),idx1,att);
 //   }else{
 //     lcd_putsnAtt(x,y,PSTR(" P1"" P2"" P3""MAX""FUL"" X1"" X2"" X3"" X4")+3*(idx1-5),3,att);
 //   }

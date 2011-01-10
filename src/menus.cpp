@@ -445,7 +445,7 @@ void menuProcMixOne(uint8_t event)
     uint8_t attr = sub==i ? BLINK : 0; 
     lcd_putsm_P( FW*8, y,PSTR("SRC\tPRC\tCURVE\tSWTCH\tSLOPE\t\tRM"),i);
     switch(i){
-    case 0:   putsChnRaw(   FW*4,y,md2.srcRaw,attr);
+    case 0:   putsChnRaw(   FW*4,y,md2.srcRaw-1,attr);
       //if(attr) md2.srcRaw = checkIncDec_hm( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
       if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
       break;
@@ -553,7 +553,7 @@ void menuProcMix(uint8_t event)
 
       lcd_outdezAtt(  7*FW, y, md2.weight,attr);
       lcd_putcAtt(    7*FW+1, y, '%',0);
-      putsChnRaw(     9*FW-2, y, md2.srcRaw,0);
+      putsChnRaw(     9*FW-2, y, md2.srcRaw-1,0);
       if(md2.swtch)putsDrSwitches( 13*FW-4, y, md2.swtch,0);
       if(md2.curve)lcd_putsmAtt(   17*FW+2, y, PSTR(CURV_STR),md2.curve,0);
       if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
@@ -659,7 +659,7 @@ void menuProcTrim(uint8_t event)
   {
     uint8_t y=i*FH+FH*3;
     uint8_t attr = sub==i ? INVERS : 0; 
-    putsChnRaw(0,y,i+1,0);//attr);
+    putsChnRaw(0,y,i,0);//attr);
     lcd_outdezAtt( 8*FW, y, trimVal(i)*2, attr|PREC1 );
     if(sub>=0 && outHelp[i] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[i]   , outHelp[i]   ? BLINK|SIGN : 0);
     else           lcd_outdezAtt(14*FW, y, g_model.limitData[i].offset , 0);
@@ -797,7 +797,7 @@ void menuProcExpoOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn+1,0);//!!!stickMode
+  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn,0);//!!!stickMode
   //bool withDr=g_model.expoData[FoldedList::s_currIDT].drSw!=0;
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
@@ -881,7 +881,7 @@ void menuProcExpoAll(uint8_t event)
 
     if(line->showCh){  
       //putsChn(0,y,line->chId,0); // show CHx
-      putsChnRaw( 0, y,line->chId,0);
+      putsChnRaw( 0, y,line->chId-1,0);
     }
     if(FoldedList::s_isSelectedCh) {
       if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
@@ -1313,7 +1313,7 @@ void menuProcTrainer(uint8_t event)
   for(uint8_t i=0; i<4; i++){
     y=(i+2)*FH;
     TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
-    putsChnRaw( 0, y,i+1,0);
+    putsChnRaw( 0, y,i,0);
     //                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
     edit = (sub==i && subSub==1);
     lcd_putsmAtt(   4*FW, y, PSTR("off\t +=\t :="),td->mode,
@@ -1458,7 +1458,7 @@ void menuProcSetup0(uint8_t event)
         for(uint8_t i=0; i<4; i++)
         {
           lcd_img(    (6+4*i)*FW, y,   sticks,i,0);
-          putsChnRaw( (6+4*i)*FW, y+FH,i+1,0);//sub==3?BLINK:0);
+          putsChnRaw( (6+4*i)*FW, y+FH,convertMode(i),0);//sub==3?BLINK:0);
         }
         if(attr){
           CHECK_INCDEC_H_GENVAR(event,g_eeGeneral.stickMode,0,3);
