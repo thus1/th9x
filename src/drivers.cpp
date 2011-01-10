@@ -18,6 +18,21 @@
 
 #include "th9x.h"
 
+void memswap(void *dest, const void *src, uint8_t n)
+{
+  char *p=(char*) dest;
+  char *q=(char*) src;
+  while(n){
+    char c=*p;
+    *p = *q;
+    *q = c;
+    p++; q++; n--;
+  }
+}
+
+
+
+
 #ifndef SIM
 #include "avr/interrupt.h"
 
@@ -51,12 +66,6 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t s
   }
 }
 
-//inline uint16_t anaIn(uint8_t chan)
-//{
-//  //                     ana-in:   3 1 2 0 4 5 6 7          
-//  static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
-//  return s_ana[pgm_read_byte(crossAna+chan)] / 4;
-//}
 #endif
 
 
@@ -317,15 +326,4 @@ void per10ms()
       break;
   }
 
-//   if(g_beepCnt){
-//     g_beepCnt--;
-//     PORTE |=  (1<<OUT_E_BUZZER);
-//     printf("."); 
-//     if(g_beepCnt==0)
-//     {
-//       printf("%d\n",g_tmr10ms); 
-//     }
-//   }else{
-//     PORTE &= ~(1<<OUT_E_BUZZER);
-//   }
 }
