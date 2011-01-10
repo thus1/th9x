@@ -44,7 +44,7 @@ typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   vBatWarn;
   int8_t    vBatCalib;  
   int8_t    lightSw;
-  TrainerData_r0 trainer;
+  TrainerData_r0 trainer; //!!!stickMode
   uint8_t   view;     //index of subview in main scrren
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
@@ -75,7 +75,9 @@ typedef struct t_EEGeneral_r119 {
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r119;
-#define GENVERS150 4
+#define GENVERS150   4
+#define GENVERS150_5 5
+#define GENVERS_TOP GENVERS150_5
 typedef struct t_EEGeneral_r150 {
   uint8_t   myVers;
   int16_t   calibMid[7];             //ge150 4->7
@@ -105,14 +107,13 @@ typedef struct t_EEGeneral_r150 {
 
 
 
-
 //eeprom modelspec
 
-typedef struct t_ExpoData_r0 { //<r84
-  int8_t  expNorm;
-  int8_t  expDr;
-  int8_t  drSw;
-} __attribute__((packed)) ExpoData_r0;//<r84;
+// typedef struct t_ExpoData_r0 { //<r84
+//   int8_t  expNorm;
+//   int8_t  expDr;
+//   int8_t  drSw;
+// } __attribute__((packed)) ExpoData_r0;//<r84;
 
 typedef struct t_ExpoData_r84 {
   int8_t  expNorm;
@@ -127,7 +128,7 @@ typedef struct t_ExpoData_r171 {
   uint8_t mode3:3; //0=end 1=pos 2=neg 3=both 4=trimNeg
 
   int8_t  weight6:6;
-  uint8_t chn:2;
+  uint8_t chn:2;  //!!!stickMode!!!
 
   int8_t  drSw:5;
   uint8_t curve:3; //
@@ -155,11 +156,11 @@ typedef struct t_TrimData_r143 {
   int8_t  trim;    //quadratisch
 } __attribute__((packed)) TrimData_r143;
 
-typedef struct t_LimitData_r0 { //<r84
-  int8_t  min;
-  int8_t  max;
-  bool    revert;
-} __attribute__((packed)) LimitData_r0;//84;
+// typedef struct t_LimitData_r0 { //<r84
+//   int8_t  min;
+//   int8_t  max;
+//   bool    revert;
+// } __attribute__((packed)) LimitData_r0;//84;
 
 typedef struct t_LimitData_r84 {
   int8_t  min;
@@ -178,7 +179,7 @@ typedef struct t_LimitData_r167 {
 
 typedef struct t_MixData_r0 {
   uint8_t destCh:4; //        1..NUM_CHNOUT,X1-X4
-  uint8_t srcRaw:4; //0=off   1..8      ,X1-X4
+  uint8_t srcRaw:4; //0=off   1..8      ,X1-X4  //!!!stickMode!!!
   int8_t  weight;
   int8_t  swtch:5;
   uint8_t curve:3; //0=symmetrisch 1=no neg 2=no pos
@@ -209,20 +210,20 @@ typedef struct t_MixData_r0 {
 //
 
 
-typedef struct t_ModelData_r0 { //<r84
-  char      name[10];    // 10 must be first for eeLoadModelName
-  uint8_t   stickModex;   // 1
-  uint8_t   tmrMode;     // 1
-  uint16_t  tmrVal;      // 2
-  uint8_t   protocol;    // 1
-  char      res[3];      // 3
-  LimitData_r0 limitData[NUM_CHNOUT];// 3*8 //<r84
-  ExpoData_r0  expoData[4]; // 3*4 //<r84
-  MixData_r0   mixData[20]; //4*20
-  int8_t    curves5[2][5];   // 10
-  int8_t    curves9[2][9];   // 18
-  TrimData_r0  trimData[4]; // 3*4
-} __attribute__((packed)) ModelData_r0;//84; //174
+// typedef struct t_ModelData_r0 { //<r84
+//   char      name[10];    // 10 must be first for eeLoadModelName
+//   uint8_t   stickModex;   // 1
+//   uint8_t   tmrMode;     // 1
+//   uint16_t  tmrVal;      // 2
+//   uint8_t   protocol;    // 1
+//   char      res[3];      // 3
+//   LimitData_r0 limitData[NUM_CHNOUT];// 3*8 //<r84
+//   ExpoData_r0  expoData[4]; // 3*4 //<r84
+//   MixData_r0   mixData[20]; //4*20
+//   int8_t    curves5[2][5];   // 10
+//   int8_t    curves9[2][9];   // 18
+//   TrimData_r0  trimData[4]; // 3*4
+// } __attribute__((packed)) ModelData_r0;//84; //174
 
 #define MDVERS84 1
 typedef struct t_ModelData_r84 {
@@ -283,12 +284,12 @@ typedef struct t_ModelData_r171 {
   uint8_t   protocol;             // 1
   char      res[3];               // 3
   LimitData_r167 limitData[NUM_CHNOUT];// 4*8
-  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
+  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15 //!!!stickMode!!!
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4 //!!!stickMode!!!
 } __attribute__((packed)) ModelData_r171; //251
 
 

@@ -206,11 +206,11 @@ const prog_char APM modn12x3[]=
   "\x3" "\x1" "\x2" "\x0"
   "\x3" "\x2" "\x1" "\x0";
 
-const prog_char APM modi12x3[]=
-  "RUD""ELE""THR""AIL"
-  "RUD""THR""ELE""AIL"
-  "AIL""ELE""THR""RUD"
-  "AIL""THR""ELE""RUD";
+// const prog_char APM modi12x3[]=
+//   "RUD""ELE""THR""AIL"
+//   "RUD""THR""ELE""AIL"
+//   "AIL""ELE""THR""RUD"
+//   "AIL""THR""ELE""RUD";
 
 uint8_t convertMode(uint8_t srcChn)
 {
@@ -239,12 +239,15 @@ void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
-  if((idx1>=1) && (idx1 <=4)) 
-  {
-    lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att);  
-  }else{
-    lcd_putsnAtt(x,y,PSTR(" P1"" P2"" P3""MAX""FUL"" X1"" X2"" X3"" X4")+3*(idx1-5),3,att);
-  }
+//   if((idx1>=1) && (idx1 <=4)) 
+//   {
+    //lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att); // !!!stickMode
+    lcd_putsmAtt(x,y,PSTR("RUD\t""ELE\t""THR\t""AIL\t"
+                          " P1\t"" P2\t"" P3\t""MAX\t""FUL\t"
+                          " X1\t"" X2\t"" X3\t"" X4"),idx1-1,att);
+//   }else{
+//     lcd_putsnAtt(x,y,PSTR(" P1"" P2"" P3""MAX""FUL"" X1"" X2"" X3"" X4")+3*(idx1-5),3,att);
+//   }
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
@@ -379,7 +382,7 @@ uint8_t checkTrim(uint8_t event)
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
     bool    up  = k&1;
-    int8_t *ptrim = &g_model.trimData[idx].trim;
+    int8_t *ptrim = &g_model.trimData[convertMode(idx)].trim;
     if(up){
       //      if( (*ptrim < 0) ||
       //          ((*ptrim < 31) &&  IS_KEY_FIRST(event))  //issue 35, 39

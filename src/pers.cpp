@@ -32,7 +32,7 @@ EFile theFile2; //sometimes we need two files
 void generalDefault()
 {
   memset(&g_eeGeneral,0,sizeof(g_eeGeneral));
-  g_eeGeneral.myVers   =  GENVERS150;
+  g_eeGeneral.myVers   =  GENVERS_TOP;
   g_eeGeneral.currModel=  0;
   g_eeGeneral.contrast = 30;
   g_eeGeneral.vBatWarn = 90;
@@ -88,18 +88,24 @@ bool eeLoadGeneral()
     sz = sizeof(EEGeneral_r150);
     p150->myVers  = GENVERS150;
   }
+
   if( sz == sizeof(EEGeneral_r150) && g_eeGeneral.myVers == GENVERS150){
-    //    for(int i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
-    //#ifdef SIM
-    //    if(g_eeGeneral.chkSum != sum)  printf("bad g_eeGeneral.chkSum == sum\n");
-    //#endif  
-    //    return g_eeGeneral.chkSum == sum;
+    EEGeneral_r150 *p150= (EEGeneral_r150*)&g_eeGeneral;
+    if(p150->stickMode & 1)
+      memswap(&p150->trainer.chanMix[1],
+              &p150->trainer.chanMix[2],sizeof(p150->trainer.chanMix[1]));
+    if(p150->stickMode & 2)
+      memswap(&p150->trainer.chanMix[0],
+              &p150->trainer.chanMix[3],sizeof(p150->trainer.chanMix[0]));
+    p150->myVers  = GENVERS150_5;
+  }
+  if( sz == sizeof(EEGeneral_r150) && g_eeGeneral.myVers == GENVERS150_5){
     return true;
   }
   printf("bad g_eeGeneral\n");
   return false;
 }
-#define CM(x) convertMode(x)
+#define CM(x) x //convertMode(x)
 
 
 uint8_t modelMixerDefaults=6;
@@ -221,24 +227,24 @@ void eeLoadModel(uint8_t id)
   theFile.openRd(FILE_MODEL(id));
   uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
 
-#if 0
-  if( sz == sizeof(ModelData_r0) ){
-    printf("converting model data t0 r84\n");
-    char* pSrc = ((char*)&g_model) + sizeof(ModelData_r0); //Pointers behind the end
-    char* pDst = ((char*)&g_model) + sizeof(ModelData_r84);
-    ModelData_r84 *model84 = (ModelData_r84*)&g_model;
-#define sizeof84(memb) sizeof(((ModelData_r84*)0)->memb)
-    fullCopy(sizeof84(trimData)+sizeof84(curves9)+sizeof84(curves5));
-
-    partCopy(sizeof84(mixData), sizeof(MixData_r0)*20);
-
-    for(uint8_t i=0; i<DIM(model84->expoData); i++){
-      partCopy(sizeof(ExpoData_r84), sizeof(ExpoData_r0));
-    }
-    sz = sizeof(ModelData_r84);
-    model84->mdVers = MDVERS84;
-  }
-#endif  
+// #if 0
+//   if( sz == sizeof(ModelData_r0) ){
+//     printf("converting model data t0 r84\n");
+//     char* pSrc = ((char*)&g_model) + sizeof(ModelData_r0); //Pointers behind the end
+//     char* pDst = ((char*)&g_model) + sizeof(ModelData_r84);
+//     ModelData_r84 *model84 = (ModelData_r84*)&g_model;
+// #define sizeof84(memb) sizeof(((ModelData_r84*)0)->memb)
+//     fullCopy(sizeof84(trimData)+sizeof84(curves9)+sizeof84(curves5));
+// 
+//     partCopy(sizeof84(mixData), sizeof(MixData_r0)*20);
+// 
+//     for(uint8_t i=0; i<DIM(model84->expoData); i++){
+//       partCopy(sizeof(ExpoData_r84), sizeof(ExpoData_r0));
+//     }
+//     sz = sizeof(ModelData_r84);
+//     model84->mdVers = MDVERS84;
+//   }
+// #endif  
   if( sz == sizeof(ModelData_r84) && g_model.mdVers == MDVERS84) {
     printf("converting model data from r84 to r143\n");
     ModelData_r84  *model84  = (ModelData_r84*)&g_model;
@@ -292,7 +298,7 @@ void eeLoadModel(uint8_t id)
     for(int8_t i=0,j=0; i<4; i++){
       if(hlpExp[i].expNorm || hlpExp[i].expNormWeight){
         model171->expoTab[j].drSw    = hlpExp[i].drSw ? -hlpExp[i].drSw : 0;
-        model171->expoTab[j].chn     = i;
+        model171->expoTab[j].chn     = convertMode(i);
         model171->expoTab[j].mode3   = 3;
         model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expNorm);
         model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expNormWeight+100);
@@ -301,7 +307,7 @@ void eeLoadModel(uint8_t id)
 
       if(hlpExp[i].drSw && (hlpExp[i].expDr || hlpExp[i].expSwWeight)){
 	model171->expoTab[j].drSw    = hlpExp[i].drSw;
-	model171->expoTab[j].chn     = i;
+	model171->expoTab[j].chn     = convertMode(i);
 	model171->expoTab[j].mode3   = 3;
 	model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expDr);
 	model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expSwWeight+100);
@@ -310,6 +316,19 @@ void eeLoadModel(uint8_t id)
     }
     memset(hlpExp, 0, sizeof(model167->expoData));
     sz = sizeof(ModelData_r171);
+
+    for(uint8_t i=0;i<MAX_MIXERS;i++){
+      MixData_r0 &md = model171->mixData[i];
+      if(md.destCh==0) break;
+      md.srcRaw = convertMode(md.srcRaw-1)+1;
+    }
+    if(g_eeGeneral.stickMode & 1)
+      memswap(&model171->trimData[1],
+              &model171->trimData[2],sizeof(model171->trimData[1]));
+    if(g_eeGeneral.stickMode & 2)
+      memswap(&model171->trimData[0],
+              &model171->trimData[3],sizeof(model171->trimData[0]));
+
     model167->mdVers = MDVERS171;
   }
   if( sz == sizeof(ModelData_r171) && g_model.mdVers == MDVERS171) {
