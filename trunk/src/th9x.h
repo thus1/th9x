@@ -392,6 +392,8 @@ template<class t> inline t min(t a, t b){ return a<b?a:b; }
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
 template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? (t)-1 : (t)0); }
 
+void memswap(void *dest, const void *src, uint8_t n);
+
 
 #define EE_GENERAL 1
 #define EE_MODEL   2
