@@ -115,7 +115,8 @@ class Th9xSim: public FXMainWindow
 public:
   Th9xSim(){};
   Th9xSim(FXApp* a);
-   long onKeypress(FXObject*,FXSelector,void*);
+  long onKeypress(FXObject*,FXSelector,void*);
+  long onArrowPress(FXObject*,FXSelector,void*);
   long onChore(FXObject*,FXSelector,void*);
   long onTimeout(FXObject*,FXSelector,void*);
   void makeSnapshot(const FXDrawable* drawable);
@@ -134,6 +135,8 @@ public:
   FXSlider      *sliders[8];
   FXKnob        *knobs[8];
   FXKnob        *knobsppm[8];
+  FXArrowButton *arrow[3];
+  FXArrowButton *arrow2[3];
 };
 // Message Map
 FXDEFMAP(Th9xSim) Th9xSimMap[]={
@@ -141,6 +144,7 @@ FXDEFMAP(Th9xSim) Th9xSimMap[]={
   //________Message_Type_________ID_____________________Message_Handler_______
   FXMAPFUNC(SEL_CHORE,     1,    Th9xSim::onChore),
   FXMAPFUNC(SEL_TIMEOUT,   2,    Th9xSim::onTimeout),
+  FXMAPFUNC(SEL_COMMAND,   1000,    Th9xSim::onArrowPress),
   FXMAPFUNC(SEL_KEYPRESS,  0,    Th9xSim::onKeypress),
   };
 
@@ -192,11 +196,18 @@ Th9xSim::Th9xSim(FXApp* a)
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
   }
+  arrow[0]= new FXArrowButton(hf0,this,1000,ARROW_LEFT);
+  arrow[1]= new FXArrowButton(hf0,this,1000,ARROW_DOWN);
+  arrow[2]= new FXArrowButton(hf0,this,1000,ARROW_RIGHT);
+  
   for(int i=0; i<4; i++){
     knobsppm[i]= new FXKnob(i<4 ? hf00 : hf01,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobsppm[i]->setRange(1000,2000);
     knobsppm[i]->setValue(1500+i*20);
   }
+  arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
+  arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_DOWN);
+  arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
 
 
   bmf = new FXBitmapFrame(this,bmp,0,0,0,0,0,0,0,0,0);
@@ -246,6 +257,24 @@ void Th9xSim::doEvents()
   getApp()->runOneEvent(false);
 }
 
+long Th9xSim::onArrowPress(FXObject*sender,FXSelector sel,void*v)
+{
+  int which,val;
+  if(sender==arrow[0]) { which=1; val=0;}
+  if(sender==arrow[1]) { which=1; val=512;}
+  if(sender==arrow[2]) { which=1; val=1023;}
+  if(sender==arrow2[0]){ which=2; val=1000;}
+  if(sender==arrow2[1]){ which=2; val=1500;}
+  if(sender==arrow2[2]){ which=2; val=2000;}
+  if(which == 1){
+    for(int i=0; i<4; i++) sliders[i]->setValue(val);
+    for(int i=4; i<7; i++) knobs[i]->setValue(val);
+  }
+  if(which == 2){
+    for(int i=0; i<4; i++) knobsppm[i]->setValue(val);
+  }
+  return 0;
+}
 long Th9xSim::onKeypress(FXObject*,FXSelector,void*v)
 {
   FXEvent *evt=(FXEvent*)v;
