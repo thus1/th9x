@@ -137,6 +137,7 @@ public:
   FXKnob        *knobsppm[8];
   FXArrowButton *arrow[3];
   FXArrowButton *arrow2[3];
+  FXToggleButton *togButPpm;
 };
 // Message Map
 FXDEFMAP(Th9xSim) Th9xSimMap[]={
@@ -208,6 +209,7 @@ Th9xSim::Th9xSim(FXApp* a)
   arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
   arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_DOWN);
   arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
+  togButPpm = new FXToggleButton(hf00,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
 
 
   bmf = new FXBitmapFrame(this,bmp,0,0,0,0,0,0,0,0,0);
@@ -297,11 +299,13 @@ void Th9xSim::init2()
 extern uint16_t       s_trainerLast10ms;
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
-  for(int i=0; i<4; i++){
-    g_ppmIns[i]=knobsppm[i]->getValue()-1500;
+  if(togButPpm->getState()){
+    for(int i=0; i<4; i++){
+      g_ppmIns[i]=knobsppm[i]->getValue()-1500;
+    }
+    g_trainerSlaveActive = 1;
+    s_trainerLast10ms    = g_tmr10ms;
   }
-  g_trainerSlaveActive = 1;
-  s_trainerLast10ms    = g_tmr10ms;
 
   per10ms();
   getApp()->addChore(this,1);

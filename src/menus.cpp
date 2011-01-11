@@ -612,9 +612,9 @@ void menuProcMix(uint8_t event)
 
 
 
-int16_t trimVal(uint8_t idx)
+int16_t trimVal(uint8_t iLog)
 {
-  return trimExp(g_model.trimData[idx].trim);
+  return trimExp(g_model.trimData[iLog].trim);
 //  return trim*(abs(trim)+1)/2;
 }
 
@@ -655,17 +655,17 @@ void menuProcTrim(uint8_t event)
 
   lcd_puts_P( 5*FW, 1*FH,PSTR("Trim   Subtrim"));
   lcd_puts_P(11*FW, 2*FH,PSTR(      "Ch14 Ch58"));
-  for(uint8_t i=0; i<4; i++)
+  for(uint8_t iLog=0; iLog<4; iLog++)
   {
-    uint8_t y=i*FH+FH*3;
-    uint8_t attr = sub==i ? INVERS : 0; 
-    putsChnRaw(0,y,i,0);//attr);
-    lcd_outdezAtt( 8*FW, y, trimVal(i)*2, attr|PREC1 );
-    if(sub>=0 && outHelp[i] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[i]   , outHelp[i]   ? BLINK|SIGN : 0);
-    else           lcd_outdezAtt(14*FW, y, g_model.limitData[i].offset , 0);
+    uint8_t y=iLog*FH+FH*3;
+    uint8_t attr = sub==iLog ? INVERS : 0; 
+    putsChnRaw(0,y,iLog,0);//attr);
+    lcd_outdezAtt( 8*FW, y, trimVal(iLog)*2, attr|PREC1 );
+    if(sub>=0 && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? BLINK|SIGN : 0);
+    else           lcd_outdezAtt(14*FW, y, g_model.limitData[iLog].offset , 0);
 
-    if(sub>=0 && outHelp[i+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[i+4] , outHelp[i+4] ? BLINK|SIGN : 0);
-    else           lcd_outdezAtt(19*FW, y, g_model.limitData[i+4].offset , 0);
+    if(sub>=0 && outHelp[iLog+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[iLog+4] , outHelp[iLog+4] ? BLINK|SIGN : 0);
+    else           lcd_outdezAtt(19*FW, y, g_model.limitData[iLog+4].offset , 0);
   }
   lcd_puts_P(FW*6,FH*7,PSTR("-->  Rearrange"));  
 }
@@ -797,7 +797,7 @@ void menuProcExpoOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn,0);//!!!stickMode
+  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn,0);
   //bool withDr=g_model.expoData[FoldedList::s_currIDT].drSw!=0;
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
@@ -823,8 +823,8 @@ void menuProcExpoOne(uint8_t event)
   {
     int16_t yv=expo(xv*(RESX/WCHART),kView);
     if(ed.curve) yv = intpol(yv, ed.curve - 1);
-    yv = (yv * wView)/100;
     yv /= (RESX/WCHART);
+    yv  = (yv * wView)/100;
     if((xv<0 && mode3==1)||(xv>0 && mode3==2)||(mode3>=3)) lcd_plot(X0+xv, Y0-yv);
   }
   lcd_vline(X0,Y0-WCHART,WCHART*2);
@@ -1310,26 +1310,26 @@ void menuProcTrainer(uint8_t event)
     checkIncDecGen2(event, &mstate2.m_posHorz, 0, 3, 0);
   }
   sub-=2;
-  for(uint8_t i=0; i<4; i++){
-    y=(i+2)*FH;
-    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[i];
-    putsChnRaw( 0, y,i,0);
+  for(uint8_t iLog=0; iLog<4; iLog++){
+    y=(iLog+2)*FH;
+    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[iLog];
+    putsChnRaw( 0, y,iLog,0);
     //                sub==i ? (subSub==0 ? BLINK : INVERS) : 0);
-    edit = (sub==i && subSub==1);
+    edit = (sub==iLog && subSub==1);
     lcd_putsmAtt(   4*FW, y, PSTR("off\t +=\t :="),td->mode,
                     edit ? BLINK : 0);
     if(edit) td->mode = checkIncDec_hg( event, td->mode, 0,2); //!! bitfield
 
-    edit = (sub==i && subSub==2);
+    edit = (sub==iLog && subSub==2);
     lcd_outdezAtt( 11*FW, y, td->studWeight*13/4,
                    edit ? BLINK : 0);
     if(edit) td->studWeight = checkIncDec_hg( event, td->studWeight, -31,31); //!! bitfield
 
-    edit = (sub==i && subSub==3);
+    edit = (sub==iLog && subSub==3);
     lcd_putsmAtt(  12*FW, y, PSTR("ch1\tch2\tch3\tch4"),td->srcChn, edit ? BLINK : 0);
     if(edit) td->srcChn = checkIncDec_hg( event, td->srcChn, 0,3); //!! bitfield
 
-    edit = (sub==i && subSub==4);
+    edit = (sub==iLog && subSub==4);
     putsDrSwitches(15*FW, y, td->swtch, edit ? BLINK : 0);
     if(edit) {
       td->swtch = checkIncDec_hg( event, td->swtch,  -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
@@ -1951,8 +1951,8 @@ void perOut(int16_t *chanOut)
     if(v <= -RESX) v = -RESX;
     if(v >=  RESX) v =  RESX;
     uint8_t iLog = convertMode(iHw);
-    anas[iLog] = v; //10+1 Bit  !!!stickMode!!!
-    if(iHw<4)anaCalib[iLog] = v; //for show in expo !!!stickMode!!!
+    anas[iLog] = v; //10+1 Bit  
+    if(iHw<4)anaCalib[iLog] = v; //for show in expo 
   }
   anas[7] = 512; //100% fuer MAX
   anas[8] = 512; //100% fuer MAX
@@ -1961,14 +1961,14 @@ void perOut(int16_t *chanOut)
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
     ExpoData_r171 &ed = g_model.expoTab[i];
     if(ed.mode3==0) break; //end of list
-    if(ed.mode3==4) trimAssym[ed.chn]=true; //!!!stickMode!!!
+    if(ed.mode3==4) trimAssym[ed.chn]=true;
     if(getSwitch(ed.drSw,1)) {
-      int16_t v = anas[ed.chn];//!!!stickMode!!!
+      int16_t v = anas[ed.chn];
       if((v<0 && ed.mode3&1) || (v>0 && ed.mode3&2)){
 	v = expo(v,idx2val15_100(ed.exp5));
 	if(ed.curve) v = intpol(v, ed.curve - 1);
 	v = v * (int32_t)(idx2val30_100(ed.weight6)) / 100;
-	anas[ed.chn] = v; //!!!stickMode!!!
+	anas[ed.chn] = v;
       }
     }
   }
@@ -1979,7 +1979,7 @@ void perOut(int16_t *chanOut)
   for(uint8_t iLog=0;iLog<4;iLog++){        // calc Sticks
     int16_t v = anas[iLog];
 
-    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[iLog];// !!!stickMode
+    TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[iLog];
     if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
@@ -1993,13 +1993,13 @@ void perOut(int16_t *chanOut)
     }
 
     //trace throttle
-    //if(THRCHN == i)  //stickMode=0123 -> thr=2121  !!!stickMode!!!
-    if(iLog == STK_THR)  //stickMode=0123 -> thr=2121  !!!stickMode!!!
+    //if(THRCHN == i)  //stickMode=0123 -> thr=2121
+    if(iLog == STK_THR)  //stickMode=0123 -> thr=2121
       trace((v+512)/32); //trace thr 0..31
 
     //trim
-    if(trimAssym[iLog]){                        // !!!stickMode!!!
-      v += trimVal(iLog)*(int32_t)(512-v)/1024; //260*1024 !!!stickMode!!!
+    if(trimAssym[iLog]){                       
+      v += trimVal(iLog)*(int32_t)(512-v)/1024; //260*1024
     }else{
       v += trimVal(iLog);
     }
