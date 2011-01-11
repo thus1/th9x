@@ -44,7 +44,7 @@ typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   vBatWarn;
   int8_t    vBatCalib;  
   int8_t    lightSw;
-  TrainerData_r0 trainer; //!!!stickMode
+  TrainerData_r0 trainer; //
   uint8_t   view;     //index of subview in main scrren
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
@@ -128,7 +128,7 @@ typedef struct t_ExpoData_r171 {
   uint8_t mode3:3; //0=end 1=pos 2=neg 3=both 4=trimNeg
 
   int8_t  weight6:6;
-  uint8_t chn:2;  //!!!stickMode!!!
+  uint8_t chn:2;  //
 
   int8_t  drSw:5;
   uint8_t curve:3; //
@@ -179,7 +179,7 @@ typedef struct t_LimitData_r167 {
 
 typedef struct t_MixData_r0 {
   uint8_t destCh:4; //        1..NUM_CHNOUT,X1-X4
-  uint8_t srcRaw:4; //0=off   1..8      ,X1-X4  //!!!stickMode!!!
+  uint8_t srcRaw:4; //0=off   1..8      ,X1-X4
   int8_t  weight;
   int8_t  swtch:5;
   uint8_t curve:3; //0=symmetrisch 1=no neg 2=no pos
@@ -284,12 +284,12 @@ typedef struct t_ModelData_r171 {
   uint8_t   protocol;             // 1
   char      res[3];               // 3
   LimitData_r167 limitData[NUM_CHNOUT];// 4*8
-  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15 //!!!stickMode!!!
+  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4 //!!!stickMode!!!
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
 } __attribute__((packed)) ModelData_r171; //251
 
 

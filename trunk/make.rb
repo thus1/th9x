@@ -165,6 +165,17 @@ class Builder
     }
   end
   alias l load
+  def load_eeprom
+    fbin=ARGV[1] or raise "missing eeprom filename"
+    case @pars[:PROG] 
+    when "AVRDUDE"
+      typ = MCU_PAR[@pars[:MCU].to_sym][:id]
+      sys "avrdude rdEeprom",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U eeprom:w:#{fbin}:r"
+    else
+      raise "bad progrmmer"
+    end
+    #backup_gen(MCU_PAR[@pars[:MCU].to_sym][:eepromsize],"rdEeprom","eeprom")
+  end
   def backup_gen(size,uspact,avdact)
     mpars=MCU_PAR[@pars[:MCU].to_sym]
     fn=@dt+avdact
@@ -185,15 +196,12 @@ class Builder
   end
   def backup_eeprom()
     backup_gen(MCU_PAR[@pars[:MCU].to_sym][:eepromsize],"rdEeprom","eeprom")
-    #pars=MCU_PAR[@pars[:MCU].to_sym]
-    #Dir.indir("BACKUP"){
-    #  sys "usbprog rdEeprom",@pars[:USBPROG] +" rdEeprom 0 #{pars[:eepromsize]} #{@dt}eeprom"
-    #}
   end
   def backup()
     backup_flash()
     backup_eeprom()
   end
+  alias le load_eeprom
   alias be backup_eeprom
   alias bf backup_flash
   alias b  backup

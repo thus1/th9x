@@ -105,7 +105,6 @@ bool eeLoadGeneral()
   printf("bad g_eeGeneral\n");
   return false;
 }
-#define CM(x) x //convertMode(x)
 
 
 uint8_t modelMixerDefaults=6;
@@ -132,47 +131,47 @@ void modelMixerDefault(uint8_t typ)
       break;
     case 1:
       // rud ele thr ail
-      for(uint8_t i= 0; i<4; i++){ // !!!stickMode!!!srcRaw
-        md->destCh = i+1;       md->srcRaw = CM(i)+1;        md->weight = 100;
+      for(uint8_t i= 0; i<4; i++){ //
+        md->destCh = i+1;       md->srcRaw = i+1;        md->weight = 100;
         md++;
       }
       break;
     
       //V-Tail
     case 2:
-      md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
-      md->destCh = STK_RUD+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight =-100; md++;
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_RUD)+1;  md->weight = 100; md++;
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
-      md->destCh = STK_THR+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 100;
+      md->destCh = STK_RUD+1; md->srcRaw = STK_RUD+1;  md->weight = 100; md++;
+      md->destCh = STK_RUD+1; md->srcRaw = STK_ELE+1;  md->weight =-100; md++;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_RUD+1;  md->weight = 100; md++;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
+      md->destCh = STK_THR+1; md->srcRaw = STK_THR+1;  md->weight = 100;
       break;
 
       //Elevon\\Delta
     case 3:
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight = 100; md++;
-      md->destCh = STK_THR+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 100; md++;
-      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 100; md++;
-      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight =-100;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_AIL+1;  md->weight = 100; md++;
+      md->destCh = STK_THR+1; md->srcRaw = STK_THR+1;  md->weight = 100; md++;
+      md->destCh = STK_AIL+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
+      md->destCh = STK_AIL+1; md->srcRaw = STK_AIL+1;  md->weight =-100;
       break;
 
       //eCCPM
     case 4:
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 72; md++;
-      md->destCh = STK_ELE+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
-      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_ELE)+1;  md->weight = 36; md++;
-      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_AIL)+1;  md->weight = 62; md++;
-      md->destCh = STK_AIL+1;   md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
-      md->destCh = 6;           md->srcRaw = CM(STK_ELE)+1;  md->weight = 36; md++;
-      md->destCh = 6;           md->srcRaw = CM(STK_AIL)+1;  md->weight = 62; md++;
-      md->destCh = 6;           md->srcRaw = CM(STK_THR)+1;  md->weight = 55; md++;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 72; md++;
+      md->destCh = STK_ELE+1; md->srcRaw = STK_THR+1;  md->weight = 55; md++;
+      md->destCh = STK_AIL+1; md->srcRaw = STK_ELE+1;  md->weight = 36; md++;
+      md->destCh = STK_AIL+1; md->srcRaw = STK_AIL+1;  md->weight = 62; md++;
+      md->destCh = STK_AIL+1; md->srcRaw = STK_THR+1;  md->weight = 55; md++;
+      md->destCh = 6;         md->srcRaw = STK_ELE+1;  md->weight = 36; md++;
+      md->destCh = 6;         md->srcRaw = STK_AIL+1;  md->weight = 62; md++;
+      md->destCh = 6;         md->srcRaw = STK_THR+1;  md->weight = 55; md++;
       // Sim Calib
     case 5:
       for(uint8_t i= 0; i<8; i++){
-        md->destCh = i+1;       md->srcRaw = 8;/*MAX*/       md->weight = 100; 
+        md->destCh = i+1;     md->srcRaw = 8;/*MAX*/       md->weight = 100; 
         md->swtch  = 1+SW_ID0-SW_BASE;
         md++;
-        md->destCh = i+1;       md->srcRaw = 8;/*MAX*/       md->weight =-100; 
+        md->destCh = i+1;     md->srcRaw = 8;/*MAX*/       md->weight =-100; 
         md->swtch  = 1+SW_ID2-SW_BASE;
         md++;
       }
