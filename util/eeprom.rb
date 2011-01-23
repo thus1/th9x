@@ -68,6 +68,25 @@ CStruct.defStruct "EEGeneral_r119",<<-"END_TYP"
   END_TYP
 
 
+CStruct.defStruct "EEGeneral_r150",<<-"END_TYP"
+  uint8_t   myVers;
+  int16_t   calibMid[7];             //ge150 4->7
+  int16_t   calibSpanNeg[7]; //ge119 //ge150 4->7
+  int16_t   calibSpanPos[7]; //ge119 //ge150 4->7
+  //uint16_t  chkSum;
+  uint8_t   inactivityMin;    //ge150
+  uint8_t   resv;             //ge150
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib; 
+  int8_t    lightSw;
+  TrainerData_r0 trainer;
+  uint8_t   view2_2_4;  // was view in earlier versions
+  uint8_t   warn3_2_3; //bitset for several warnings
+  uint8_t   stickMode;   // 1
+END_TYP
+
 
 
 
@@ -88,6 +107,11 @@ CStruct.defStruct "ExpoData_r84",<<-"END_TYP"
   int8_t  expNormWeight;
   int8_t  expSwWeight;
   END_TYP
+CStruct.defStruct "ExpoData_r171",<<-"END_TYP"
+  int8_t  exp5_mode3; //0=end 1=pos 2=neg 3=both 4=trimNeg
+  int8_t  weight6_chn2;  //
+  int8_t  drSw5_curve3; //
+  END_TYP
 CStruct.defStruct "TrimData_r0",<<-"END_TYP"
   int8_t  trim;    //quadratisch
   int16_t trimDef_lt133;
@@ -106,6 +130,11 @@ CStruct.defStruct "LimitData_r84",<<-"END_TYP"
   int8_t  min;
   int8_t  max; 
   int8_t  rev_offset;
+  END_TYP
+CStruct.defStruct "LimitData_r167",<<-"END_TYP"
+  int8_t  min_scale;
+  int8_t  max7; 
+  bool    revert_offset;
   END_TYP
 
 CStruct.defStruct "MixData_r0",<<-"END_TYP"
@@ -179,6 +208,37 @@ CStruct.defStruct "ModelData_r143",<<-"END_TYP"
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
  END_TYP
   
+CStruct.defStruct "ModelData_r167",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[8];// 4*8
+  ExpoData_r84  expoData[4];          // 5*4
+  MixData_r0   mixData[25];  //0 4*25
+  int8_t    curves3[3][3];        // 9  new143
+  int8_t    curves5[2][5];        // 10
+  int8_t    curves9[2][9];        // 18
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+
+ END_TYP
+CStruct.defStruct "ModelData_r171",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[8];// 4*8
+  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
+  MixData_r0   mixData[25];  //0 4*25
+  int8_t    curves3[3][3];        // 9  new143
+  int8_t    curves5[2][5];        // 10
+  int8_t    curves9[2][9];        // 18
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+ END_TYP
   
 
 
@@ -410,6 +470,8 @@ class Reader_V4
     when 1  ;   return "EEGeneral_r0              ",CStruct::EEGeneral_r0
     when 2  ;   return "EEGeneral_r119            ",CStruct::EEGeneral_r119
     when 3  ;   return "EEGeneral_r119_3          ",CStruct::EEGeneral_r119
+    when 4  ;   return "EEGeneral_r150            ",CStruct::EEGeneral_r150
+    when 5  ;   return "EEGeneral_r150_5          ",CStruct::EEGeneral_r150
     else;
       hlp=CStruct::ModelData_helper.new()
       hlp.fromBin(buf)
@@ -418,8 +480,10 @@ class Reader_V4
 	return 			"ModelData_r0  '#{hlp.name}'",CStruct::ModelData_r0
       else
 	case hlp.mdVers
-	when MDVERS84; 	return 	"ModelData_r84 '#{hlp.name}'",CStruct::ModelData_r84
-	when MDVERS143; return 	"ModelData_r143'#{hlp.name}'",CStruct::ModelData_r143
+	when 1;	return 	"ModelData_r84 '#{hlp.name}'",CStruct::ModelData_r84
+	when 2; return 	"ModelData_r143'#{hlp.name}'",CStruct::ModelData_r143
+	when 3; return 	"ModelData_r167'#{hlp.name}'",CStruct::ModelData_r167
+	when 4; return 	"ModelData_r171'#{hlp.name}'",CStruct::ModelData_r171
 	else;     	return 	"ModelData??   '#{hlp.name}'",nil
 	end
       end

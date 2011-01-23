@@ -500,7 +500,7 @@ extern const char stamp4[];
 
 inline void _beep(uint8_t b) {
   g_nextBeep=b;
-  //printf("beep %d\n",b);
+  printf("beep %d\n",b);
 }
 
 /// Erzeugt einen kurzen beep
