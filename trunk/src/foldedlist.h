@@ -32,6 +32,7 @@
 class FoldedList
 {
 public:
+  static FoldedList inst;
   struct Line{
     bool   showCh:1;// show the dest chn
     bool   showDat:1;// show the data info
@@ -40,28 +41,45 @@ public:
     int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t idt;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
   };
-  static Line s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
-  static uint8_t s_prepCurrCh; //for construction of s_lines
-  static uint8_t s_prepCurrIFL;
-  static uint8_t s_prepCurrISL;
-  static uint8_t s_prepCurrIDT;  // *
+ private:
+#define flstatic
+  flstatic Line    s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
+  flstatic uint8_t s_prepCurrCh; //for construction of s_lines
+//indize:
+//
+// IDT  data tab
+// ISL  select sequence
+// IFL  foldedlist
+// IFLr rel. foldedlist
+  flstatic uint8_t s_prepCurrIFL;
+  flstatic uint8_t s_prepCurrISL;
+  flstatic uint8_t s_prepCurrIDT;  // *
 
-  static uint8_t s_iterOfsIFL;
-  static uint8_t s_iterPosIFL;
-  static uint8_t s_iterHitIFL;
-  static uint8_t s_subISL;
-  static uint8_t s_iterMinISL;
-  static bool    s_isSelectedCh; // *
-  static bool    s_isSelectedDat;// *
-  static bool    s_editMode;     // *
-  static uint8_t s_currIDTOld;   // *
+  flstatic uint8_t s_iterOfsIFL;
+  flstatic uint8_t s_iterPosIFL;
+  flstatic uint8_t s_iterHitIFL;
+  flstatic uint8_t s_subISL;
+  flstatic uint8_t s_iterMinISL;
+  flstatic bool    s_isSelectedCh; // *
+  flstatic bool    s_isSelectedDat;// *
+  flstatic bool    s_editMode;     // *
+  flstatic uint8_t s_currIDTOld;   // *
 
-  static uint8_t s_currIDT;
-  static uint8_t s_currDestCh;   // *
-  static bool    s_currInsMode;  // *
+  flstatic uint8_t s_currIDT;
+  flstatic uint8_t s_currDestCh;   // *
+  flstatic bool    s_currInsMode;  // *
 
 
-  
+ public:  
+  static uint8_t fillLevel()    {return inst.s_prepCurrIDT+1;}
+  static uint8_t currIDT()      {return inst.s_currIDT;}
+  static uint8_t currIDTOld()   {return inst.s_currIDTOld;}
+  static uint8_t currDestCh()   {return inst.s_currDestCh;}
+  static bool    currInsMode()  {return inst.s_currInsMode;}
+  static bool    isSelectedCh() {return inst.s_isSelectedCh;}
+  static bool    isSelectedDat(){return inst.s_isSelectedDat;}
+  static bool    editMode()     {return inst.s_editMode;}
+  static void    editModeOff()  { inst.s_editMode=false;}
   /// iterate one time to fill the list (init loop)
   /// init(); addDat addDat addDat ..
   static void init();
@@ -74,7 +92,7 @@ public:
   static Line* firstLine(int8_t sub);
   static Line* nextLine(uint8_t lines);
 
-  static int8_t numSeqs(){return s_prepCurrISL;};
+  static int8_t numSeqs(){return inst.s_prepCurrISL;};
 #define FoldedListDup      1
 #define FoldedListEdit     2
 #define FoldedListNew      3
@@ -84,6 +102,8 @@ public:
   static uint8_t doEvent(uint8_t event, bool subChanged, void*array,uint8_t dimArr, uint8_t szeElt);
 
 };
+
+#define FL_INST FoldedList::inst
 
 #endif
 

@@ -30,14 +30,14 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-+ expo menu multiline
-- issue 57 chan recursion
+- mixers edit
+- trainer additional inputs (mit foldedlist?)
+- show foldedlist lines nuumber
 - issue 59 more output chans, soft switches
-+ limit scaling/cutoff issue 55
 - subtrim before limits? issue 61
+- issue 57 chan recursion
 - dual rate interface issue62
 - instant trim issue63
-+ timer beep mit vorwarnung issue 65
 - outputs as inputs? calc sequence
 - show curves ref count, curve type
 - serial communication
@@ -47,16 +47,7 @@ todo
 - mixline mode + - * =
 - potis FUL/HALF
 - neg curves, more curves with parameters?
-+ thr curve statt expo
-+ thr trim nur am neg ende
 - prc-werte dynamisch 64 werte 1-150
-ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
-ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
-ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
->>ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
-ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
-ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
-ruby  -e 'x=0; [10,5,5].each{|d| 5.times{ print(" #{x}");x+=d} }'
 - curr event global var saves 340Bytes
 - format eeprom
 - pcm 
@@ -68,6 +59,13 @@ doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ beep on list overflow
++ expo menu multiline
++ limit scaling/cutoff issue 55
++ timer beep mit vorwarnung issue 65
++ thr curve statt expo
++ thr trim nur am neg ende
+
 + vbat blinks issue 60
 + move,dup mixerlines/mixergroups
 + THR alarm off with throttle
@@ -929,6 +927,15 @@ int8_t val2idx30_100(int8_t val)
   else             i = uval;
   return val < 0 ? -i : i;
 }
+/*
+ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
+ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
+ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
+ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
+ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
+ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'     155 50 100
+ruby  -e 'x=0; [10,5,5].each{|d| 5.times{ print(" #{x}");x+=d} }'
+*/
 int16_t idx2val12255(int8_t idx)
 {
   // ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'

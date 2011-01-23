@@ -426,81 +426,83 @@ void menuProcLimits(uint8_t event)
   }
 }
 
-
-
-void menuProcMixOne(uint8_t event)
+void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
 {
-  static MState2 mstate2;
-  uint8_t x=TITLEP(FoldedList::s_currInsMode ? PSTR("INSERT MIX ") : PSTR("EDIT MIX "));  
-  MixData_r0 &md2 = g_model.mixData[FoldedList::s_currIDT];
-  putsChn(x,0,md2.destCh,0);
-  MSTATE_CHECK0_V(7);
-  int8_t  sub    = mstate2.m_posVert;
-
-
+  uint8_t  attr = edit ? BLINK : 0;
+  MixData_r0 &md2 = g_model.mixData[idt];
 #define CURV_STR "   \t""cv1\t""cv2\t""cv3\t""cv4\t""cv5\t""cv6\t""cv7"
-  for(uint8_t i=0; i<=6; i++)
+
+  switch(which)
   {
-    uint8_t y=i*FH+FH;
-    uint8_t attr = sub==i ? BLINK : 0; 
-    lcd_putsm_P( FW*8, y,PSTR("SRC\tPRC\tCURVE\tSWTCH\tSLOPE\t\tRM"),i);
-    switch(i){
-    case 0:   putsChnRaw(   FW*4,y,md2.srcRaw-1,attr);
-      //if(attr) md2.srcRaw = checkIncDec_hm( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
-      if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
+    case 0:   putsChnRaw( x-FW*4,y,md2.srcRaw-1,attr);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
       break;
-    case 1:   lcd_outdezAtt(FW*7,y,md2.weight,attr);
-      if(attr) CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
+    case 1:   lcd_outdezAtt(x-FW*1,y,md2.weight,attr);
+      if(edit) CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
       break;
-    case 2:   lcd_putsmAtt( FW*4,y,PSTR(CURV_STR),md2.curve,attr);
-      if(attr) CHECK_INCDEC_H_MODELVAR_BF( event, md2.curve, 0,7); //!! bitfield
-      if(attr && md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
+    case 2:   lcd_putsmAtt(x-FW*4,y,PSTR(CURV_STR),md2.curve,attr);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.curve, 0,7); //!! bitfield
+      if(edit && md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
 	s_curveChan = md2.curve-1;
 	pushMenu(menuProcCurveOne);
       }
       break;
-    case 3:   putsDrSwitches(3*FW,  y,md2.swtch,attr);
-      if(attr) {
+    case 3:   putsDrSwitches(x-FW*5,  y,md2.swtch,attr);
+      if(edit) {
 	CHECK_INCDEC_H_MODELVAR_BF( event, md2.swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
 	CHECK_LAST_SWITCH(md2.swtch,EE_MODEL|_FL_POSNEG);
       }
       break;
     case 4:   
       {
-	lcd_puts_P(3*FW, y, PSTR("<  s"));
+	lcd_puts_P(x-FW*5, y, PSTR("<  s"));
 	uint16_t slope = slopeFull100ms(md2.speedDown);
-	if(slope<100)  lcd_outdezAtt(FW*6,y,slope,   attr|PREC1);
-	else           lcd_outdezAtt(FW*6,y,slope/10,attr);
-	//lcd_outdezAtt(FW*3,y,md2.speedDown,attr);
-	if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedDown, 0,15); //!! bitfield
+	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   attr|PREC1);
+	else           lcd_outdezAtt(x-FW*2,y,slope/10,attr);
+	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedDown, 0,15); //!! bitfield
 	break;
       }
     case 5:
       {
-	lcd_puts_P(14*FW, y-FH, PSTR(">  s"));
-	//lcd_putcAtt(4*FW+1, y-FH, '>',0);
+	lcd_puts_P(x+FW*6, y-FH, PSTR(">  s"));
 	uint16_t slope = slopeFull100ms(md2.speedUp);
-	if(slope<100)  lcd_outdezAtt(FW*17,y-FH,slope,   attr|PREC1);
-	else           lcd_outdezAtt(FW*17,y-FH,slope/10,attr);
-	//lcd_outdezAtt(FW*7,y-FH,md2.speedUp,attr);
-	if(attr)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedUp, 0,15); //!! bitfield
+	if(slope<100)  lcd_outdezAtt(x+FW*9,y-FH,slope,   attr|PREC1);
+	else           lcd_outdezAtt(x+FW*9,y-FH,slope/10,attr);
+	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedUp, 0,15); //!! bitfield
 	break;
       }
     case 6:   lcd_putsAtt(  FW*1,y,PSTR("[MENU]"),attr);
-      //lcd_puts_P(  FW*6,y,PSTR("remove [Menu]"));
-      if(attr && event==EVT_KEY_FIRST(KEY_MENU)){
+      if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
 	memmove(
-		&g_model.mixData[FoldedList::s_currIDT],
-		&g_model.mixData[FoldedList::s_currIDT+1],
-		(DIM(g_model.mixData)-(FoldedList::s_currIDT+1))*sizeof(g_model.mixData[0]));
+		&g_model.mixData[FL_INST.currIDT()],
+		&g_model.mixData[FL_INST.currIDT()+1],
+		(DIM(g_model.mixData)-(FL_INST.currIDT()+1))*sizeof(g_model.mixData[0]));
 	memset(&g_model.mixData[DIM(g_model.mixData)-1],0,sizeof(g_model.mixData[0]));
 	STORE_MODELVARS;
 	killEvents(event);
 	popMenu();  
       }
       break;
-    }
   }
+}
+
+void menuProcMixOne(uint8_t event)
+{
+  static MState2 mstate2;
+  uint8_t x=TITLEP(FL_INST.currInsMode() ? PSTR("INSERT MIX ") : PSTR("EDIT MIX "));  
+  MixData_r0 &md2 = g_model.mixData[FL_INST.currIDT()];
+  putsChn(x,0,md2.destCh,0);
+  MSTATE_CHECK0_V(7);
+  int8_t  sub    = mstate2.m_posVert;
+
+
+  uint8_t  y = FH*1;
+  for(uint8_t i=0;i<=6;i++){
+    lcd_putsm_P( FW*8, y,PSTR("SRC\tPRC\tCURVE\tSWTCH\tSLOPE\t\tRM"),i);
+    editMixVals(event,i,sub==i,8*FW, y,FL_INST.currIDT());
+    y+=FH;
+  }
+
 }
 
 
@@ -512,66 +514,61 @@ void menuProcMix(uint8_t event)
   static MState2 mstate2;
   TITLE("MIXER");  
   int8_t subOld  = mstate2.m_posVert;
-  MSTATE_CHECK_V(4,menuTabModel,FoldedList::numSeqs());
+  MSTATE_TAB = {4}; //4 columns
+  MSTATE_CHECK_VxH(4,menuTabModel,FL_INST.numSeqs());
   int8_t  sub    = mstate2.m_posVert;
+  int8_t  subHor = mstate2.m_posHorz;
 
-  FoldedList::init();
+  FL_INST.init();
   MixData_r0  *md= g_model.mixData;
   for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
   {
-    FoldedList::addDat(md[i].destCh,i);
+    FL_INST.addDat(md[i].destCh,i);
   }
-  FoldedList::fill(NUM_XCHNOUT+1);
+  FL_INST.fill(NUM_XCHNOUT+1);
 
-
+  lcd_outdez(  18*FW, 0, FL_INST.fillLevel()); //fill level
 
   uint8_t y = FH;
-  for(FoldedList::Line* line=FoldedList::firstLine(sub);
+  for(FoldedList::Line* line=FL_INST.firstLine(sub);
       line;
-      line=FoldedList::nextLine(7), y+=FH
+      line=FL_INST.nextLine(7), y+=FH
       )
   {
     if(line->showCh){  
       putsChn(0,y,line->chId,0); // show CHx
     }
-    if(FoldedList::s_isSelectedCh) {
+    if(FL_INST.isSelectedCh()) {
       if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
     }
     if(line->showDat){ //show data 
       MixData_r0 &md2=md[line->idt];
-      uint8_t attr = FoldedList::s_isSelectedDat ? BLINK : 0; 
+      uint8_t attr = FL_INST.isSelectedDat() ? BLINK : 0; 
       uint8_t att2 = 0;
+      bool sel = FL_INST.isSelectedDat(); 
 
-      if(FoldedList::s_isSelectedDat) {
+      if(sel) { //show diag values
         currMixerLine = line->idt;
         lcd_outdez(   9*FW, 0, currMixerVal>>9);
         lcd_putc  (   9*FW, 0, '/');
-       
         lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
-        if(FoldedList::s_editMode) {attr=0; att2=BLINK;}
+        if(FL_INST.editMode()) {attr=0; att2=BLINK;}
       }
-
-      lcd_outdezAtt(  7*FW, y, md2.weight,attr);
-      lcd_putcAtt(    7*FW+1, y, '%',0);
-      putsChnRaw(     9*FW-2, y, md2.srcRaw-1,0);
-      if(md2.swtch)putsDrSwitches( 13*FW-4, y, md2.swtch,0);
-      if(md2.curve)lcd_putsmAtt(   17*FW+2, y, PSTR(CURV_STR),md2.curve,0);
-      if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, 's',0);
-
+      editMixVals(event,0,sel && subHor==3,  8*FW,   y,line->idt); //3src
+      editMixVals(event,1,sel && subHor==0, 12*FW-3, y,line->idt); //4prc
+      editMixVals(event,2,sel && subHor==1, 15*FW,   y,line->idt); //3crv
+      editMixVals(event,3,sel && subHor==2, 19*FW,   y,line->idt); //4sw
+      if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '+',0);
       if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
-
-      if(FoldedList::s_isSelectedDat) { //handle dat is selected
-        CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
-      }
     }
   } //for 7
-  switch(FoldedList::doEvent(event,subOld != sub,g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0])))
+  switch(FL_INST.doEvent(event,subOld != sub,g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0])))
   {
     case FoldedListNew:
       {
-        MixData_r0  *md = &g_model.mixData[FoldedList::s_currIDT];
-        md->destCh      = FoldedList::s_currDestCh; //-s_mixTab[sub];
-        md->srcRaw      = FoldedList::s_currDestCh; //1;   //
+        MixData_r0  *md = &g_model.mixData[FL_INST.currIDT()];
+        md->destCh      = FL_INST.currDestCh(); //-s_mixTab[sub];
+        md->srcRaw      = FL_INST.currDestCh(); //1;   //
         md->weight      = 100;
         md->swtch       = 0; //no switch
         md->curve       = 0; //linear
@@ -584,16 +581,16 @@ void menuProcMix(uint8_t event)
       break;
     case   FoldedListCntUp:
       {
-        MixData_r0  *md = &g_model.mixData[FoldedList::s_currIDTOld];
+        MixData_r0  *md = &g_model.mixData[FL_INST.currIDTOld()];
         if(md->destCh < NUM_XCHNOUT) md->destCh++; 
-        else FoldedList::s_editMode=false;
+        else FL_INST.editModeOff();
       }
       break;
     case   FoldedListCntDown:   
       {
-        MixData_r0  *md = &g_model.mixData[FoldedList::s_currIDTOld];
+        MixData_r0  *md = &g_model.mixData[FL_INST.currIDTOld()];
         if(md->destCh > 1) md->destCh--; 
-        else FoldedList::s_editMode=false;
+        else FL_INST.editModeOff();
       }
       break;
     case FoldedListDup:
@@ -698,42 +695,6 @@ int16_t expo(int16_t x, int16_t k)
 }
 
 
-#ifdef EXTENDED_EXPO
-/// expo with y-offset
-class Expo
-{
-  uint16_t   c;
-  int16_t    d,drx;
-public:
-  void     init(uint8_t k, int8_t yo);
-  static int16_t  expou(uint16_t x,uint16_t c, int16_t d);
-  int16_t  expo(int16_t x);
-};
-void    Expo::init(uint8_t k, int8_t yo)
-{
-  c = (uint16_t) k  * 256 / 100;
-  d = (int16_t)  yo * 256 / 100;
-  drx = d * ((uint16_t)RESXu/256);
-}
-int16_t Expo::expou(uint16_t x,uint16_t c, int16_t d)
-{
-  uint16_t a = 256 - c - d;
-  if( (int16_t)a < 0 ) a = 0;
-  // a x^3 + c x + d
-  //                         9  18  27        11  20   18
-  uint32_t res =  ((uint32_t)x * x * x / 0x10000 * a / (RESXul*RESXul/0x10000) +
-                   (uint32_t)x                   * c
-  ) / 256;
-  return (int16_t)res;
-}
-int16_t  Expo::expo(int16_t x)
-{
-  if(c==256 && d==0) return x;
-  if(x>=0) return expou(x,c,d) + drx;
-  return -expou(-x,c,-d) + drx;
-}
-#endif
-
 
 
 void editExpoVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
@@ -780,9 +741,9 @@ void editExpoVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, ui
       lcd_putsAtt( x, y,PSTR("[MENU]"),invBlk);
       if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
 	memmove(
-		&g_model.expoTab[FoldedList::s_currIDT],
-		&g_model.expoTab[FoldedList::s_currIDT+1],
-		(DIM(g_model.expoTab)-(FoldedList::s_currIDT+1))*sizeof(g_model.expoTab[0]));
+		&g_model.expoTab[FL_INST.currIDT()],
+		&g_model.expoTab[FL_INST.currIDT()+1],
+		(DIM(g_model.expoTab)-(FL_INST.currIDT()+1))*sizeof(g_model.expoTab[0]));
 	memset(&g_model.expoTab[DIM(g_model.expoTab)-1],0,sizeof(g_model.expoTab[0]));
 	STORE_MODELVARS;
 	killEvents(event);
@@ -797,21 +758,19 @@ void menuProcExpoOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  putsChnRaw(x,0,g_model.expoTab[FoldedList::s_currIDT].chn,0);
-  //bool withDr=g_model.expoData[FoldedList::s_currIDT].drSw!=0;
+  putsChnRaw(x,0,g_model.expoTab[FL_INST.currIDT()].chn,0);
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
 
-  //uint8_t  invBlk = 0;
   uint8_t  y = FH*2;
 
   for(uint8_t i=0;i<6;i++){
     lcd_putsm_P(0,y,PSTR("Expo\t""Crv\t""Weight\t""DrSw\t""Mode\t""RM"),i);
-    editExpoVals(event,i,sub==i,5*FW, y,FoldedList::s_currIDT);
+    editExpoVals(event,i,sub==i,5*FW, y,FL_INST.currIDT());
     y+=FH;
   }
 
-  ExpoData_r171 &ed = g_model.expoTab[FoldedList::s_currIDT];
+  ExpoData_r171 &ed = g_model.expoTab[FL_INST.currIDT()];
   int8_t   kView = idx2val15_100(ed.exp5);
   int8_t   wView = idx2val30_100(ed.weight6);
   uint8_t  mode3  = ed.mode3;
@@ -830,7 +789,7 @@ void menuProcExpoOne(uint8_t event)
   lcd_vline(X0,Y0-WCHART,WCHART*2);
   lcd_hline(X0-WCHART,Y0,WCHART*2);
 
-  int16_t x512  = anaCalib[FoldedList::s_currIDT];
+  int16_t x512  = anaCalib[FL_INST.currIDT()];
   int16_t y512  = expo(x512,kView);
   y512 = y512 * (wView / 4)/(100 / 4);
 
@@ -851,17 +810,17 @@ void menuProcExpoAll(uint8_t event)
   TITLE("EXPO/DR");  
   int8_t subOld  = mstate2.m_posVert;
   MSTATE_TAB = {5,5};
-  MSTATE_CHECK_VxH(3,menuTabModel,2+FoldedList::numSeqs()-1);
+  MSTATE_CHECK_VxH(3,menuTabModel,2+FL_INST.numSeqs()-1);
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
 
-  FoldedList::init();
+  FL_INST.init();
   ExpoData_r171 *ed = g_model.expoTab;
-  for(uint8_t i=0; i<DIM(g_model.mixData) && ed[i].mode3; i++)
-  {
-    FoldedList::addDat(ed[i].chn+1,i);
-  }
-  FoldedList::fill(4+1);
+  for(uint8_t i=0; i<DIM(g_model.mixData)&&ed[i].mode3;i++)
+    FL_INST.addDat(ed[i].chn+1,i);
+  FL_INST.fill(4+1);
+
+  lcd_outdez(  18*FW-1, 0, FL_INST.fillLevel()); //fill level
 
 
   for(uint8_t i=0; i<5; i++)
@@ -873,25 +832,22 @@ void menuProcExpoAll(uint8_t event)
   }
 
   uint8_t y = 2*FH;
-  for(FoldedList::Line* line=FoldedList::firstLine(sub>=2?sub-1:0);
+  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
       line;
-      line=FoldedList::nextLine(6), y+=FH
+      line=FL_INST.nextLine(6), y+=FH
       )
   {
-
     if(line->showCh){  
-      //putsChn(0,y,line->chId,0); // show CHx
       putsChnRaw( 0, y,line->chId-1,0);
     }
-    if(FoldedList::s_isSelectedCh) {
+    if(FL_INST.isSelectedCh()) {
       if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
     }
     if(line->showDat){ //show data 
-      bool sel = FoldedList::s_isSelectedDat; 
+      bool sel = FL_INST.isSelectedDat(); 
       bool selEdit = 0;
-      if(sel && FoldedList::s_editMode) {sel=0; selEdit=true;}
+      if(sel && FL_INST.editMode()) {sel=0; selEdit=true;}
 
-      //    bool    sel=(sub==i+2);
       editExpoVals(event,0,sel && subHor==0, 2*FW,   y,line->idt);
       editExpoVals(event,1,sel && subHor==1, 6*FW-3, y,line->idt);
       editExpoVals(event,2,sel && subHor==2, 9*FW-3, y,line->idt);
@@ -900,12 +856,12 @@ void menuProcExpoAll(uint8_t event)
       if(selEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
     }
   }
-  switch(FoldedList::doEvent(event,subOld != sub,g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0])))
+  switch(FL_INST.doEvent(event,subOld != sub,g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0])))
   {
     case FoldedListNew:
       {
-        ExpoData_r171  *ed = &g_model.expoTab[FoldedList::s_currIDT];
-        ed->chn         = FoldedList::s_currDestCh-1; //-s_mixTab[sub];
+        ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDT()];
+        ed->chn         = FL_INST.currDestCh()-1; //-s_mixTab[sub];
         ed->mode3       = 3; //both neg+pos
         ed->exp5        = 0;
         ed->weight6     = 30;
@@ -918,16 +874,16 @@ void menuProcExpoAll(uint8_t event)
       break;
     case   FoldedListCntUp:
       {
-        ExpoData_r171  *ed = &g_model.expoTab[FoldedList::s_currIDTOld];
+        ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDTOld()];
         if(ed->chn < 3) ed->chn++; 
-        else FoldedList::s_editMode=false;
+        else FL_INST.editModeOff();
       }
       break;
     case   FoldedListCntDown:   
       {
-        ExpoData_r171  *ed = &g_model.expoTab[FoldedList::s_currIDTOld];
+        ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDTOld()];
         if(ed->chn > 0) ed->chn--; 
-        else FoldedList::s_editMode=false;
+        else FL_INST.editModeOff();
       }
       break;
     case FoldedListDup:
