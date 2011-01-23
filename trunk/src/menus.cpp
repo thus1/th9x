@@ -22,7 +22,7 @@ int8_t add7Bit(int8_t a,int8_t b){
   return a;
 }
 int16_t lim2val(int8_t limidx,int8_t dlt){ 
-  return idx2val12255(add7Bit(limidx,dlt));
+  return idx2val50_150(add7Bit(limidx,dlt));
 }
 
 
@@ -385,7 +385,7 @@ void menuProcLimits(uint8_t event)
           //lcd_outdezAtt(  12*FW, y, (int8_t)(ld->min-100),   attr);
           //ld->min -=  40;
           v = add7Bit(ld->min,-40);
-          lcd_outdezAtt(  12*FW, y, idx2val12255(v),   attr);
+          lcd_outdezAtt(  12*FW, y, idx2val50_150(v),   attr);
           if(attr) {
             //ld->min -=  100;
             //if(CHECK_INCDEC_H_MODELVAR( event, ld->min, -125,125))  LIMITS_DIRTY; 
@@ -405,7 +405,7 @@ void menuProcLimits(uint8_t event)
           //lcd_outdezAtt( 16*FW, y, (int8_t)(ld->max+100),    attr);
           v = add7Bit(ld->max,+40);
           //ld->max +=  40;
-          lcd_outdezAtt( 18*FW, y, idx2val12255(v),    attr);
+          lcd_outdezAtt( 18*FW, y, idx2val50_150(v),    attr);
           if(attr) {
             // ld->max +=  100;
             // if(CHECK_INCDEC_H_MODELVAR( event, ld->max, -125,125))  LIMITS_DIRTY; 
@@ -1807,11 +1807,9 @@ void calcLimitCache()
   printf("calc limit cache\n");
   s_limitCacheOk = true;
   for(uint8_t i=0; i<NUM_CHNOUT; i++){
-    //int16_t v = idx2val12255(g_model.limitData[i].min-40);
     int16_t v;
     v = lim2val(g_model.limitData[i].min,-40);
     s_cacheLimitsMin[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
-    //v = idx2val12255(g_model.limitData[i].max+40);
     v = lim2val(g_model.limitData[i].max,+40);
     s_cacheLimitsMax[i] = 5*v + v/8 ; // *512/100 ~  *(5 1/8)
   }

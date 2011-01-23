@@ -104,16 +104,13 @@ typedef struct t_EEGeneral_r150 {
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
 } __attribute__((packed)) EEGeneral_r150;
+#define EEGeneral_TOP EEGeneral_r150
 
 
-
+/////////////////////////////////////////////////////////////////////////////
 //eeprom modelspec
+/////////////////////////////////////////////////////////////////////////////
 
-// typedef struct t_ExpoData_r0 { //<r84
-//   int8_t  expNorm;
-//   int8_t  expDr;
-//   int8_t  drSw;
-// } __attribute__((packed)) ExpoData_r0;//<r84;
 
 typedef struct t_ExpoData_r84 {
   int8_t  expNorm;
@@ -121,7 +118,7 @@ typedef struct t_ExpoData_r84 {
   int8_t  drSw;
   int8_t  expNormWeight;
   int8_t  expSwWeight;
-} __attribute__((packed)) ExpoData_r84;
+} __attribute__((packed)) ExpoData_r84; //5*4=20
 
 typedef struct t_ExpoData_r171 {
   int8_t  exp5:5;
@@ -132,20 +129,8 @@ typedef struct t_ExpoData_r171 {
 
   int8_t  drSw:5;
   uint8_t curve:3; //
-} __attribute__((packed)) ExpoData_r171;
+} __attribute__((packed)) ExpoData_r171; //3*15=45
 
-/*
-  5*4=20
-  2: chan
-  2: 0=always, 1=pos, 2=neg
-  1: reverse
-  1: trimassym
-  5: when sw
-  3: curve
-  int8_t  exp;
-  int8_t  weight;
-
-*/
 
 typedef struct t_TrimData_r0 {
   int8_t  trim;    //quadratisch
@@ -156,11 +141,6 @@ typedef struct t_TrimData_r143 {
   int8_t  trim;    //quadratisch
 } __attribute__((packed)) TrimData_r143;
 
-// typedef struct t_LimitData_r0 { //<r84
-//   int8_t  min;
-//   int8_t  max;
-//   bool    revert;
-// } __attribute__((packed)) LimitData_r0;//84;
 
 typedef struct t_LimitData_r84 {
   int8_t  min;
@@ -187,43 +167,29 @@ typedef struct t_MixData_r0 {
   uint8_t speedDown:4;      // 0 nichts
 } __attribute__((packed)) MixData_r0;
 //more data:
-// destCh 12->16                                +1?
-// srcRaw 13->S1-4,P1-3,ful,s1-4,p1-3,max,ch1-16 32  +1
-// ful/half
-// curve  8->16 ,neg                            +2
-// sw-mode -100,0,disable                       +2
-// mix-mode + 1 * =                             +2
+// destCh 12 -> 16                                     4+1?
+// srcRaw 13 -> S1-4,P1-3,ful,s1-4,p1-3,max,ch1-16 32  4+1
+//              ful           half
+// curve  8->16 ,neg                                   3+2(1)
+// sw-mode -100,0,disable                              0+2
+// mix-mode + 1 * =                                    0+2
 //
 //  uint8_t destCh:4;
 //  uint8_t curve:4; 
 
 //  uint8_t srcRaw:5;
 //  uint8_t mixmode:2; 
+//  uint8_t curveNeg:1; 
 
 //  int8_t  swtch:5;
 //  int8_t  swtchmode:2;
-//  uint8_t curveNeg:1; 
 
 //  int8_t  weight;
+
 //  uint8_t speedUp:4;
 //  uint8_t speedDown:4;
 //
 
-
-// typedef struct t_ModelData_r0 { //<r84
-//   char      name[10];    // 10 must be first for eeLoadModelName
-//   uint8_t   stickModex;   // 1
-//   uint8_t   tmrMode;     // 1
-//   uint16_t  tmrVal;      // 2
-//   uint8_t   protocol;    // 1
-//   char      res[3];      // 3
-//   LimitData_r0 limitData[NUM_CHNOUT];// 3*8 //<r84
-//   ExpoData_r0  expoData[4]; // 3*4 //<r84
-//   MixData_r0   mixData[20]; //4*20
-//   int8_t    curves5[2][5];   // 10
-//   int8_t    curves9[2][9];   // 18
-//   TrimData_r0  trimData[4]; // 3*4
-// } __attribute__((packed)) ModelData_r0;//84; //174
 
 #define MDVERS84 1
 typedef struct t_ModelData_r84 {
@@ -292,9 +258,12 @@ typedef struct t_ModelData_r171 {
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
 } __attribute__((packed)) ModelData_r171; //251
 
+#define MDVERS_TOP MDVERS171
+#define ModelData_TOP ModelData_r171
 
-extern EEGeneral_r150 g_eeGeneral;
-extern ModelData_r171 g_model;
+
+extern EEGeneral_TOP g_eeGeneral;
+extern ModelData_TOP g_model;
 
 
 
