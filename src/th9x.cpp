@@ -185,8 +185,8 @@ mode4 ail thr ele rud
 
 
 
-EEGeneral_r150 g_eeGeneral;
-ModelData_r171 g_model;
+EEGeneral_TOP g_eeGeneral;
+ModelData_TOP g_model;
 uint16_t       s_trainerLast10ms;
 uint8_t        g_trainerSlaveActive;
 uint16_t  g_badAdc,g_allAdc;
@@ -204,11 +204,6 @@ const prog_char APM modn12x3[]=
   "\x3" "\x1" "\x2" "\x0"
   "\x3" "\x2" "\x1" "\x0";
 
-// const prog_char APM modi12x3[]=
-//   "RUD""ELE""THR""AIL"
-//   "RUD""THR""ELE""AIL"
-//   "AIL""ELE""THR""RUD"
-//   "AIL""THR""ELE""RUD";
 
 uint8_t convertMode(uint8_t srcChn)
 {
@@ -237,16 +232,10 @@ void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
-//   if((idx1>=1) && (idx1 <=4)) 
-//   {
-    //lcd_putsnAtt(x,y,modi12x3+g_eeGeneral.stickMode*12+3*(idx1-1),3,att); // !!!stickMode
   if((idx1 < NUM_XCHNRAW)) 
     lcd_putsmAtt(x,y,PSTR("RUD\t""ELE\t""THR\t""AIL\t"
                           " P1\t"" P2\t"" P3\t""MAX\t""FUL\t"
                           " X1\t"" X2\t"" X3\t"" X4"),idx1,att);
-//   }else{
-//     lcd_putsnAtt(x,y,PSTR(" P1"" P2"" P3""MAX""FUL"" X1"" X2"" X3"" X4")+3*(idx1-5),3,att);
-//   }
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
@@ -936,7 +925,7 @@ ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50
 ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'     155 50 100
 ruby  -e 'x=0; [10,5,5].each{|d| 5.times{ print(" #{x}");x+=d} }'
 */
-int16_t idx2val12255(int8_t idx)
+int16_t idx2val50_150(int8_t idx)
 {
   // ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'
   // idx  0  10  30   50
@@ -949,7 +938,7 @@ int16_t idx2val12255(int8_t idx)
   }
   return (idx < 0) ? -uval : uval;
 }
-int8_t val2idx12255(int16_t val)
+int8_t val2idx50_150(int16_t val)
 {
   uint8_t uval = val < 0 ? (uint8_t)-val : val;
   int8_t  i;
@@ -960,16 +949,8 @@ int8_t val2idx12255(int16_t val)
 }
 
 
-//uint8_t g_dynvals12255[64];
-
 void init() //common init for simu and target
 {
-  //  uint8_t i=0;
-  //uint8_t s=0;
-  //for(;i<10;i++){ g_dynvals12255[i] = s; s+=1;  }; // 0:0 30:50 40:100 50:150
-  //for(;i<30;i++){ g_dynvals12255[i] = s; s+=2;  };
-  //for(;i<=50;i++){ g_dynvals12255[i] = s; s+=5;  };
-
   g_menuStack[0] =  menuProc0;
 
   eeReadAll(); //load general setup and selected model

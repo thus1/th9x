@@ -157,8 +157,8 @@ int8_t  idx2val15_100(int8_t idx);
 int8_t  val2idx15_100(int8_t val);
 int8_t  idx2val30_100(int8_t idx);
 int8_t  val2idx30_100(int8_t val);
-int16_t idx2val12255(int8_t idx);
-int8_t  val2idx12255(int16_t val);
+int16_t idx2val50_150(int8_t idx);
+int8_t  val2idx50_150(int16_t val);
 
 
 
@@ -178,8 +178,6 @@ enum EnumKeys {
   TRM_RV_UP   ,
   TRM_RH_DWN  ,
   TRM_RH_UP   ,
-  //SW_NC     ,
-  //SW_ON     ,
   SW_ThrCt  ,
   SW_RuddDR ,
   SW_ElevDR ,
@@ -190,20 +188,16 @@ enum EnumKeys {
   SW_Gear   ,
   SW_Trainer 
 };
-//#define SW_BASE      SW_NC
 #define SW_BASE      SW_ThrCt
 #define SW_BASE_DIAG SW_ThrCt
-//#define SWITCHES_STR "  NC  ON THR RUD ELE ID0 ID1 ID2 AILGEARTRNR"
+//see SWITCHES_STR
 #define MAX_DRSWITCH (1+SW_Trainer-SW_ThrCt+1)
 
 #define NUM_KEYS TRM_RH_UP+1
 #define TRM_BASE TRM_LH_DWN
 
-//#define _MSK_KEY_FIRST (_MSK_KEY_REPT|0x20)
-//#define EVT_KEY_GEN_BREAK(key) ((key)|0x20)
 #define _MSK_KEY_REPT    0x40
 #define _MSK_KEY_FIRST   0x20
-//#define _MSK_KEY_DBL     0x10
 #define IS_KEY_BREAK(evt)  (((evt)&0xf0)        ==                 _MSK_KEY_FIRST)
 #define IS_KEY_FIRST(evt)  (((evt)&0xf0)        ==  (_MSK_KEY_REPT|_MSK_KEY_FIRST))
 #define IS_KEY_REPT(evt)   ( (evt)&                  _MSK_KEY_REPT)
