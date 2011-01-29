@@ -250,6 +250,7 @@ void Th9xSim::makeSnapshot(const FXDrawable* drawable)
      {
          snapshot.savePixels(stream);
          stream.close();
+         printf("Snapshot written: %s \n",buf);
      }
      else printf("Kann Datei %s nicht öffnen",buf);
 }
