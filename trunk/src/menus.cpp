@@ -758,7 +758,8 @@ void menuProcExpoOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  putsChnRaw(x,0,g_model.expoTab[FL_INST.currIDT()].chn,0);
+  ExpoData_r171 &ed = g_model.expoTab[FL_INST.currIDT()];
+  putsChnRaw(x,0,ed.chn,0);
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
 
@@ -770,7 +771,6 @@ void menuProcExpoOne(uint8_t event)
     y+=FH;
   }
 
-  ExpoData_r171 &ed = g_model.expoTab[FL_INST.currIDT()];
   int8_t   kView = idx2val15_100(ed.exp5);
   int8_t   wView = idx2val30_100(ed.weight6);
   uint8_t  mode3  = ed.mode3;
@@ -789,20 +789,22 @@ void menuProcExpoOne(uint8_t event)
   lcd_vline(X0,Y0-WCHART,WCHART*2);
   lcd_hline(X0-WCHART,Y0,WCHART*2);
 
-  int16_t x512  = anaCalib[FL_INST.currIDT()];
+  int16_t x512  = anaCalib[ed.chn];//FL_INST.currIDT()];
   int16_t y512  = expo(x512,kView);
-  y512 = y512 * (wView / 4)/(100 / 4);
 
+  //dy/dx
+  int16_t dy  = x512>0 ? y512-expo(x512-20,kView) : expo(x512+20,kView)-y512;
+  //lcd_outdezNAtt(14*FW, 2*FH,   dy*(100/20), LEADING0|PREC2,3);
+  lcd_outdezNAtt(14*FW, 2*FH,   dy*(100/20), 0,3);
+
+  y512 = y512 * (wView / 4)/(100 / 4);
   lcd_outdezAtt( 19*FW, 6*FH,x512*25/((signed) RESXu/4), 0 );
   lcd_outdezAtt( 14*FW, 1*FH,y512*25/((signed) RESXu/4), 0 );
   x512 = X0+x512/(RESXu/WCHART);
   y512 = Y0-y512/(RESXu/WCHART);
   lcd_vline(x512, y512-3,3*2+1);
   lcd_hline(x512-3, y512,3*2+1);
-  //dy/dx
   
-  int16_t dy  = x512>0 ? y512-expo(x512-20,kView) : expo(x512+20,kView)-y512;
-  lcd_outdezNAtt(14*FW, 2*FH,   dy*(100/20), LEADING0|PREC2,3);
 }
 void menuProcExpoAll(uint8_t event)
 {
@@ -1650,8 +1652,11 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_RIGHT):
-      if(getEventDbl(event)==2 && s_lastPopMenu[1]){
-        pushMenu(s_lastPopMenu[1]);
+      //if(getEventDbl(event)==2 && s_lastPopMenu[1]){
+      if(getEventDbl(event)==2){
+        pushMenu(menuProcModelSelect);//menuProcExpoAll); 
+        //pushMenu(s_lastPopMenu[1]);
+        killEvents(event);
         break;
       }
       if(sub<1) {
@@ -1660,21 +1665,29 @@ void menuProc0(uint8_t event)
       }
       break;
     case EVT_KEY_LONG(KEY_RIGHT):
-      pushMenu(menuProcModelSelect);//menuProcExpoAll); 
+      if(s_lastPopMenu[1]){
+        pushMenu(s_lastPopMenu[1]);
+      }else{
+        pushMenu(menuProcModelSelect);//menuProcExpoAll); 
+      }
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_LEFT):
-      if(getEventDbl(event)==2 && s_lastPopMenu[0]){
-        pushMenu(s_lastPopMenu[0]);
-        break;
-      }
+      //if(getEventDbl(event)==2 && s_lastPopMenu[0]){
+      //  pushMenu(s_lastPopMenu[0]);
+      //  break;
+      //}
       if(sub>0) {
         sub=sub-1;
         beepKey();
       }
       break;
     case EVT_KEY_LONG(KEY_LEFT):
-      pushMenu(menuProcSetup0);
+      if(s_lastPopMenu[0]){
+        pushMenu(s_lastPopMenu[0]);
+      }else{
+        pushMenu(menuProcSetup0);
+      }
       killEvents(event);
       break;
 #define MAX_VIEWS 2

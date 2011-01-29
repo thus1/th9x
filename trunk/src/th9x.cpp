@@ -416,7 +416,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
-  if(event==EVT_KEY_FIRST(kpl) && getEventDbl(event)==3){
+  if(event==EVT_KEY_LONG(kpl) && getEventDbl(event)==2){
     int niceVal=-150;
     while(1){
       if(newval < niceVal){
@@ -426,7 +426,8 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       if(niceVal>=i_max) break;
       niceVal += 50;
     }
-  }else if(event==EVT_KEY_FIRST(kmi) && getEventDbl(event)==3){
+    killEvents(event);
+  }else if(event==EVT_KEY_LONG(kmi) && getEventDbl(event)==2){
     int niceVal=150;
     while(1){
       if(newval > niceVal){
@@ -436,6 +437,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       if(niceVal<=i_min) break;
       niceVal -= 50;
     }
+    killEvents(event);
   }else if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
     newval++; 
     //beepKey();     
@@ -871,6 +873,8 @@ void evalCaptures()
 
 int8_t idx2val15_100(int8_t idx)
 {
+  //ruby  -e 'x=0; [[10,50],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  // 0 10 20 30 40 50 55 60 65 70 75 80 85 90 95 100
   // idx  0  1       5      15
   // val  0 10 .10. 50 .5. 100
   uint8_t i   = abs(idx);
@@ -892,6 +896,8 @@ int8_t val2idx15_100(int8_t val)
 
 int8_t idx2val30_100(int8_t idx)
 {
+  //ruby  -e 'x=0; [[1,2],[2,30],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  //0 1 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100
   // idx  0 1 2     16      30
   // val  0 1 2 .2. 30 .5. 100
   uint8_t i   = abs(idx);
@@ -916,18 +922,10 @@ int8_t val2idx30_100(int8_t val)
   else             i = uval;
   return val < 0 ? -i : i;
 }
-/*
-ruby  -e 'x=0; [1,2,3,4,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 51 100
-ruby  -e 'x=0; [1,2,4,4,4].  each{|d| 10.times{ print(" #{x}");x+=d} }'   146 50 102
-ruby  -e 'x=0; [2,3,5,5].    each{|d| 10.times{ print(" #{x}");x+=d} }'
-ruby  -e 'x=0; [1,2,2,5,5].  each{|d| 10.times{ print(" #{x}");x+=d} }'   145 50,100
-ruby  -e 'x=0; [1,1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'   155 50 100
-ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'     155 50 100
-ruby  -e 'x=0; [10,5,5].each{|d| 5.times{ print(" #{x}");x+=d} }'
-*/
 int16_t idx2val50_150(int8_t idx)
 {
-  // ruby  -e 'x=0; [1,2,2,5,5].each{|d| 10.times{ print(" #{x}");x+=d} }'
+  //ruby  -e 'x=0; [[1,10],[2,50],[5,155]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  //0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150
   // idx  0  10  30   50
   // val  0  10  50  150
   uint8_t i   = abs(idx);

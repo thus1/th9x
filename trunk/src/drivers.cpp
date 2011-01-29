@@ -122,7 +122,7 @@ void Key::input(bool val, EnumKeys enuk)
   if(m_state && m_vals==0){  //gerade eben sprung auf 0
     if(m_state!=KSTATE_KILLED) {
       putEvent(EVT_KEY_BREAK(enuk));
-      if(!( m_state == 32 && m_cnt<12)){
+      if(!( m_state == 32 && m_cnt<16)){
         m_dblcnt=0;
       }
         //      }
@@ -134,7 +134,7 @@ void Key::input(bool val, EnumKeys enuk)
     case KSTATE_OFF: 
       if(m_vals==FFVAL){ //gerade eben sprung auf ff
         m_state = KSTATE_START;
-        if(m_cnt>10) m_dblcnt=0; //pause zu lang fuer double
+        if(m_cnt>20) m_dblcnt=0; //pause zu lang fuer double
         m_cnt   = 0;
       }
       break;
@@ -146,6 +146,7 @@ void Key::input(bool val, EnumKeys enuk)
       m_cnt     = 0;
       break;
     case 32: 
+      if(m_dblcnt>1) printf("double=%d\n",m_dblcnt);
       if(m_cnt == 24)        putEvent(EVT_KEY_LONG(enuk));
       //fallthrough
     case 16: 
