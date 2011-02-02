@@ -397,7 +397,7 @@ uint8_t checkTrim(uint8_t event)
     if(*ptrim==0) {
       //killEvents(event);
       pauseEvents(event);
-      beepWarn();
+      beepWarn(); //mid trim value reached
     }
     return 0;
   }
@@ -416,6 +416,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(i_flags&_FL_VERT){
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
+  //  kurz-lang-kombi plus
   if(event==EVT_KEY_LONG(kpl) && getEventDbl(event)==2){
     int niceVal=-150;
     while(1){
@@ -427,6 +428,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       niceVal += 50;
     }
     killEvents(event);
+    //  kurz-lang-kombi minus
   }else if(event==EVT_KEY_LONG(kmi) && getEventDbl(event)==2){
     int niceVal=150;
     while(1){
@@ -438,15 +440,16 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       niceVal -= 50;
     }
     killEvents(event);
+    //normal plus
   }else if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
     newval++; 
-    //beepKey();     
     kother=kmi;
+    //normal minus
   }else if(event==EVT_KEY_FIRST(kmi) || event== EVT_KEY_REPT(kmi)) {
     newval--; 
-    //beepKey();     
     kother=kpl;
   }
+  //gleichzeitig plus und minus
   if((kother != (uint8_t)-1) && keyState((EnumKeys)kother)){
     newval=-val;
     killEvents(kmi);
@@ -459,13 +462,13 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   {
     newval = i_max;
     killEvents(event);
-    beepWarn();
+    beepWarn(); //incdec max limit reached 
   }
   if(newval < i_min)
   {
     newval = i_min;
     killEvents(event);
-    beepWarn();
+    beepWarn(); //incdec min limit reached 
   }
   if(newval != val){
     if((newval%20)==0) {
@@ -592,7 +595,7 @@ void   perChecks() //ca 10ms
         if(g_eeGeneral.inactivityMin)
         {
           if((uint16_t)(g_tmr1s - g_actTime1s) > g_eeGeneral.inactivityMin*60u){
-            beepWarn();
+            beepWarn(); //inactivity warning
             g_actTime1s+=1;
           }
         }
