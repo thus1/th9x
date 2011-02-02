@@ -284,18 +284,24 @@ void per10ms()
   if(s_beepCnt) s_beepCnt--;
   static prog_uint8_t APM beepTab[]= {
     /* volumes: 
-    trim key,warn1,warn,err */
-    0,   0,   0,    0,   0, //quiet
-    1,   0,   1,   30, 100, //silent
-    1,   1,   1,   30, 100, //normal
-    4,   4,   4,   50, 150, //for motor
+             Tmr   TmrLong   
+             Bat
+             Store
+             TmrDouble
+    Trim Key,        Warn,   Err 
+    1    2    3        4       5  */
+
+    0,   0,   0,       0,      0, //quiet
+    1,   0,   1,      30,    100, //silent
+    1,   1,   1,      30,    100, //normal
+    4,   4,   4,      50,    150, //for motor
   };
   switch(s_beepState){
     case 0: //wait for next job
       {
         if(g_nextBeep==0) break;
         if(g_nextBeep==6){ //double warn1
-          s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+2);
+          s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+3-1);
           s_beepState = 3;
         }else{
           s_beepCnt   = pgm_read_byte(beepTab+5*BEEP_VOL+g_nextBeep-1);

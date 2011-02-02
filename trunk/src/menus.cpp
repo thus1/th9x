@@ -1057,7 +1057,7 @@ void menuProcModelSelect(uint8_t event)
           beepKey();
           s_editMode = false;
         }
-        else                      beepWarn();
+        else beepWarn(); //model duplicate not possible
       }
       break;
 
