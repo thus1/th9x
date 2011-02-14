@@ -12,10 +12,58 @@ class String
     return ret
   end
 end
+class Integer
+  def sgn()
+    self<0 ? -1 : self==0 ? 0 : 1
+  end
+end
 CStruct.alignment=1
 
 
 # V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4V4
+
+def idx2val15_100(idx) 
+  [0,10,20,30,40,50,55,60,65,70,75,80,85,90,95,100][idx.abs]*idx.sgn
+end
+def idx2val30_100(idx) 
+[0,1,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100][idx.abs]*idx.sgn
+end
+def idx2val50_150(idx) 
+  a=idx.abs
+  #a=50 if a>50
+[0,1,2,3,4,5,6,7,8,9,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,
+46,48,50,55,60,65,70,75,80,85,90,95,100,105,110,115,120,125,130,135,140,145,
+150,155,160,165,170,175,180,185,190,195,200,205,210,215
+][a]*idx.sgn
+end
+def chnOutTo_s(idx) 
+  %w(EOF CH1 CH2 CH3 CH4 CH5 CH6 CH7 CH8 X1 X2 X3 X4)[idx]
+end
+def chnInTo_s(idx)
+  %w(EOF RUD ELE THR AIL P1 P2 P3 MAX FUL X1 X2 X3 X4)[idx]
+end
+def crvTo_s(idx) 
+  idx==0?"    " : "Crv#{idx}" 
+end
+def swtchTo_s(idx) 
+  return "    " if idx==0 
+  sprintf("%s%-3s",idx<0 ? "!":" ",%w(0 THR RUD ELE ID0 ID1 ID2 AIL GEA TRN ON)[idx])
+end
+def int5(i5)
+  i5&=0x1f
+  i5-=0x20 if i5 & 0x10 != 0
+  i5
+end
+def int6(i6)
+  i6&=0x3f
+  i6-=0x40 if i6 & 0x20 != 0
+  i6
+end
+def int7(i7)
+  i7&=0x7f
+  i7-=0x80 if i7 & 0x40 != 0
+  i7
+end
 
 CStruct.defStruct "TrainerData1_r0",<<-"END_TYP"
   uint8_t srcChn3_swtch5; //0-7 = ch1-8
@@ -112,14 +160,34 @@ CStruct.defStruct "ExpoData_r171",<<-"END_TYP"
   int8_t  weight6_chn2;  //
   int8_t  drSw5_curve3; //
   END_TYP
+
+module CStruct; class ExpoData_r171
+  def to_sInternal(ofs,nest=0)
+    s=sprintf("%3s %s %4de %3d%% %4s %3s\n",
+              %w(EOF >0 <0 1 T-)[exp5_mode3>>5], 
+              %w(RUD ELE THR AIL)[weight6_chn2>>6],
+              idx2val15_100(int5(exp5_mode3)),
+              idx2val30_100(int6(weight6_chn2)),
+              swtchTo_s(drSw5_curve3&0x1f),
+              crvTo_s(drSw5_curve3>>5)
+            )
+    [s,ofs+sizeof()]
+  end
+end;end
 CStruct.defStruct "TrimData_r0",<<-"END_TYP"
   int8_t  trim;    //quadratisch
   int16_t trimDef_lt133;
   END_TYP
 
 CStruct.defStruct "TrimData_r143",<<-"END_TYP"
-  int8_t  trim;    //quadratisch
+  int8_t  trim[4];    //quadratisch
   END_TYP
+module CStruct; class TrimData_r143
+  def to_sInternal(ofs,nest=0)
+    [(0...4).map{|i| "#{trim[i]}"}.join(",")+"\n",ofs+sizeof()]
+  end
+end;end
+
 CStruct.defStruct "LimitData_r0",<<-"END_TYP"
   int8_t  min;
   int8_t  max;
@@ -132,10 +200,29 @@ CStruct.defStruct "LimitData_r84",<<-"END_TYP"
   int8_t  rev_offset;
   END_TYP
 CStruct.defStruct "LimitData_r167",<<-"END_TYP"
-  int8_t  min_scale;
+  int8_t  min7_scale1;
   int8_t  max7; 
-  bool    revert_offset;
+  int8_t  revert1_offset7;
   END_TYP
+module CStruct; class LimitData_r167
+  def lim(idx,ofs)
+    #puts "#{idx} #{ofs}"
+    idx = (idx+ofs) & 0x7f
+    idx -= 128    if idx>=64 
+    #puts "#{idx} #{ofs}"
+    idx2val50_150(idx)
+  end
+  def to_sInternal(ofs,nest=0)
+    s=sprintf("%4d < x < %4d  %s %s ofs %4d\n",
+              lim(min7_scale1,-40),
+              lim(max7       ,+40),
+              (min7_scale1>>7) != 0 ? "scl" : "   ",
+              (revert1_offset7&1) != 0 ? "rev" : "   ",
+              (revert1_offset7/2)
+            )
+    [s,ofs+sizeof()]
+  end
+end;end
 
 CStruct.defStruct "MixData_r0",<<-"END_TYP"
   uint8_t destCh4_srcRaw4; //
@@ -144,15 +231,51 @@ CStruct.defStruct "MixData_r0",<<-"END_TYP"
   uint8_t  speedUp4_speedDwn4;
   END_TYP
 
+
+
+module CStruct; class MixData_r0
+  def to_sInternal(ofs,nest=0)
+    s=sprintf("%3s %3s %4d%% %s %s dwn%d up%d\n",
+            chnOutTo_s((destCh4_srcRaw4&0xf)),
+            chnInTo_s((destCh4_srcRaw4>>4)),
+            weight,
+            crvTo_s(swtch5_curve3>>5),
+            swtchTo_s(swtch5_curve3&0x1f),
+            speedUp4_speedDwn4>>4,
+            speedUp4_speedDwn4&0xf
+            )
+    [s,ofs+sizeof()]
+  end
+end;end
+#x=CStruct::MixData_r0.new
+#pp x.methods.sort
+#pp x.to_s
+#exit
+
 CStruct.defStruct "Crv3_V4",<<-"END_TYP"
   int8_t    c[3];
   END_TYP
+module CStruct; class Crv3_V4
+  def to_sInternal(ofs,nest=0)
+    [(0...3).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
+  end
+end;end
 CStruct.defStruct "Crv5_V4",<<-"END_TYP"
   int8_t    c[5];
   END_TYP
+module CStruct; class Crv5_V4
+  def to_sInternal(ofs,nest=0)
+    [(0...5).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
+  end
+end;end
 CStruct.defStruct "Crv9_V4",<<-"END_TYP"
   int8_t    c[9];
   END_TYP
+module CStruct; class Crv9_V4
+  def to_sInternal(ofs,nest=0)
+    [(0...9).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
+  end
+end;end
 CStruct.defStruct "ModelData_r0",<<-"END_TYP"
   char      name[10];    // 10
   uint8_t   stickMode;   // 1
@@ -202,10 +325,10 @@ CStruct.defStruct "ModelData_r143",<<-"END_TYP"
   LimitData_r84 limitData[8];// 4*8
   ExpoData_r84  expoData[4];          // 5*4
   MixData_r0   mixData[25];  //0 4*25
-  Crv3_V4   curves3[3];   // ß
+  Crv3_V4   curves3[3];   // 9
   Crv5_V4   curves5[2];   // 10
   Crv9_V4   curves9[2];   // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+  TrimData_r143  trimData;    // 3*4 -> 1*4
  END_TYP
   
 CStruct.defStruct "ModelData_r167",<<-"END_TYP"
@@ -218,10 +341,10 @@ CStruct.defStruct "ModelData_r167",<<-"END_TYP"
   LimitData_r167 limitData[8];// 4*8
   ExpoData_r84  expoData[4];          // 5*4
   MixData_r0   mixData[25];  //0 4*25
-  int8_t    curves3[3][3];        // 9  new143
-  int8_t    curves5[2][5];        // 10
-  int8_t    curves9[2][9];        // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+  Crv3_V4   curves3[3];   // 9
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r143  trimData;    // 3*4 -> 1*4
 
  END_TYP
 CStruct.defStruct "ModelData_r171",<<-"END_TYP"
@@ -234,10 +357,10 @@ CStruct.defStruct "ModelData_r171",<<-"END_TYP"
   LimitData_r167 limitData[8];// 4*8
   ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
   MixData_r0   mixData[25];  //0 4*25
-  int8_t    curves3[3][3];        // 9  new143
-  int8_t    curves5[2][5];        // 10
-  int8_t    curves9[2][9];        // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+  Crv3_V4   curves3[3];   // 9
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r143  trimData;    // 3*4 -> 1*4
  END_TYP
   
 
@@ -582,7 +705,7 @@ Options
       when 1; r=Reader_V1.new; r.read(f); return r
       when 4; r=Reader_V4.new; r.read(f); return r
       else
-        raise "unknown eeprom version #{vers}"
+        raise "unknown eeprom version #{@vers}"
       end
     }
   end

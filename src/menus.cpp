@@ -55,6 +55,9 @@ MenuFuncP_PROGMEM APM menuTabDiag[] = {
   menuProcDiagKeys, 
   menuProcDiagAna, 
   menuProcDiagCalib
+#ifdef SIM
+  ,menuProcDisplayTest
+#endif
 };
 
 //#define PARR8(args...) (__extension__({static prog_uint8_t APM __c[] = args;&__c[0];}))
@@ -519,12 +522,21 @@ void menuProcMix(uint8_t event)
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
 
-  FL_INST.init();
   MixData_r0  *md= g_model.mixData;
-  for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
-  {
-    FL_INST.addDat(md[i].destCh,i);
-  }
+  bool failed;
+  do{
+    failed=false;
+    FL_INST.init(g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0]));
+    for(uint8_t i=0; i<MAX_MIXERS && md[i].destCh; i++)
+    {
+      if(! FL_INST.addDat(md[i].destCh,i)){
+        failed = true;
+        eeDirty(EE_MODEL);
+        break; //data ist resorted, try once more
+      }
+    }
+  }while(failed);
+
   FL_INST.fill(NUM_XCHNOUT+1);
 
   lcd_outdez(  18*FW, 0, FL_INST.fillLevel()); //fill level
@@ -562,7 +574,7 @@ void menuProcMix(uint8_t event)
       if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
     }
   } //for 7
-  switch(FL_INST.doEvent(event,subOld != sub,g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0])))
+  switch(FL_INST.doEvent(event,subOld != sub))
   {
     case FoldedListNew:
       {
@@ -667,10 +679,23 @@ void menuProcTrim(uint8_t event)
   lcd_puts_P(FW*6,FH*7,PSTR("-->  Rearrange"));  
 }
 
-uint16_t expou(uint16_t x, uint16_t k)
+uint16_t expou(uint16_t x,uint16_t x2, uint8_t k)
 {
-  // k*x*x*x + (1-k)*x
-  return ((unsigned long)x*x*x/0x10000*k/(RESXul*RESXul/0x10000) + (RESKul-k)*x+RESKul/2)/RESKul;
+  // 7   9   9   9     7      9
+  // k * x * x * x + (RK-k) * x
+  // RK  RX  RX        RK 
+  //(k * x * x     + (Rk-k)*4) * x2
+  //     2**16                     RK*4
+  
+  uint32_t r32;
+  r32  = x * k;    //9+7
+  r32 *= x;        //25
+  r32  = (uint8_t)(100u-k)*4u + (uint16_t)(r32>>16) ; //9
+  r32 *= x2;       //18
+  return r32/400;
+  // return ((unsigned long)x*x*x2/0x10000*k/(RESXul*RESXul/0x10000) 
+  //         +             (RESKul-k)*x2+RESKul/2)
+  //  / RESKul;
 }
 // expo-funktion:
 // ---------------
@@ -680,18 +705,22 @@ uint16_t expou(uint16_t x, uint16_t k)
 // f(x,k)=x*x*k/10 + x*(1-k/10) ;P[0,1,2,3,4,5,6,7,8,9,10]
 // f(x,k)=1+(x-1)*(x-1)*(x-1)*k/10 + (x-1)*(1-k/10) ;P[0,1,2,3,4,5,6,7,8,9,10]
 
-int16_t expo(int16_t x, int16_t k)
+int16_t expo2(int16_t x, int16_t x2, int8_t k)
 {
-  if(k == 0) return x;
+  if(k == 0) return x2;
   int16_t   y;
   bool    neg =  x < 0;
-  if(neg)   x = -x;
+  if(neg){   x = -x; x2=-x2;}
   if(k<0){
-    y = RESXu-expou(RESXu-x,-k);
+    y = RESXu-expou(RESXu-x,RESXu-x2,-k);
   }else{
-    y = expou(x,k);
+    y = expou(x,x2,k);
   }
   return neg? -y:y;
+}
+inline int16_t expo(int16_t x, int8_t k)
+{
+  return expo2(x,x,k);
 }
 
 
@@ -816,10 +845,21 @@ void menuProcExpoAll(uint8_t event)
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
 
-  FL_INST.init();
   ExpoData_r171 *ed = g_model.expoTab;
-  for(uint8_t i=0; i<DIM(g_model.mixData)&&ed[i].mode3;i++)
-    FL_INST.addDat(ed[i].chn+1,i);
+  bool failed;
+  do{
+    failed=false;
+    FL_INST.init(g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0]));
+    for(uint8_t i=0; i<DIM(g_model.mixData)&&ed[i].mode3;i++)
+    {
+      if(! FL_INST.addDat(ed[i].chn+1,i)){
+        failed = true;
+        eeDirty(EE_MODEL);
+        break; //data ist resorted, try once more
+      }
+    }
+  }while(failed);
+
   FL_INST.fill(4+1);
 
   lcd_outdez(  18*FW-1, 0, FL_INST.fillLevel()); //fill level
@@ -858,7 +898,7 @@ void menuProcExpoAll(uint8_t event)
       if(selEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
     }
   }
-  switch(FL_INST.doEvent(event,subOld != sub,g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0])))
+  switch(FL_INST.doEvent(event,subOld != sub))
   {
     case FoldedListNew:
       {
@@ -1086,7 +1126,40 @@ void menuProcModelSelect(uint8_t event)
 }
 
 
+#ifdef SIM
+void menuProcDisplayTest(uint8_t event)
+{
+  static MState2 mstate2;
+  TITLE("CALIB");
+  MSTATE_CHECK_V(8,menuTabDiag,4);
+  static int x0,y0;
+  switch(event)
+  {
+    case EVT_KEY_REPT(KEY_RIGHT):
+    case EVT_KEY_FIRST(KEY_RIGHT):
+      x0+=1;
+      break;
+    case EVT_KEY_REPT(KEY_LEFT):
+    case EVT_KEY_FIRST(KEY_LEFT):
+      x0-=1;
+      break;
+    case EVT_KEY_REPT(KEY_DOWN):
+    case EVT_KEY_FIRST(KEY_DOWN):
+      y0+=1;
+      break;
+    case EVT_KEY_REPT(KEY_UP):
+    case EVT_KEY_FIRST(KEY_UP):
+      y0-=1;
+      break;
+  }
 
+  for(int i=0; i<30; i++)
+  {
+    lcd_vline(x0+i,y0,i);
+    lcd_hline(x0+40,y0+i,i);
+  }
+}
+#endif
 void menuProcDiagCalib(uint8_t event)
 {
   static MState2 mstate2;
@@ -1924,6 +1997,9 @@ void perOut(int16_t *chanOut)
   anas[7] = 512; //100% fuer MAX
   anas[8] = 512; //100% fuer MAX
 
+  static int16_t anas2[4];
+  memcpy(anas2,anas,sizeof(anas2));
+
   //Expotab   anas[hw4] -> anas[hw4]
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
     ExpoData_r171 &ed = g_model.expoTab[i];
@@ -1932,9 +2008,10 @@ void perOut(int16_t *chanOut)
     if(getSwitch(ed.drSw,1)) {
       int16_t v = anas[ed.chn];
       if((v<0 && ed.mode3&1) || (v>0 && ed.mode3&2)){
-	v = expo(v,idx2val15_100(ed.exp5));
-	if(ed.curve) v = intpol(v, ed.curve - 1);
-	v = v * (int32_t)(idx2val30_100(ed.weight6)) / 100;
+        int16_t k=idx2val15_100(ed.exp5);
+        v = expo2(anas2[ed.chn],v,k);
+        if(ed.curve) v = intpol(v, ed.curve - 1);
+        v = v * (int32_t)(idx2val30_100(ed.weight6)) / 100;
 	anas[ed.chn] = v;
       }
     }

@@ -445,6 +445,7 @@ void menuProcModelSelect(uint8_t event);
 void menuProcStatistic2(uint8_t event);
 void menuProcStatistic(uint8_t event);
 void menuProc0(uint8_t event);
+void menuProcDisplayTest(uint8_t event);
 
 void setupPulses();
 void setupPulsesPPM();

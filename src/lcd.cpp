@@ -14,27 +14,30 @@
 
 
 
-// #ifdef SIM
-// #  include "simpgmspace.h"
-// #else
-// #  include <avr/pgmspace.h>
-// #define F_CPU 16000000UL  // 16 MHz
-// #  include <util/delay.h>
-// #endif
-// #include "lcd.h"
-// #include <stdlib.h>
 #include "th9x.h"
 
 
+#ifdef SIM
+uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W]; 
+#else
 uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8]; 
-#define DISPLAY_END (displayBuf+sizeof(displayBuf))
+#endif
+#define DISPLAY_SIZE (DISPLAY_W*DISPLAY_H/8)
+#define DISPLAY_END  (displayBuf+DISPLAY_SIZE)
 #include "font.lbm"
 #define font_5x8_x20_x7f (font+3)
 
 #define BITMASK(bit) (1<<(bit))
 void lcd_clear()
 {
-  for(unsigned i=0; i<sizeof(displayBuf); i++) displayBuf[i]=0;
+#ifdef SIM
+  static uint8_t fill=0;
+  for(unsigned i=0; i<DISPLAY_W; i++) {
+    if(displayBuf[DISPLAY_SIZE+i] != fill) printf("disp overflow byte:%d\n",i);
+  }
+  memset(displayBuf+DISPLAY_SIZE,++fill,DISPLAY_W);
+#endif
+  memset(displayBuf,0,DISPLAY_SIZE);
 }
 
 
@@ -50,6 +53,7 @@ void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8
     uint8_t   *p = &displayBuf[ (i_y / 8 + yb) * DISPLAY_W + i_x ];
     for(uint8_t x=0; x < w; x++){
       uint8_t b = pgm_read_byte(q++);
+      assert(p<DISPLAY_END);
       *p++ = inv ? ~b : b;
     }     
   }
@@ -60,16 +64,15 @@ void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode)
   uint8_t   *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
   bool     inv  = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
   uint8_t     i = min(DISPLAY_END-p,(int)w);
-  if(inv)  for(; i!=0; i--) *p++ ^= 0xff;
-#ifdef SIM
-  assert(p<=DISPLAY_END);
-#endif
+  if(inv)  for(; i!=0; i--){
+    assert(p<DISPLAY_END);
+    *p++ ^= 0xff;
+  }
 }
 /// invers: 0 no 1=yes 2=blink
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
-  //uint8_t *pmax = &displayBuf[ DISPLAY_H/8 * DISPLAY_W ];
   
   prog_uchar    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
@@ -92,9 +95,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
     else    for(; i!=0; i--) *p++ =  pgm_read_byte(q++);
     if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
   }
-#ifdef SIM
   assert(p<=DISPLAY_END);
-#endif
 }
 void lcd_putc(uint8_t x,uint8_t y,const char c)
 {
@@ -203,9 +204,6 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
 
 void lcd_plot(uint8_t x,uint8_t y)
 {
-  //  if(y>=64)  return;
-  //  if(x>=128) return;
-  //  displayBuf[ y / 8 * DISPLAY_W + x ] ^= BITMASK(y%8);
   uint8_t *p   = &displayBuf[ y / 8 * DISPLAY_W + x ];
   if(p<DISPLAY_END) *p ^= BITMASK(y%8);
 }
@@ -222,6 +220,7 @@ void lcd_hlineStip(int8_t x,int8_t y, int8_t w,uint8_t pat)
   while(w){
     if(pat&1) {
       //lcd_plot(x,y);
+      assert(p<DISPLAY_END);
       *p ^= msk;
       pat = (pat >> 1) | 0x80;
     }else{
@@ -250,14 +249,28 @@ void lcd_vlineStip(int8_t x,int8_t y, int8_t h, uint8_t pat)
   //if(x>=DISPLAY_W) return; //warning, not possible
   uint8_t *p  = &displayBuf[  y    / 8 * DISPLAY_W + x ];
   uint8_t *q  = &displayBuf[ (y+h) / 8 * DISPLAY_W + x ];
+  assert(p < DISPLAY_END);
   *p ^= ~(BITMASK(y%8)-1)&pat;
-  while(1){
+  //#if 1
+  uint8_t c=(y+h)%8;
+  while(p<q){
     p  += DISPLAY_W;
-    if(p>=q) break;
+    if((p==q) && c==0) break;
+    assert(p < DISPLAY_END);
     *p ^= pat;
   }
-  uint8_t c=(y+h)%8;
-  if(c) *p ^= (BITMASK(c)-1)&pat;
+  if(c) {
+    assert(p < DISPLAY_END);
+    *p ^= ~(BITMASK(c)-1) & pat;
+  }
+  //#else
+  //  while(p<q){
+  //    p  += DISPLAY_W;
+  //   *p  ^= pat;
+  //  }
+  //  assert(p < DISPLAY_END);
+  //  *p ^= ~(BITMASK((y+h)%8)-1)&pat;
+  //#endif
 }
 
 void lcdSendCtl(uint8_t val)
