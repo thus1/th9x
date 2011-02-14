@@ -30,6 +30,7 @@ unsigned char dummyport;
 char g_title[80];
 const char *eepromFile = "eeprom.bin";
 
+extern unsigned char displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W];
 
 void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
 {

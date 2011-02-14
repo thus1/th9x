@@ -17,62 +17,62 @@
 
 FoldedList FoldedList::inst;
 
-#if 0
-FoldedList::Line FoldedList::s_lines[MAX_MIXERS+NUM_XCHNOUT+1];
-//indize:
-//
-// IDT  data tab
-// ISL  select sequence
-// IFL  foldedlist
-// IFLr rel. foldedlist
-//
-//for construction of FoldedList
-uint8_t FoldedList::s_prepCurrCh;  
-uint8_t FoldedList::s_prepCurrIFL; //IFL
-uint8_t FoldedList::s_prepCurrISL; //ISL
-uint8_t FoldedList::s_prepCurrIDT; //IDT
-//for iteration of FoldedList
-uint8_t FoldedList::s_iterOfsIFL;  //IFL first visible
-uint8_t FoldedList::s_iterPosIFL;  //IFL curr
-uint8_t FoldedList::s_iterHitIFL;  //IFLr selected
-uint8_t FoldedList::s_subISL;      //ISL
-uint8_t FoldedList::s_iterMinISL;  //ISL make visible
-bool    FoldedList::s_isSelectedCh;
-bool    FoldedList::s_isSelectedDat;
-bool    FoldedList::s_editMode; //edit linesequence
 
-//variables for edit/insert one line
-uint8_t FoldedList::s_currIDTOld;   //IDT before
-uint8_t FoldedList::s_currIDT;  //IDT curr
-uint8_t FoldedList::s_currDestCh;
-bool    FoldedList::s_currInsMode; //insert or edit
-#endif
-
-void FoldedList::init()
+void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt)
 {
-  inst.s_prepCurrCh  = 0;
-  inst.s_prepCurrIFL= 0;
-  inst.s_prepCurrISL = 1;
-  inst.s_prepCurrIDT =-1;
-  memset(inst.s_lines,0,sizeof(inst.s_lines));
-  // inst.s_iterOfsIFL   = 0; only on entry
+  inst.m_prepCurrCh  = 0;
+  inst.m_prepCurrIFL = 0;
+  inst.m_prepCurrISL = 1;
+  inst.m_prepCurrIDT =-1;
+  inst.m_prepArray   =array;
+  inst.m_prepDimArr  =dimArr;
+  inst.m_prepSzeElt  =szeElt;
+
+  memset(inst.m_lines,0,sizeof(inst.m_lines));
+  // inst.m_iterOfsIFL   = 0; only on entry
 }
-void FoldedList::addDat(uint8_t ch, uint8_t idt)
+bool FoldedList::fill(uint8_t ch) //helper func for construction
 {
+  if(ch > inst.m_prepCurrCh) {
+    while(1){
+      if(inst.m_prepCurrIFL>0) inst.m_lines[inst.m_prepCurrIFL-1].islCh=inst.m_prepCurrISL++;
+      inst.m_prepCurrCh++;
+      if(inst.m_prepCurrCh>=ch) break;
+      inst.m_lines[inst.m_prepCurrIFL].showCh = true;
+      inst.m_lines[inst.m_prepCurrIFL].chId   = inst.m_prepCurrCh;
+      inst.m_lines[inst.m_prepCurrIFL].idt    = inst.m_prepCurrIDT; //insert behind
+      inst.m_prepCurrIFL++;
+      assert(inst.m_prepCurrIFL<=DIM(inst.m_lines));
+    }
+    return true;
+  }else{
+    return false;
+  }
+}
+bool FoldedList::addDat(uint8_t ch, uint8_t idt)
+{
+  if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
+    printf("resort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
+    memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
+    inst.m_editMode=false;
+    return false; //failed
+  }
+
   if(fill(ch))
-    inst.s_lines[inst.s_prepCurrIFL].showCh = true;
-  inst.s_lines[inst.s_prepCurrIFL].chId     = inst.s_prepCurrCh;
-  inst.s_lines[inst.s_prepCurrIFL].idt      = inst.s_prepCurrIDT = idt;
-  inst.s_lines[inst.s_prepCurrIFL].showDat  = true;
-  inst.s_lines[inst.s_prepCurrIFL].islDat   = inst.s_prepCurrISL++;
-  inst.s_prepCurrIFL++;
+    inst.m_lines[inst.m_prepCurrIFL].showCh = true;
+  inst.m_lines[inst.m_prepCurrIFL].chId     = inst.m_prepCurrCh;
+  inst.m_lines[inst.m_prepCurrIFL].idt      = inst.m_prepCurrIDT = idt;
+  inst.m_lines[inst.m_prepCurrIFL].showDat  = true;
+  inst.m_lines[inst.m_prepCurrIFL].islDat   = inst.m_prepCurrISL++;
+  inst.m_prepCurrIFL++;
+  return true; //ok
 }
 void FoldedList::show(){
 #ifdef SIM
-  //for(uint8_t i=0; i<DIM(inst.s_mixTab); i++){
+  //for(uint8_t i=0; i<DIM(inst.m_mixTab); i++){
   for(uint8_t i=0; i<14; i++){
-    //MixTab *mt=inst.s_mixTab+i;
-    FoldedList::Line* line=&inst.s_lines[i];
+    //MixTab *mt=inst.m_mixTab+i;
+    FoldedList::Line* line=&inst.m_lines[i];
     printf( "chId %2d islCh%c%2d islDat%c%2d idt %d\n",
             line->chId,
             line->showCh?'*':' ', line->islCh,
@@ -81,139 +81,129 @@ void FoldedList::show(){
   }
 #endif
 }
-bool FoldedList::fill(uint8_t ch) //helper func for construction
-{
-  if(ch > inst.s_prepCurrCh) {
-    while(1){
-      if(inst.s_prepCurrIFL>0) inst.s_lines[inst.s_prepCurrIFL-1].islCh=inst.s_prepCurrISL++;
-      inst.s_prepCurrCh++;
-      if(inst.s_prepCurrCh>=ch) break;
-      inst.s_lines[inst.s_prepCurrIFL].showCh = true;
-      inst.s_lines[inst.s_prepCurrIFL].chId   = inst.s_prepCurrCh;
-      inst.s_lines[inst.s_prepCurrIFL].idt    = inst.s_prepCurrIDT; //insert behind
-      inst.s_prepCurrIFL++;
-      assert(inst.s_prepCurrIFL<=DIM(inst.s_lines));
-    }
-    return true;
-  }else{
-    return false;
-  }
-}
 FoldedList::Line* FoldedList::firstLine(int8_t sub){
-  inst.s_currIDTOld  = inst.s_currIDT;
-  inst.s_subISL     = sub;
-  inst.s_iterPosIFL = inst.s_iterOfsIFL;
-  Line *l=&inst.s_lines[inst.s_iterPosIFL];
-  inst.s_iterMinISL = l->islDat ? l->islDat : l->islCh;
-  inst.s_iterHitIFL = 0;
+  inst.m_currIDTOld  = inst.m_currIDT;
+  inst.m_subISL     = sub;
+  inst.m_iterPosIFL = inst.m_iterOfsIFL;
+  Line *l=&inst.m_lines[inst.m_iterPosIFL];
+  inst.m_iterMinISL = l->islDat ? l->islDat : l->islCh;
+  inst.m_iterHitIFL = 0;
   return nextLine(6);
 }
 FoldedList::Line* FoldedList::nextLine(uint8_t lines){
-  int8_t i = inst.s_iterPosIFL-inst.s_iterOfsIFL;
-  Line  *l  = &inst.s_lines[inst.s_iterPosIFL];
+  int8_t i = inst.m_iterPosIFL-inst.m_iterOfsIFL;
+  Line  *l  = &inst.m_lines[inst.m_iterPosIFL];
   if(i>=lines  || !(l->showCh || l->showDat) ) {
-    //Line *l=&inst.s_lines[inst.s_iterPosIFL-1];
+    //Line *l=&inst.m_lines[inst.m_iterPosIFL-1];
     l--;
     uint8_t iterMaxISL = l->islCh ? l->islCh : l->islDat;
 
-    //printf("inst.s_subISL%d,inst.s_iterOfsIFL%d,inst.s_iterHitIFL%d,inst.s_iterMinISL%d,iterMax%d\n",inst.s_subISL,inst.s_iterOfsIFL,inst.s_iterHitIFL,inst.s_iterMinISL,iterMax);
-    if( inst.s_subISL!=0 &&  inst.s_iterHitIFL==0) { //versuche die Marke zu finden
-      if(inst.s_subISL < inst.s_iterMinISL)      inst.s_iterOfsIFL = max(0,inst.s_iterOfsIFL-1);
-      if(inst.s_subISL > iterMaxISL)      inst.s_iterOfsIFL++;
+    //printf("inst.m_subISL%d,inst.m_iterOfsIFL%d,inst.m_iterHitIFL%d,inst.m_iterMinISL%d,iterMax%d\n",inst.m_subISL,inst.m_iterOfsIFL,inst.m_iterHitIFL,inst.m_iterMinISL,iterMax);
+    if( inst.m_subISL!=0 &&  inst.m_iterHitIFL==0) { //versuche die Marke zu finden
+      if(inst.m_subISL < inst.m_iterMinISL)      inst.m_iterOfsIFL = max(0,inst.m_iterOfsIFL-1);
+      if(inst.m_subISL > iterMaxISL)      inst.m_iterOfsIFL++;
     }
-    else if(inst.s_iterHitIFL<=2)          inst.s_iterOfsIFL = max(0,inst.s_iterOfsIFL-1);
-    else if(inst.s_iterHitIFL>=(lines-1) && i>=lines)  inst.s_iterOfsIFL++;
+    else if(inst.m_iterHitIFL<=2)          inst.m_iterOfsIFL = max(0,inst.m_iterOfsIFL-1);
+    else if(inst.m_iterHitIFL>=(lines-1) && i>=lines)  inst.m_iterOfsIFL++;
     return 0;
   }
-  inst.s_isSelectedCh  = inst.s_subISL > 0 && inst.s_subISL == l->islCh; 
-  inst.s_isSelectedDat = inst.s_subISL > 0 && inst.s_subISL == l->islDat; 
+  inst.m_isSelectedCh  = inst.m_subISL > 0 && inst.m_subISL == l->islCh; 
+  inst.m_isSelectedDat = inst.m_subISL > 0 && inst.m_subISL == l->islDat; 
 
-  if(inst.s_isSelectedCh){ //handle CHx is selected 
-    inst.s_currIDT     = l->idt+1;
-    inst.s_currInsMode = true;
-    inst.s_currDestCh     = l->chId;
-    inst.s_iterHitIFL      = i+1;
-    // printf("inst.s_currMixIdx=%d\n",inst.s_currMixIdx);
+  if(inst.m_isSelectedCh){ //handle CHx is selected 
+    inst.m_currIDT     = l->idt+1;
+    inst.m_currInsMode = true;
+    inst.m_currDestCh     = l->chId;
+    inst.m_iterHitIFL      = i+1;
+    // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
   }
-  if(inst.s_isSelectedDat){ //handle dat is selected 
-    inst.s_currIDT     = l->idt;
-    inst.s_currInsMode = false;
-    inst.s_currDestCh     = l->chId;
-    inst.s_iterHitIFL      = i+1;
-    // printf("inst.s_currMixIdx=%d\n",inst.s_currMixIdx);
+  if(inst.m_isSelectedDat){ //handle dat is selected 
+    inst.m_currIDT     = l->idt;
+    inst.m_currInsMode = false;
+    inst.m_currDestCh     = l->chId;
+    inst.m_iterHitIFL      = i+1;
+    // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
   }
-  inst.s_iterPosIFL++;
+  inst.m_iterPosIFL++;
   return l;
 }
 
-uint8_t FoldedList::doEvent(uint8_t event, bool subChanged, void*array,uint8_t dimArr, uint8_t szeElt)
+uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
+//, void*array,uint8_t dimArr, uint8_t szeElt)
 {
   uint8_t ret=0;
   switch(event)
   {
     case EVT_ENTRY:
-      FoldedList::inst.s_iterOfsIFL=0;
+      FoldedList::inst.m_iterOfsIFL=0;
     case EVT_ENTRY_UP:
-      inst.s_editMode=false;
+      inst.m_editMode=false;
       break;
     case  EVT_KEY_FIRST(KEY_EXIT):
-      if(inst.s_editMode){
-        inst.s_editMode = false;
+      if(inst.m_editMode){
+        inst.m_editMode = false;
         beepKey();
         killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
       }
       break;
     case EVT_KEY_LONG(KEY_MENU):
-      if(inst.s_currInsMode) break;
+      if(inst.m_currInsMode) break;
       killEvents(event); //cut off 
-      if(inst.s_editMode)
+      if(inst.m_editMode)
       {
         beepKey();
         ret = FoldedListDup;
         goto ret_dup;
       }
-      inst.s_editMode=true;
+      inst.m_editMode=true;
       break;
     case EVT_KEY_BREAK(KEY_MENU):
-      if(inst.s_subISL<1) break;
-      if(inst.s_currInsMode){
+      if(inst.m_subISL<1) break;
+      if(inst.m_currInsMode){
         ret=FoldedListNew;
         goto ret_dup;
       }
       return FoldedListEdit;
   }
 
-  if(inst.s_editMode && subChanged) // && inst.s_currIDTOld != inst.s_currMixIdx)
+  if(inst.m_editMode && subChanged) // && inst.m_currIDTOld != inst.m_currMixIdx)
   {
     STORE_MODELVARS;
-    if(inst.s_currInsMode){
-      return inst.s_currIDTOld <  inst.s_currIDT ? FoldedListCntUp : FoldedListCntDown;
+    if(inst.m_currInsMode){
+      return inst.m_currIDTOld <  inst.m_currIDT ? FoldedListCntUp : FoldedListCntDown;
     }else{
       //swap
-      if( (inst.s_currIDTOld<=inst.s_prepCurrIDT) && (inst.s_currIDT<=inst.s_prepCurrIDT)){
-        printf("swap %d %d %d\n",inst.s_currIDTOld,inst.s_currIDT,inst.s_prepCurrIDT);
-        memswap((char*)array + (uint8_t)(szeElt * (inst.s_currIDT)),
-                (char*)array + (uint8_t)(szeElt * (inst.s_currIDTOld)),
-                szeElt);
+      if( (inst.m_currIDTOld<inst.fillLevel()) && (inst.m_currIDT<inst.fillLevel())){
+        printf("swap %d %d %d\n",inst.m_currIDTOld,inst.m_currIDT,inst.m_prepCurrIDT);
+        //memswap((char*)array + (uint8_t)(szeElt * (inst.m_currIDT)),
+        //        (char*)array + (uint8_t)(szeElt * (inst.m_currIDTOld)),
+        //        szeElt);
+        memswap(inst.arrayElt(inst.m_currIDT),
+                inst.arrayElt(inst.m_currIDTOld),
+                inst.m_prepSzeElt);
         return FoldedListSwap;
       }else{
-        inst.s_editMode=false;
+        inst.m_editMode=false;
       }
     }
   }
   return 0; 
   
   ret_dup:
-  if((uint8_t)(inst.fillLevel())>=dimArr){
-    //printf("currIDT %d dimArr %d\n",inst.s_prepCurrIDT,dimArr);
+  if((uint8_t)(inst.fillLevel())>=inst.m_prepDimArr){
+    //printf("currIDT %d dimArr %d\n",inst.m_prepCurrIDT,dimArr);
     beepErr();
     return 0;
   }
 
+  //memmove(
+  //  (char*)array + (uint8_t)(szeElt * (uint8_t)(inst.m_currIDT+1)),
+  //  (char*)array + (uint8_t)(szeElt *  inst.m_currIDT),
+  //  (uint8_t)(szeElt * (uint8_t)(dimArr-inst.m_currIDT-1))
   memmove(
-    (char*)array + (uint8_t)(szeElt * (uint8_t)(inst.s_currIDT+1)),
-    (char*)array + (uint8_t)(szeElt *  inst.s_currIDT),
-    (uint8_t)(szeElt * (uint8_t)(dimArr-inst.s_currIDT-1))
+    inst.arrayElt(inst.m_currIDT+1),
+    inst.arrayElt(inst.m_currIDT),
+    (uint8_t)(inst.m_prepSzeElt * (uint8_t)(inst.m_prepDimArr-inst.m_currIDT-1))
   );
   STORE_MODELVARS;
   return ret;
