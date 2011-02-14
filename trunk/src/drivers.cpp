@@ -146,7 +146,7 @@ void Key::input(bool val, EnumKeys enuk)
       m_cnt     = 0;
       break;
     case 32: 
-      if(m_dblcnt>1) printf("double=%d\n",m_dblcnt);
+      //if(m_dblcnt>1) printf("double=%d\n",m_dblcnt);
       if(m_cnt == 24)        putEvent(EVT_KEY_LONG(enuk));
       //fallthrough
     case 16: 
