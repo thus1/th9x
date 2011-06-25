@@ -168,6 +168,8 @@ class Builder
   def load_eeprom
     fbin=ARGV[1] or raise "missing eeprom filename"
     case @pars[:PROG] 
+    when "USBPROG"
+      sys "usbprog wrEeprom",@pars[:USBPROG] +" wrEeprom #{fbin}"
     when "AVRDUDE"
       typ = MCU_PAR[@pars[:MCU].to_sym][:id]
       sys "avrdude rdEeprom",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U eeprom:w:#{fbin}:r"
