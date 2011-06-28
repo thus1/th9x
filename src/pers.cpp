@@ -100,9 +100,19 @@ bool eeLoadGeneral()
     p150->myVers  = GENVERS150_5;
   }
   if( sz == sizeof(EEGeneral_r150) && g_eeGeneral.myVers == GENVERS150_5){
+    EEGeneral_r150 &p150= *(EEGeneral_r150*)&g_eeGeneral;
+    EEGeneral_r192 &p192= *(EEGeneral_r192*)&g_eeGeneral;
+
+    memmove(&p192.trainer.calib[4], 
+            &p150.trainer, 
+	    sizeof(EEGeneral_r150)-offsetof(EEGeneral_r150,trainer));
+    sz+=8;
+    p192.myVers  = GENVERS192;
+  }
+  if( sz == sizeof(EEGeneral_TOP) && g_eeGeneral.myVers == GENVERS_TOP){
     return true;
   }
-  printf("bad g_eeGeneral\n");
+  printf("bad g_eeGeneral sz=%d vers=%d\n",sz,g_eeGeneral.myVers);
   return false;
 }
 
@@ -124,7 +134,7 @@ prog_char* modelMixerDefaultName(uint8_t typ)
 void modelMixerDefault(uint8_t typ)
 {
   memset(&g_model.mixData[0],0,sizeof(g_model.mixData));
-  MixData_r0 *md=&g_model.mixData[0];
+  MixData_r192*md=&g_model.mixData[0];
   switch (typ){
     //Simple 4-Ch
     case 0:
@@ -132,46 +142,46 @@ void modelMixerDefault(uint8_t typ)
     case 1:
       // rud ele thr ail
       for(uint8_t i= 0; i<4; i++){ //
-        md->destCh = i+1;       md->srcRaw = i+1;        md->weight = 100;
+        md->destCh = i+1;       md->srcRaw = i;        md->weight = 100;
         md++;
       }
       break;
     
       //V-Tail
     case 2:
-      md->destCh = STK_RUD+1; md->srcRaw = STK_RUD+1;  md->weight = 100; md++;
-      md->destCh = STK_RUD+1; md->srcRaw = STK_ELE+1;  md->weight =-100; md++;
-      md->destCh = STK_ELE+1; md->srcRaw = STK_RUD+1;  md->weight = 100; md++;
-      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
-      md->destCh = STK_THR+1; md->srcRaw = STK_THR+1;  md->weight = 100;
+      md->destCh = SRC_RUD+1; md->srcRaw = SRC_RUD;  md->weight = 100; md++;
+      md->destCh = SRC_RUD+1; md->srcRaw = SRC_ELE;  md->weight =-100; md++;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_RUD;  md->weight = 100; md++;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_ELE;  md->weight = 100; md++;
+      md->destCh = SRC_THR+1; md->srcRaw = SRC_THR;  md->weight = 100;
       break;
 
       //Elevon\\Delta
     case 3:
-      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
-      md->destCh = STK_ELE+1; md->srcRaw = STK_AIL+1;  md->weight = 100; md++;
-      md->destCh = STK_THR+1; md->srcRaw = STK_THR+1;  md->weight = 100; md++;
-      md->destCh = STK_AIL+1; md->srcRaw = STK_ELE+1;  md->weight = 100; md++;
-      md->destCh = STK_AIL+1; md->srcRaw = STK_AIL+1;  md->weight =-100;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_ELE;  md->weight = 100; md++;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_AIL;  md->weight = 100; md++;
+      md->destCh = SRC_THR+1; md->srcRaw = SRC_THR;  md->weight = 100; md++;
+      md->destCh = SRC_AIL+1; md->srcRaw = SRC_ELE;  md->weight = 100; md++;
+      md->destCh = SRC_AIL+1; md->srcRaw = SRC_AIL;  md->weight =-100;
       break;
 
       //eCCPM
     case 4:
-      md->destCh = STK_ELE+1; md->srcRaw = STK_ELE+1;  md->weight = 72; md++;
-      md->destCh = STK_ELE+1; md->srcRaw = STK_THR+1;  md->weight = 55; md++;
-      md->destCh = STK_AIL+1; md->srcRaw = STK_ELE+1;  md->weight = 36; md++;
-      md->destCh = STK_AIL+1; md->srcRaw = STK_AIL+1;  md->weight = 62; md++;
-      md->destCh = STK_AIL+1; md->srcRaw = STK_THR+1;  md->weight = 55; md++;
-      md->destCh = 6;         md->srcRaw = STK_ELE+1;  md->weight = 36; md++;
-      md->destCh = 6;         md->srcRaw = STK_AIL+1;  md->weight = 62; md++;
-      md->destCh = 6;         md->srcRaw = STK_THR+1;  md->weight = 55; md++;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_ELE;  md->weight = 72; md++;
+      md->destCh = SRC_ELE+1; md->srcRaw = SRC_THR;  md->weight = 55; md++;
+      md->destCh = SRC_AIL+1; md->srcRaw = SRC_ELE;  md->weight = 36; md++;
+      md->destCh = SRC_AIL+1; md->srcRaw = SRC_AIL;  md->weight = 62; md++;
+      md->destCh = SRC_AIL+1; md->srcRaw = SRC_THR;  md->weight = 55; md++;
+      md->destCh = 6;         md->srcRaw = SRC_ELE;  md->weight = 36; md++;
+      md->destCh = 6;         md->srcRaw = SRC_AIL;  md->weight = 62; md++;
+      md->destCh = 6;         md->srcRaw = SRC_THR;  md->weight = 55; md++;
       // Sim Calib
     case 5:
       for(uint8_t i= 0; i<8; i++){
-        md->destCh = i+1;     md->srcRaw = 8;/*MAX*/       md->weight = 100; 
+        md->destCh = i+1;     md->srcRaw = 7;/*MAX*/       md->weight = 100; 
         md->swtch  = 1+SW_ID0-SW_BASE;
         md++;
-        md->destCh = i+1;     md->srcRaw = 8;/*MAX*/       md->weight =-100; 
+        md->destCh = i+1;     md->srcRaw = 7;/*MAX*/       md->weight =-100; 
         md->swtch  = 1+SW_ID2-SW_BASE;
         md++;
       }
@@ -209,7 +219,7 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
     }
   }
 }
-int8_t trimRevert(int16_t val)
+int8_t trimRevert2(int16_t val)
 {
   uint8_t idx = 0;
   bool    neg = val<0; val=abs(val);
@@ -219,6 +229,16 @@ int8_t trimRevert(int16_t val)
   }
   return neg ? -idx : idx;
 }
+int8_t trimRevert4(int16_t val)
+{
+  uint8_t idx = 0;
+  bool    neg = val<0; val=abs(val);
+  while(val>trimExp4(idx)){
+    idx++;
+  }
+  return neg ? -idx : idx;
+}
+
 void eeLoadModel(uint8_t id)
 {
   if(id>=MAX_MODELS) return; //paranoia
@@ -249,8 +269,8 @@ void eeLoadModel(uint8_t id)
     ModelData_r84  *model84  = (ModelData_r84*)&g_model;
     ModelData_r143 *model143 = (ModelData_r143*)&g_model;
     for(int8_t i=3; i>=0; i--){
-      int16_t val = trimExp(model84->trimData[i].trim) + model84->trimData[i].trimDef_lt133;
-      model143->trimData[i].trim = trimRevert(val);
+      int16_t val = trimExp2(model84->trimData[i].trim) + model84->trimData[i].trimDef_lt133;
+      model143->trimData[i].trim = trimRevert2(val);
     }
     memmove(&model143->curves5, &model84->curves5, sizeof(model84->curves5)+sizeof(model84->curves9));
     memset(model143->curves3, 0, sizeof(model143->curves3));
@@ -266,9 +286,11 @@ void eeLoadModel(uint8_t id)
     ModelData_r143 *model143 = (ModelData_r143*)&g_model;
     ModelData_r167 *model167 = (ModelData_r167*)&g_model;
     for(int8_t i=0; i<NUM_CHNOUT; i++){
-      model167->limitData[i].min   = val2idx50_150(model143->limitData[i].min);
+      int8_t v = model143->limitData[i].min-100;
+      model167->limitData[i].min   = add7Bit(val2idx50_150(v),40);
       model167->limitData[i].scale = 0;
-      model167->limitData[i].max   = val2idx50_150(model143->limitData[i].max);
+      v = model143->limitData[i].max+100;
+      model167->limitData[i].max   = add7Bit(val2idx50_150(v),-40);
       model167->limitData[i].resv  = 0;
     }
     model143->mdVers = MDVERS167;
@@ -329,6 +351,41 @@ void eeLoadModel(uint8_t id)
               &model171->trimData[3],sizeof(model171->trimData[0]));
 
     model167->mdVers = MDVERS171;
+  }
+  if( sz == sizeof(ModelData_r171) && g_model.mdVers == MDVERS171) {
+    printf("converting model data from r171 to r192\n");
+    ModelData_r171 *model171 = (ModelData_r171*)&g_model;
+    ModelData_r192 *model192 = (ModelData_r192*)&g_model;
+    memmove(&model192->curves3, 
+	    &model171->curves3,
+	    sizeof(ModelData_r171)-offsetof(ModelData_r171,curves3));
+    for(uint8_t i=MAX_MIXERS;i>0;){i--;
+      MixData_r0   &md0   = model171->mixData[i];
+      MixData_r192 &md192 = model192->mixData[i];
+      uint8_t dc=md0.destCh;
+      if(dc==0){
+	memset(&md192,0,5);
+	continue;
+      }
+      memmove(&md192.weight,&md0.weight,3);
+      uint8_t sr=md0.srcRaw; //0 RUD ELE THR AIL P1 P2 P3 MAX FUL X1-4
+      memset(&md192,0,2);
+      md192.destCh =dc;
+      if(sr>4){
+	if(sr<=9) md192.switchMode=1; //P1-3, FUL I=-1
+	if(sr==8) md192.switchMode=2; //MAX I=0
+	if(sr==9) sr=8; //FUL->MAX
+        if(sr>7)  sr+=3;//space for p1-3
+      }
+      md192.srcRaw =sr-1;
+      if(md192.weight<0 && md192.curve){
+        md192.weight   = -md192.weight;
+        md192.curveNeg = 1;
+      }
+    }
+    
+    sz = sizeof(ModelData_r192);
+    model171->mdVers = MDVERS192;
   }
   if( sz == sizeof(ModelData_TOP) && g_model.mdVers == MDVERS_TOP) {
     return;

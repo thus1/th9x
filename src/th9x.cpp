@@ -30,28 +30,31 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-- mixers edit
-- trainer additional inputs (mit foldedlist?)
-- show foldedlist lines nuumber
-- issue 59 more output chans, soft switches
-- subtrim before limits? issue 61
-- issue 57 chan recursion
-- dual rate interface issue62
-- instant trim issue63
-- outputs as inputs? calc sequence
++ instant trim issue63 par:switch,t1,t2
+- ensure load-save combi
+- fast slopes after load
++ show foldedlist lines number
 - show curves ref count, curve type
+- issue 59 more output chans, soft switches
+- outputs as inputs? calc sequence
+- issue 57 chan recursion
+- subtrim before limits? issue 61
++ dual rate interface issue62
 - serial communication
 - timer mit thr-switch
-- standard mixer in slave mode (own model number?)
-- switch mode -1 0 disabled
-- mixline mode + - * =
-- potis FUL/HALF
-- neg curves, more curves with parameters?
+- standard mixer in slave mode (virtual model number?)
++ switch mode off -1 0 +1 
++ mixline mode + * =
++ chain src
++ potis FUL/HALF
++ trainer 1-8 as src 
++ neg curves,
+- fast multiply 8*16 > 32
+- format eeprom
+- more curves with parameters?
 - prc-werte dynamisch 64 werte 1-150
 - curr event global var saves 340Bytes
-- format eeprom
 - pcm 
-- fast multiply 8*16 > 32
 doku
 - doku switch select
 - doku dblklick fast menu jump
@@ -233,9 +236,10 @@ void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
   if((idx1 < NUM_XCHNRAW)) 
-    lcd_putsmAtt(x,y,PSTR("RUD\t""ELE\t""THR\t""AIL\t"
-                          " P1\t"" P2\t"" P3\t""MAX\t""FUL\t"
-                          " X1\t"" X2\t"" X3\t"" X4"),idx1,att);
+    //    lcd_putsmAtt(x,y,PSTR("RUD\t""ELE\t""THR\t""AIL\t"
+    //                          " P1\t"" P2\t"" P3\t""MAX\t""FUL\t"
+    //                          " X1\t"" X2\t"" X3\t"" X4"),idx1,att);
+    lcd_putsmAtt(x,y,PSTR(SRC_STR),idx1,att);
 }
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
@@ -952,13 +956,14 @@ int8_t val2idx50_150(int16_t val)
 
 void init() //common init for simu and target
 {
-  g_menuStack[0] =  menuProc0;
+  //g_menuStack[0] =  menuProc0;
 
   eeReadAll(); //load general setup and selected model
 #ifndef SIM
   lcdSetRefVolt(g_eeGeneral.contrast);
   setupAdc();  //before checkTHR
 #endif
+  chainMenu(menuProc0); //call evt_entry
   checkMem();  //enough eeprom free? 
   checkTHR();
   checkSwitches(); //must be last

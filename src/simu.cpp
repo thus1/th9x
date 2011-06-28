@@ -164,9 +164,11 @@ Th9xSim::Th9xSim(FXApp* a)
 
   FXHorizontalFrame *hf00=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   FXHorizontalFrame *hf01=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  FXHorizontalFrame *hf02=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   //FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  FXHorizontalFrame *hf0=new FXHorizontalFrame(hf1,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf10=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf11=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FILL_X);
 
   //rh lv rv lh
   for(int i=0; i<4; i++){
@@ -193,24 +195,24 @@ Th9xSim::Th9xSim(FXApp* a)
     sliders[i]->setTickDelta(7);
     sliders[i]->setValue(i==1 ? 200 : 512+i*25);
   }
+  arrow[0]= new FXArrowButton(hf10,this,1000,ARROW_LEFT);
+  arrow[1]= new FXArrowButton(hf10,this,1000,ARROW_UP);
+  arrow[2]= new FXArrowButton(hf10,this,1000,ARROW_RIGHT);
   for(int i=4; i<8; i++){
-    knobs[i]= new FXKnob(hf0,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    knobs[i]= new FXKnob(hf11,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
   }
-  arrow[0]= new FXArrowButton(hf0,this,1000,ARROW_LEFT);
-  arrow[1]= new FXArrowButton(hf0,this,1000,ARROW_DOWN);
-  arrow[2]= new FXArrowButton(hf0,this,1000,ARROW_RIGHT);
   
-  for(int i=0; i<4; i++){
-    knobsppm[i]= new FXKnob(i<4 ? hf00 : hf01,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+  arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
+  arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_UP);
+  arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
+  togButPpm = new FXToggleButton(hf00,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
+  for(int i=0; i<8; i++){
+    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobsppm[i]->setRange(1000,2000);
     knobsppm[i]->setValue(1500+i*20);
   }
-  arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
-  arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_DOWN);
-  arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
-  togButPpm = new FXToggleButton(hf00,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
 
 
   bmf = new FXBitmapFrame(this,bmp,0,0,0,0,0,0,0,0,0);
@@ -275,7 +277,7 @@ long Th9xSim::onArrowPress(FXObject*sender,FXSelector sel,void*v)
     for(int i=4; i<7; i++) knobs[i]->setValue(val);
   }
   if(which == 2){
-    for(int i=0; i<4; i++) knobsppm[i]->setValue(val);
+    for(int i=0; i<8; i++) knobsppm[i]->setValue(val);
   }
   return 0;
 }
@@ -302,7 +304,7 @@ extern uint16_t       s_trainerLast10ms;
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
   if(togButPpm->getState()){
-    for(int i=0; i<4; i++){
+    for(int i=0; i<8; i++){
       g_ppmIns[i]=knobsppm[i]->getValue()-1500;
     }
     g_trainerSlaveActive = 1;

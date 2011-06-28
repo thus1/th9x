@@ -205,6 +205,8 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
     inst.arrayElt(inst.m_currIDT),
     (uint8_t)(inst.m_prepSzeElt * (uint8_t)(inst.m_prepDimArr-inst.m_currIDT-1))
   );
+  if(ret==FoldedListNew)
+    memset(inst.arrayElt(inst.m_currIDT),0,inst.m_prepSzeElt);
   STORE_MODELVARS;
   return ret;
 

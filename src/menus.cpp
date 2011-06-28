@@ -31,7 +31,6 @@ uint16_t slopeFull100ms(uint8_t speed);
 static int16_t anaCalib[4];
 int16_t g_chans512[NUM_CHNOUT];
 uint8_t g_sumAna;
-//static TrainerData g_trainer;
 
 //sticks
 #include "sticks.lbm"
@@ -432,49 +431,74 @@ void menuProcLimits(uint8_t event)
 void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
 {
   uint8_t  attr = edit ? BLINK : 0;
-  MixData_r0 &md2 = g_model.mixData[idt];
-#define CURV_STR "   \t""cv1\t""cv2\t""cv3\t""cv4\t""cv5\t""cv6\t""cv7"
+  MixData_r192 &md2 = g_model.mixData[idt];
+#define CURV_STR     "  \t""f1\t""f2\t""f3\t""f4\t""f5\t""f6\t""f7"
 
   switch(which)
   {
-    case 0:   putsChnRaw( x-FW*4,y,md2.srcRaw-1,attr);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 1,NUM_XCHNRAW); //!! bitfield
+    case 0:   putsChnRaw( x-FW*3,y,md2.srcRaw,attr);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 0,NUM_XCHNRAW-1); //!! bitfield
       break;
-    case 1:   lcd_outdezAtt(x-FW*1,y,md2.weight,attr);
+    case 1:   lcd_outdezAtt(x-FW*0,y,md2.weight,attr);
       if(edit) CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
       break;
-    case 2:   lcd_putsmAtt(x-FW*4,y,PSTR(CURV_STR),md2.curve,attr);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.curve, 0,7); //!! bitfield
+    case 2:   lcd_putsmAtt(x-FW*2,y,PSTR("+=\t*=\t:="), md2.mixMode,attr);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.mixMode, 0,2);
+      break;
+    case 3:   
+      //              lcd_putsmAtt(x-FW*3,y,PSTR(" \t-"),  md2.curveNeg,attr);
+      if(md2.curveNeg&&md2.curve) lcd_putcAtt(x-FW*3+3,y,'!', attr);
+      lcd_putsmAtt(x-FW*2,y,PSTR(CURV_STR),  md2.curve,attr);
+
+      if(edit){
+	int8_t cv = md2.curve; if(md2.curveNeg) cv=-cv;
+	CHECK_INCDEC_H_MODELVAR( event, cv, -7,7);
+	md2.curve    = abs(cv);
+	md2.curveNeg = cv<0;
+	
+      }
       if(edit && md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
 	s_curveChan = md2.curve-1;
 	pushMenu(menuProcCurveOne);
       }
       break;
-    case 3:   putsDrSwitches(x-FW*5,  y,md2.swtch,attr);
+    case 4:   putsDrSwitches(x-FW*4,  y,md2.swtch,attr);
       if(edit) {
 	CHECK_INCDEC_H_MODELVAR_BF( event, md2.swtch, -MAX_DRSWITCH, MAX_DRSWITCH); //!! bitfield
 	CHECK_LAST_SWITCH(md2.swtch,EE_MODEL|_FL_POSNEG);
       }
       break;
-    case 4:   
+    case 15:
+    case 5:   
+      if(!md2.swtch)break;
+      if(which==15)
+	lcd_putsmAtt(x-FW*2, y, PSTR("  \t-1\t=0\t+1"),md2.switchMode,attr);
+      else
+	lcd_putsmAtt(x, y, PSTR("O=off\tI=-1\tI=0\tI=+1"),md2.switchMode,attr);
+      //}
+      if(edit){
+	CHECK_INCDEC_H_MODELVAR_BF( event,md2.switchMode , 0,3);
+      }
+      break;
+    case 6:   
       {
-	lcd_puts_P(x-FW*5, y, PSTR("<  s"));
+	lcd_puts_P(x-FW*4, y, PSTR("{  s"));
 	uint16_t slope = slopeFull100ms(md2.speedDown);
-	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   attr|PREC1);
-	else           lcd_outdezAtt(x-FW*2,y,slope/10,attr);
+	if(slope<100)  lcd_outdezAtt(x-FW*1,y,slope,   attr|PREC1);
+	else           lcd_outdezAtt(x-FW*1,y,slope/10,attr);
 	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedDown, 0,15); //!! bitfield
 	break;
       }
-    case 5:
+    case 7:
       {
-	lcd_puts_P(x+FW*6, y-FH, PSTR(">  s"));
+	lcd_puts_P(x-FW*4, y, PSTR("  s}"));
 	uint16_t slope = slopeFull100ms(md2.speedUp);
-	if(slope<100)  lcd_outdezAtt(x+FW*9,y-FH,slope,   attr|PREC1);
-	else           lcd_outdezAtt(x+FW*9,y-FH,slope/10,attr);
+	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   attr|PREC1);
+	else           lcd_outdezAtt(x-FW*2,y,slope/10,attr);
 	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedUp, 0,15); //!! bitfield
 	break;
       }
-    case 6:   lcd_putsAtt(  FW*1,y,PSTR("[MENU]"),attr);
+    case 8:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),attr);
       if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
 	memmove(
 		&g_model.mixData[FL_INST.currIDT()],
@@ -493,16 +517,22 @@ void menuProcMixOne(uint8_t event)
 {
   static MState2 mstate2;
   uint8_t x=TITLEP(FL_INST.currInsMode() ? PSTR("INSERT MIX ") : PSTR("EDIT MIX "));  
-  MixData_r0 &md2 = g_model.mixData[FL_INST.currIDT()];
+  MixData_r192 &md2 = g_model.mixData[FL_INST.currIDT()];
   putsChn(x,0,md2.destCh,0);
-  MSTATE_CHECK0_V(7);
+  MSTATE_CHECK0_V(9);
   int8_t  sub    = mstate2.m_posVert;
 
 
   uint8_t  y = FH*1;
-  for(uint8_t i=0;i<=6;i++){
-    lcd_putsm_P( FW*8, y,PSTR("SRC\tPRC\tCURVE\tSWTCH\tSLOPE\t\tRM"),i);
-    editMixVals(event,i,sub==i,8*FW, y,FL_INST.currIDT());
+  for(uint8_t i=0;i<=8;i++){
+    uint8_t  x = FW*7;
+    if(i==2){x+=FW*9; y-=FH;}
+    if(i==5){x+=FW*7;y-=FH;}
+    if(i==7){x+=FW*11;y-=FH;}
+    if(i==8){y+=FH;}
+    lcd_putsmAtt( FW*8, y,PSTR(" Src \t%  Op\t\tCurve\tSwtch\t\tSlope\t\t RM  "),i,INVERS);
+
+    editMixVals(event,i,sub==i,x, y,FL_INST.currIDT());
     y+=FH;
   }
 
@@ -517,12 +547,12 @@ void menuProcMix(uint8_t event)
   static MState2 mstate2;
   TITLE("MIXER");  
   int8_t subOld  = mstate2.m_posVert;
-  MSTATE_TAB = {4}; //4 columns
+  MSTATE_TAB = {6}; //6 columns
   MSTATE_CHECK_VxH(4,menuTabModel,FL_INST.numSeqs());
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
 
-  MixData_r0  *md= g_model.mixData;
+  MixData_r192  *md= g_model.mixData;
   bool failed;
   do{
     failed=false;
@@ -550,42 +580,47 @@ void menuProcMix(uint8_t event)
     if(line->showCh){  
       putsChn(0,y,line->chId,0); // show CHx
     }
-    if(FL_INST.isSelectedCh()) {
-      if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
-    }
     if(line->showDat){ //show data 
-      MixData_r0 &md2=md[line->idt];
+      MixData_r192 &md2=md[line->idt];
       uint8_t attr = FL_INST.isSelectedDat() ? BLINK : 0; 
       uint8_t att2 = 0;
       bool sel = FL_INST.isSelectedDat(); 
 
+      if(sel&&FL_INST.editMode()) {attr=0; att2=BLINK;sel=false;}
       if(sel) { //show diag values
         currMixerLine = line->idt;
         lcd_outdez(   9*FW, 0, currMixerVal>>9);
         lcd_putc  (   9*FW, 0, '/');
         lcd_outdez(  13*FW+1, 0, currMixerSum>>9);
-        if(FL_INST.editMode()) {attr=0; att2=BLINK;}
-      }
-      editMixVals(event,0,sel && subHor==3,  8*FW,   y,line->idt); //3src
-      editMixVals(event,1,sel && subHor==0, 12*FW-3, y,line->idt); //4prc
-      editMixVals(event,2,sel && subHor==1, 15*FW,   y,line->idt); //3crv
-      editMixVals(event,3,sel && subHor==2, 19*FW,   y,line->idt); //4sw
+      }        
+
+      if(!line->showCh)
+      editMixVals(event,2, sel && subHor==4,  3*FW,   y,line->idt); //2op
+      editMixVals(event,0, sel && subHor==5,  7*FW-2, y,line->idt); //3src
+      editMixVals(event,1, sel && subHor==0, 11*FW-3, y,line->idt); //4prc
+      editMixVals(event,3, sel && subHor==1, 14*FW-4,   y,line->idt); //3crv
+      editMixVals(event,4, sel && subHor==2, 18*FW-4,   y,line->idt); //4sw
+      editMixVals(event,15,sel && subHor==3, 20*FW-3,   y,line->idt); //2sw
       if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '+',0);
       if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
     }
+    if(FL_INST.isSelectedCh()) {
+      if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
+    }
+
   } //for 7
   switch(FL_INST.doEvent(event,subOld != sub))
   {
     case FoldedListNew:
       {
-        MixData_r0  *md = &g_model.mixData[FL_INST.currIDT()];
+        MixData_r192  *md = &g_model.mixData[FL_INST.currIDT()];
         md->destCh      = FL_INST.currDestCh(); //-s_mixTab[sub];
-        md->srcRaw      = FL_INST.currDestCh(); //1;   //
+        md->srcRaw      = FL_INST.currDestCh()-1; //1;   //
         md->weight      = 100;
-        md->swtch       = 0; //no switch
-        md->curve       = 0; //linear
-        md->speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
-        md->speedDown   = 0; //
+        // md->swtch       = 0; //no switch
+        // md->curve       = 0; //linear
+        // md->speedUp     = 0; //Servogeschwindigkeit aus Tabelle (10ms Cycle)
+        // md->speedDown   = 0; //
       }
       //fallthrough
     case FoldedListEdit:
@@ -593,14 +628,14 @@ void menuProcMix(uint8_t event)
       break;
     case   FoldedListCntUp:
       {
-        MixData_r0  *md = &g_model.mixData[FL_INST.currIDTOld()];
+        MixData_r192  *md = &g_model.mixData[FL_INST.currIDTOld()];
         if(md->destCh < NUM_XCHNOUT) md->destCh++; 
         else FL_INST.editModeOff();
       }
       break;
     case   FoldedListCntDown:   
       {
-        MixData_r0  *md = &g_model.mixData[FL_INST.currIDTOld()];
+        MixData_r192  *md = &g_model.mixData[FL_INST.currIDTOld()];
         if(md->destCh > 1) md->destCh--; 
         else FL_INST.editModeOff();
       }
@@ -623,8 +658,7 @@ void menuProcMix(uint8_t event)
 
 int16_t trimVal(uint8_t iLog)
 {
-  return trimExp(g_model.trimData[iLog].trim);
-//  return trim*(abs(trim)+1)/2;
+  return trimExp4(g_model.trimData[iLog].trim);
 }
 
 void menuProcTrim(uint8_t event)
@@ -905,10 +939,9 @@ void menuProcExpoAll(uint8_t event)
         ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDT()];
         ed->chn         = FL_INST.currDestCh()-1; //-s_mixTab[sub];
         ed->mode3       = 3; //both neg+pos
-        ed->exp5        = 0;
+        //ed->exp5        = 0;
         ed->weight6     = 30;
-        ed->drSw        = 0; //no switch
-        //md->curve       = 0; //linear
+        //ed->drSw        = 0; //no switch
       }
       //fallthrough
     case FoldedListEdit:
@@ -1370,13 +1403,15 @@ void menuProcTrainer(uint8_t event)
 
   }
   edit = (sub==4);
-  y    = 7*FH;
+  y    = 6*FH;
   lcd_putsAtt(  0*FW, y, PSTR("Cal"),(sub==4) ? BLINK : 0);
   if(g_trainerSlaveActive){
-    for(uint8_t i=0; i<4; i++)
+    uint8_t x = 7*FW;
+    for(uint8_t i=0; i<8; i++)
     {
-      uint8_t x = (i*8+16)*FW/2;
+      if(i==4){y+=FH;x=7*FW;}
       lcd_outdezAtt( x , y, (g_ppmIns[i]-g_eeGeneral.trainer.calib[i])*2,PREC1 );
+      x+=4*FW;
     }
     if(edit)
     {
@@ -1438,22 +1473,24 @@ void menuProcSetup1(uint8_t event)
     }
   }
 }
+static prog_uint8_t APM s_istTmrVals[]={ 5,10,20,40,80}; 
 void menuProcSetup0(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("SETUP BASIC");  
-  MSTATE_CHECK_V(1,menuTabDiag,1+5);
+  MSTATE_CHECK_V(1,menuTabDiag,1+8);
   int8_t  sub    = mstate2.m_posVert-1 ;
 
   uint8_t y=1*FH;
-  for(uint8_t i=0; i<5; i++,y += FH){
+  for(uint8_t i=0; i<8; i++,y += FH){
     
     uint8_t attr = sub==i ? BLINK : 0; 
-    if(i<4)lcd_putsmAtt( FW*6,y,PSTR("Contrast\t"
-                                     "AdcFilt.\t"
-                                     "Light\t"
-                                     "Beep Mod"
-				     ),i,0);
+    lcd_putsmAtt( FW*6,y,PSTR("Contrast\t"
+			      "AdcFilt.\t"
+			      "Light\t"
+			      "BeepMod\t"
+			      "InstTrim  s   s\t\t\t"
+			      ),i,0);
     switch(i){
       case 0: //Contrast
         lcd_outdezAtt(4*FW,y,g_eeGeneral.contrast,attr);
@@ -1482,8 +1519,26 @@ void menuProcSetup0(uint8_t event)
         lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVol,attr);
         if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVol,0,3);
         break;
-      case 4://stick Mode
-        y += FH;
+      case 4:// "instant trim switch"
+	putsDrSwitches(0*FW,y,g_eeGeneral.iTrimSwitch,attr);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimSwitch, 0, MAX_DRSWITCH-1);
+        }
+        break;
+      case 5:// "instant trim switch"
+        lcd_outdezAtt( FW*16, y-FH, pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme1+1]),attr+PREC1);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme1, 0, 3);
+        }
+        break;
+      case 6:// "instant trim switch"
+        lcd_outdezAtt( FW*20, y-2*FH, pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme2]),attr+PREC1);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme2, 0, 3);
+        }
+        break;
+      case 7://stick Mode
+        y -= 2*FH;
         lcd_putsAtt( 1*FW, y, PSTR("Mode"),0);//sub==3?INVERS:0);
         lcd_putcAtt( 3*FW, y+FH, '1'+g_eeGeneral.stickMode,attr);
         for(uint8_t i=0; i<4; i++)
@@ -1703,6 +1758,7 @@ void menuProcStatistic(uint8_t event)
 extern volatile uint16_t captureRing[16];
 
 
+uint8_t g_istTrimState;
 void menuProc0(uint8_t event)
 {
 #ifdef SIM
@@ -1710,6 +1766,7 @@ void menuProc0(uint8_t event)
 #endif
   static uint8_t   sub;
   static MenuFuncP s_lastPopMenu[2];
+  static uint8_t   view;
 
   switch(event)
   {
@@ -1763,15 +1820,26 @@ void menuProc0(uint8_t event)
       }
       killEvents(event);
       break;
-#define MAX_VIEWS 2
+#define MAX_VIEWS 3
+      //states of instant trim
+#define IST_OFF      0
+#define IST_CHECKKEY 1
+#define IST_WAITKEY  2
+#define IST_PREPARE  3
+#define IST_FIX      4
     case EVT_KEY_BREAK(KEY_UP):
-      g_eeGeneral.view += 2;
+      view += 2;
     case EVT_KEY_BREAK(KEY_DOWN):
-      g_eeGeneral.view += MAX_VIEWS-1; 
-      g_eeGeneral.view %= MAX_VIEWS;
+      view = (view+MAX_VIEWS-1) % MAX_VIEWS;
+      if(view==2) {
+	g_istTrimState=IST_CHECKKEY;
+      } else {
+	g_eeGeneral.view = view; //instant trim is not persistent
+      }
       eeDirty(EE_GENERAL);
       beepKey();
       break;
+
     case EVT_KEY_LONG(KEY_UP):
       chainMenu(menuProcStatistic); 
       killEvents(event);
@@ -1799,6 +1867,9 @@ void menuProc0(uint8_t event)
       killEvents(KEY_EXIT);
       killEvents(KEY_UP);
       killEvents(KEY_DOWN);
+    case EVT_EXIT:
+      view=g_eeGeneral.view;
+      g_istTrimState=IST_OFF;
       break;
   }
 
@@ -1853,34 +1924,52 @@ void menuProc0(uint8_t event)
     lcd_vline(xm+MW/2,ym-MW/2,MW);
     lcd_hline(xm-MW/2,ym-MW/2,MW);
   }
-  for(uint8_t i=0; i<NUM_CHNOUT; i++)
-  {
-    uint8_t x0,y0;
-    switch(g_eeGeneral.view)
+  uint8_t x0,y0;
+  switch(view)
     {
-      case 0:
-        x0 = (i%4*9+3)*FW/2;
-        y0 = i/4*FH+40;
-        // *1000/512 =   *2 - 24/512
-        lcd_outdezAtt( x0+4*FW , y0, g_chans512[i]*2-g_chans512[i]/21,PREC1 );
-        break;
-      case 1:
+    case 0:
+      for(uint8_t i=0; i<NUM_CHNOUT; i++) {
+	x0 = (i%4*9+3)*FW/2;
+	y0 = i/4*FH+40;
+	// *1000/512 =   *2 - 24/512
+	lcd_outdezAtt( x0+4*FW , y0, g_chans512[i]*2-g_chans512[i]/21,PREC1 );
+      }
+      break;
+    case 1:
 #define WBAR2 (50/2)
-        x0       = i<4 ? 128/4+4 : 128*3/4-4;
-        y0       = 38+(i%4)*5;
-        int8_t l = (abs(g_chans512[i])+WBAR2/2) * WBAR2 / 512;
-        lcd_hlineStip(x0-WBAR2,y0,WBAR2*2+1,0x55);
-        lcd_vline(x0,y0-2,5);
-        if(g_chans512[i]>0){
-          x0+=1;
-        }else{
-          x0-=l;
-        }
-        lcd_hline(x0,y0+1,l);
-        lcd_hline(x0,y0-1,l);
-        break;
+      for(uint8_t i=0; i<NUM_CHNOUT; i++) {
+	x0       = i<4 ? 128/4+4 : 128*3/4-4;
+	y0       = 38+(i%4)*5;
+	int8_t l = (abs(g_chans512[i])+WBAR2/2) * WBAR2 / 512;
+	lcd_hlineStip(x0-WBAR2,y0,WBAR2*2+1,0x55);
+	lcd_vline(x0,y0-2,5);
+	if(g_chans512[i]>0){
+	  x0+=1;
+	}else{
+	  x0-=l;
+	}
+	lcd_hline(x0,y0+1,l);
+	lcd_hline(x0,y0-1,l);
+      }
+      break;
+    case 2:
+      lcd_putsAtt(2*FW,5*FH,PSTR("Instant Trim"), 0);
+      switch(g_istTrimState){
+      case IST_WAITKEY:
+	lcd_putsAtt(2*FW,6*FH,PSTR("press "), BLINK);
+	putsDrSwitches(8*FW,6*FH,g_eeGeneral.iTrimSwitch,BLINK);
+
+	break;
+      case IST_PREPARE:
+	lcd_putsAtt(2*FW,6*FH,PSTR("adjust flight"), BLINK);
+	break;
+      case IST_FIX:
+	lcd_putsAtt(2*FW,6*FH,PSTR("release Sticks"), BLINK);
+	break;
+      }
+      break;
+
     }
-  }
 
 }
 
@@ -1935,7 +2024,6 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
   return erg / 50; // 100*D5/RESX;
 }
 
-uint16_t pulses2MHz[60];
 
 /*
   dt=[ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9];dx=[18,13,9,6,4,3,2,3,1,2,1,1,1,1,1]
@@ -1972,7 +2060,8 @@ uint16_t slopeFull100ms(uint8_t speed) //zeit fuer anstieg von -512 bis 512 in 1
 
 void perOut(int16_t *chanOut)
 {
-  static int16_t anas     [NUM_XCHNRAW];
+  static int16_t anas       [NUM_XCHNRAW];
+  static int16_t anas2      [4];
   static bool    trimAssym  [4]; //assymetric trim, at neg end
 
   memset(trimAssym,0,sizeof(trimAssym));
@@ -1992,13 +2081,13 @@ void perOut(int16_t *chanOut)
     if(v >=  RESX) v =  RESX;
     uint8_t iLog = convertMode(iHw);
     anas[iLog] = v; //10+1 Bit  
-    if(iHw<4)anaCalib[iLog] = v; //for show in expo 
+    if(iHw<4)anaCalib[iLog] =  v; //for show in expo 
+    else     anas[iLog+3]   = (v+512)/2; //p1-3
   }
-  anas[7] = 512; //100% fuer MAX
-  anas[8] = 512; //100% fuer MAX
+  anas[SRC_MAX] = 512; //100% fuer MAX
+  //anas[8] = 512; //100% fuer MAX
 
-  static int16_t anas2[4];
-  memcpy(anas2,anas,sizeof(anas2));
+  memcpy(anas2,anas,sizeof(anas2));//values before expo, to ensure same expo base when multiple expo lines are used
 
   //Expotab   anas[hw4] -> anas[hw4]
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
@@ -2020,6 +2109,7 @@ void perOut(int16_t *chanOut)
   //Trainer,   anas[hw4] -> anas[hw4]
   //Trace THR
   //Trim
+  //memcpy(anas2,anas,sizeof(anas2));//values before trim
   for(uint8_t iLog=0;iLog<4;iLog++){        // calc Sticks
     int16_t v = anas[iLog];
 
@@ -2037,19 +2127,60 @@ void perOut(int16_t *chanOut)
     }
 
     //trace throttle
-    //if(THRCHN == i)  //stickMode=0123 -> thr=2121
-    if(iLog == STK_THR)  //stickMode=0123 -> thr=2121
-      trace((v+512)/32); //trace thr 0..31
+    if(iLog == SRC_THR)  trace((v+512)/32); //trace thr 0..31
 
     //trim
+    
+    anas2[iLog]= v;//values before trim
     if(trimAssym[iLog]){                       
       v += trimVal(iLog)*(int32_t)(512-v)/1024; //260*1024
     }else{
       v += trimVal(iLog);
     }
-    anas[iLog] = v; //10+1 Bit
+    anas[iLog] = v;
   }
   // In anas stehen jetzt die Werte mit Trimmung -512..511
+
+  if(g_istTrimState!=IST_OFF){
+    static bool     s_istInitKey;
+    static uint16_t s_istTmr;
+    static uint16_t s_istAnas[4];
+    switch(g_istTrimState){
+    case IST_CHECKKEY:
+      s_istInitKey = getSwitch(g_eeGeneral.iTrimSwitch,0);
+      g_istTrimState = IST_WAITKEY;
+      break;
+    case IST_WAITKEY:
+      if(s_istInitKey != getSwitch(g_eeGeneral.iTrimSwitch,0)){
+	g_istTrimState = IST_PREPARE;
+	s_istTmr=pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme1+1])*10;
+      }
+      break;
+    case IST_PREPARE:
+      if(--s_istTmr%50==0)beepTmr();
+      if(s_istTmr == 0){
+	memcpy(s_istAnas,anas,sizeof(s_istAnas));
+	g_istTrimState = IST_FIX;
+	s_istTmr=pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme2])*10;
+      }
+      break;
+    case IST_FIX:
+      if(--s_istTmr%5==0)beepTmr();
+      if(s_istTmr == 0){
+	g_istTrimState = IST_CHECKKEY;
+	s_istTmr=0;
+	for(uint8_t i=0; i<4;i++){
+	  if(!trimAssym[i])
+	    g_model.trimData[i].trim = trimRevert4(s_istAnas[i]-anas2[i]);
+	}
+      }else{
+	memcpy(anas,s_istAnas,sizeof(s_istAnas));
+      }
+      break;
+    }
+  }
+
+
 
   static int32_t chans[NUM_XCHNOUT];          // Ausgaenge + intermidiates
   memset(chans,0,sizeof(chans));		// Alle Ausgaenge auf 0
@@ -2057,17 +2188,14 @@ void perOut(int16_t *chanOut)
   //Mixer loop anas[hw7+2+4]
   for(uint8_t stage=1; stage<=2; stage++){
     if(stage==2){
-      for(uint8_t i = NUM_CHNOUT;  i<NUM_XCHNOUT; i++){
-        uint8_t   j = i - NUM_XCHNOUT + NUM_XCHNRAW;
-        if(chans[i])
-          anas[j]=
-            (chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
-        else
-          anas[j]=0;
+      for(uint8_t i = DST_X1;  i<(DST_X1+NUM_VIRT); i++){
+        uint8_t   j = i - DST_X1 + SRC_X1;
+        if(chans[i]) anas[j]=(chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+        else         anas[j]=0;
       }
     }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
-      MixData_r0 &md = g_model.mixData[i];
+      MixData_r192 &md = g_model.mixData[i];
 
       static uint8_t timer[MAX_MIXERS];
       static int16_t act  [MAX_MIXERS];
@@ -2082,18 +2210,35 @@ void perOut(int16_t *chanOut)
 
       //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
 
-      if( !getSwitch(md.swtch,1) &&
-          (md.srcRaw <= 4 ||  md.srcRaw > 9) //! P1 P2 P3 MAX FUL
-      ){
-        currMixerVal=0;
-        goto mixend;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
-      }
+      //if( md.switchMode==0 && !getSwitch(md.swtch,1) 
+	  //          (md.srcRaw <= 4 ||  md.srcRaw > 9) //! P1 P2 P3 MAX FUL
+      //      ){
+      //  currMixerVal=0;
+      //  goto mixend;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
+      //}
 
-      int16_t v;
-      v = !getSwitch(md.swtch,1) ? ( //P1 P2 P3     FUL
-        (md.srcRaw == 5 || md.srcRaw == 6 || md.srcRaw == 7 || md.srcRaw == 9 )
-                                    ? -512 : 0) : anas[md.srcRaw-1];
-      if(md.weight<0) v=-v;
+      int16_t v=0;
+      //v = !getSwitch(md.swtch,1) ? ( //P1 P2 P3     FUL
+      //  (md.srcRaw == 5 || md.srcRaw == 6 || md.srcRaw == 7 || md.srcRaw == 9 )
+      //                              ? -512 : 0) : anas[md.srcRaw-1];
+      if(getSwitch(md.swtch,1)){
+	if(md.srcRaw==SRC_CUR)
+	  v=(chans[destCh-1] + (chans[destCh-1]>0 ? 100/2 : -100/2)) / 100;
+	else if(md.srcRaw>=SRC_T1){
+	  uint8_t i=md.srcRaw-SRC_T1;
+	  v=(g_ppmIns[i]- g_eeGeneral.trainer.calib[i]);
+	}
+	else
+	  v=anas[md.srcRaw];
+      }else
+	switch(md.switchMode){
+	case 0: currMixerVal=0; goto mixend;  // Zeile abgeschaltet
+	case 1: v=-512; break;
+	//case 2: v=   0; break; default
+	case 3: v= 512; break;
+	}
+
+      //if(md.weight<0) v=-v;
       if (md.speedUp || md.speedDown)
       {
         int16_t     diff     = v - act[i];
@@ -2114,22 +2259,35 @@ void perOut(int16_t *chanOut)
               act[i]        += dlt;
               timer[i]       = timerend;
             }
-          }else{
+          }else{ //!speed
             act[i]   = v;
             timer[i] = 0;
           }
         }
         v = act[i];
-      }
-      if(md.curve) v = intpol(v, md.curve - 1);
+      }// if speedUp||speedDown
+      if(md.curve) 
+	v = intpol(md.curveNeg ? -v : v, md.curve - 1);
 
     {
-      int32_t dv=(int32_t)v*(abs(md.weight)); // 10+1 Bit + 7 = 17+1
+      int32_t dv=(int32_t)v*md.weight; // 10+1 Bit + 7 = 17+1
       if(currMixerLine==i){
         currMixerVal=dv; //for mixer debug
         //mov32div8to16(currMixerVal,dv);
       }
-      chans[destCh-1] += dv; //Mixerzeile zum Ausgang addieren (dv + (dv>0 ? 100/2 : -100/2))/(100);
+      switch(md.mixMode){
+      case 0: //+
+	dv+=chans[destCh-1]; //Mixerzeile zum Ausgang addieren
+	break;
+      case 1: //*
+	dv/=50;
+	dv*=chans[destCh-1]; //
+	dv/=51200/50;
+	break;
+      case 2: //=
+	break;
+      }
+      chans[destCh-1]  = dv; //
     }
       mixend:
       if(currMixerLine==i){
@@ -2146,7 +2304,7 @@ void perOut(int16_t *chanOut)
     int32_t v32 = chans[i];
     int16_t v   = 0;
     if(g_model.limitData[i].scale){
-      if(v32>0)      v = v32 * s_cacheLimitsMax[i] / 51200;
+      if(v32>0)      v =  v32 * s_cacheLimitsMax[i] / 51200;
       else if(v32<0) v = -v32 * s_cacheLimitsMin[i] / 51200;
     }else{
       if(v32) v = (v32 + (v32 > 0 ? 100/2 : -100/2)) / 100;

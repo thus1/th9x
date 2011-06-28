@@ -140,19 +140,13 @@
 #define INP_G_RF_POW   1
 #define INP_G_RuddDR   0
 
-#define STK_RUD  0
-#define STK_ELE  1
-#define STK_THR  2
-#define STK_AIL  3
-#define STK_P1   4
-#define STK_P2   5
-#define STK_P3   6
+
 //convert from mode 1 to mode g_eeGeneral.stickMode
 //NOTICE!  =>  1..4 -> 1..4
 uint8_t convertMode(uint8_t srcChn);
 
 #define THRCHN (2-(g_eeGeneral.stickMode&1)) //stickMode=0123 -> thr=2121
-//#define THRCHN convertMode(STK_THR)
+//#define THRCHN convertMode(SRC_THR)
 int8_t  idx2val15_100(int8_t idx);
 int8_t  val2idx15_100(int8_t val);
 int8_t  idx2val30_100(int8_t idx);
@@ -212,6 +206,42 @@ enum EnumKeys {
 #define EVT_EXIT                (0xfd - _MSK_KEY_REPT)
 #define EVT_TYPE_MASK            0xf0
 #define EVT_KEY_MASK             0x0f
+
+
+
+//number of virtual output/input channels X1..X4
+#define NUM_VIRT     4
+//number of real outputchannels CH1-CH8
+#define NUM_CHNOUT   8
+///number of real output channels (CH1-CH8) plus virtual output channels X1-X4
+#define NUM_XCHNOUT (NUM_CHNOUT+NUM_VIRT)
+///number of real input channels (1-9) plus virtual input channels X1-X4
+#define NUM_XCHNRAW (7+3+2+  NUM_VIRT + 8)
+
+#define DST_CH1  0 //..CH8
+#define DST_X1   8 //..X4
+
+#define SRC_RUD  0
+#define SRC_ELE  1
+#define SRC_THR  2
+#define SRC_AIL  3
+#define SRC_P1   4
+#define SRC_P2   5
+#define SRC_P3   6
+#define SRC_p1   7
+#define SRC_p2   8
+#define SRC_p3   9
+#define SRC_MAX 10
+#define SRC_CUR 11
+#define SRC_X1  12 //..X4
+#define SRC_T1  16 //..T8
+#define SRC_STR "RUD\t""ELE\t""THR\t""AIL\t"\
+                " P1\t"" P2\t"" P3\t"\
+                " p1\t"" p2\t"" p3\t"\
+                "MAX\t""CUR\t"\
+                " X1\t"" X2\t"" X3\t"" X4\t" \
+                " T1\t"" T2\t"" T3\t"" T4\t" \
+                " T5\t"" T6\t"" T7\t"" T8"
 
 
 #define TMRMODE_NONE     0
@@ -384,8 +414,9 @@ template<class t> inline t abs(t a){ return a >  0 ? a : (t)-a; }
 template<class t> inline t min(t a, t b){ return a<b?a:b; }
 /// liefert das Maximum der Argumente
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
+#define MAX(a,b) (a>b?a:b)
 template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? (t)-1 : (t)0); }
-
+int8_t add7Bit(int8_t a,int8_t b);
 void memswap(void *dest, const void *src, uint8_t n);
 
 
@@ -403,16 +434,7 @@ void eeLoadModel(uint8_t id);
 //void eeSaveModel(uint8_t id);
 bool eeDuplicateModel(uint8_t id);
 
-//number of virtual output/input channels X1..X4
-#define NUM_VIRT     4
-//number of real outputchannels CH1-CH8
-#define NUM_CHNOUT   8
-///number of real input channels (1-9) plus virtual input channels X1-X4
-#define NUM_XCHNRAW (9+         NUM_VIRT)
-///number of real output channels (CH1-CH8) plus virtual output channels X1-X4
-#define NUM_XCHNOUT (NUM_CHNOUT+NUM_VIRT)
 
-//#define MAX_CHNRAW 8
 /// Schreibt [RUD ELE THR AIL P1 P2 P3 MAX] aufs lcd
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
 //#define MAX_CHN 8
@@ -517,13 +539,17 @@ void modelMixerDefault(uint8_t typ);
 
 uint16_t getTmr16KHz();
 
-inline int16_t trimExp(int8_t trim)
+int8_t trimRevert2(int16_t val);
+inline int16_t trimExp2(int8_t trim)
+{
+  //0 1 3 6 10 15
+  return trim*(abs(trim)+1)/2;
+}
+int8_t trimRevert4(int16_t val);
+inline int16_t trimExp4(int8_t trim)
 { 
-  int16_t  ret=trim*(abs(trim)+3)/4;
-  //#ifdef SIM
-  //  printf("trim=%d,%d\n",trim,ret);
-  //#endif  
-  return ret;   
+  //0 1 2 4 7 10 13 17
+  return trim*(abs(trim)+3)/4;
 }
 
 

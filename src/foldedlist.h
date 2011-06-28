@@ -42,7 +42,7 @@ public:
     int8_t idt;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
   };
  private:
-  Line    m_lines[MAX_MIXERS+NUM_XCHNOUT+1];
+  Line    m_lines[MAX(MAX_MIXERS+NUM_XCHNOUT,MAX_EXPOS+4)+1];
 //indize:
 //
 // IDT  data tab
