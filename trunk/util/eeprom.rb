@@ -42,6 +42,9 @@ end
 def chnInTo_s(idx)
   %w(EOF RUD ELE THR AIL P1 P2 P3 MAX FUL X1 X2 X3 X4)[idx]
 end
+def chnIn192To_s(idx)
+  %w(RUD ELE THR AIL P1 P2 P3 p1 p2 p3 MAX CUR X1 X2 X3 X4 T1 T2 T3 T4 T5 T6 T7 T8)[idx]
+end
 def crvTo_s(idx) 
   idx==0?"    " : "Crv#{idx}" 
 end
@@ -72,6 +75,10 @@ CStruct.defStruct "TrainerData1_r0",<<-"END_TYP"
 
 CStruct.defStruct "TrainerData_r0",<<-"END_TYP"
   int16_t       calib[4];
+  TrainerData1_r0  chanMix[4];
+  END_TYP
+CStruct.defStruct "TrainerData_r192",<<-"END_TYP"
+  int16_t       calib[8];
   TrainerData1_r0  chanMix[4];
   END_TYP
 CStruct.defStruct "EEGeneral_helper",<<-"END_TYP"
@@ -130,6 +137,25 @@ CStruct.defStruct "EEGeneral_r150",<<-"END_TYP"
   int8_t    vBatCalib; 
   int8_t    lightSw;
   TrainerData_r0 trainer;
+  uint8_t   view2_2_4;  // was view in earlier versions
+  uint8_t   warn3_2_3; //bitset for several warnings
+  uint8_t   stickMode;   // 1
+END_TYP
+
+CStruct.defStruct "EEGeneral_r192",<<-"END_TYP"
+  uint8_t   myVers;
+  int16_t   calibMid[7];             //ge150 4->7
+  int16_t   calibSpanNeg[7]; //ge119 //ge150 4->7
+  int16_t   calibSpanPos[7]; //ge119 //ge150 4->7
+  //uint16_t  chkSum;
+  uint8_t   inactivityMin;    //ge150
+  uint8_t   resv;             //ge150
+  uint8_t   currModel; //0..15
+  uint8_t   contrast;
+  uint8_t   vBatWarn;
+  int8_t    vBatCalib; 
+  int8_t    lightSw;
+  TrainerData_r192 trainer;
   uint8_t   view2_2_4;  // was view in earlier versions
   uint8_t   warn3_2_3; //bitset for several warnings
   uint8_t   stickMode;   // 1
@@ -247,6 +273,30 @@ module CStruct; class MixData_r0
     [s,ofs+sizeof()]
   end
 end;end
+
+CStruct.defStruct "MixData_r192",<<-"END_TYP"
+  uint8_t destCh4_mixMode2; //
+  uint8_t srcRaw5_switchMode2_curveNeg1; //
+  int8_t  weight;
+  uint8_t swtch5_curve3;
+  uint8_t speedUp4_speedDwn4;
+
+  END_TYP
+module CStruct; class MixData_r192
+  def to_sInternal(ofs,nest=0)
+    s=sprintf("%3s %3s %4d%% %s %s dwn%d up%d\n",
+            chnOutTo_s((destCh4_mixMode2&0xf)),
+            chnIn192To_s((srcRaw5_switchMode2_curveNeg1&0x1f)),
+            weight,
+            crvTo_s(swtch5_curve3>>5),
+            swtchTo_s(swtch5_curve3&0x1f),
+            speedUp4_speedDwn4>>4,
+            speedUp4_speedDwn4&0xf
+            )
+    [s,ofs+sizeof()]
+  end
+end;end
+
 #x=CStruct::MixData_r0.new
 #pp x.methods.sort
 #pp x.to_s
@@ -362,6 +412,21 @@ CStruct.defStruct "ModelData_r171",<<-"END_TYP"
   Crv9_V4   curves9[2];   // 18
   TrimData_r143  trimData;    // 3*4 -> 1*4
  END_TYP
+CStruct.defStruct "ModelData_r192",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[8];// 4*8
+  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
+  MixData_r192   mixData[25];  //0 4*25
+  Crv3_V4   curves3[3];   // 9
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  TrimData_r143  trimData;    // 3*4 -> 1*4
+ END_TYP
   
 
 
@@ -417,6 +482,7 @@ class Reader_V4
     modv4
     #puts modv4
   end
+  attr_reader :fbuf, :fbufdec
   def read(f)
     @eefs=CStruct::EeFs_V4.new()
     @eefs.read(f)
@@ -508,7 +574,7 @@ class Reader_V4
     @eefs.toBin+@blocks[64..-1]
   end
 
-  def infoMap
+  def infoMap(arg=nil)
     puts "allocation map"
     @fat.each_with_index{|fx,i|
       print fx ? fx : '////'
@@ -518,16 +584,21 @@ class Reader_V4
     puts "name sz typ sz2  blocks"
     puts "-----------------------"
     #     a    24  1   40  127, 126,
-    MAXFILES_V4.times{|i|infoFile(i)}
-    MAXFILES_V4.times{|i|infoFileFull(i)} if $opt_v>=1
+    MAXFILES_V4.times{|i|
+      infoFile(i)  if !arg or arg.to_i == i
+    }
+    MAXFILES_V4.times{|i|
+      infoFileFull(i) if !arg or arg.to_i == i
+    } if $opt_v>=1
   end
-  def info
+  def info(arg=nil)
     @eefs.each{|n,val,obj|
       printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
     }
     puts
-    puts "freeBlks=#{@freeBlks} freeSz=#{@freeBlks*@bs}"
-    infoMap
+    totbl=@fat.length-4
+    puts "freeBlks=#{@freeBlks}/#{totbl} freeSz=#{@freeBlks*(@bs-1)} totSz=#{totbl*(@bs-1)}"
+    infoMap(arg)
   end
 
   def encode(buf)
@@ -557,6 +628,42 @@ class Reader_V4
     }
     obuf
   end
+  def encode2(buf)
+    buf=buf.dup
+    obuf   = ""
+    cnt2   = 0
+    cnt    = 0
+    state0 = true
+    i_len  = buf.length
+    (i_len+1).times{|i|
+      nst0 = buf[i] == 0
+      # nst0 = false if  nst0 && !state0 && buf[i+1]!=0
+      if nst0 != state0 || cnt==0x3f || (cnt2!=0 && cnt==0xf) || i==i_len
+        if(state0)
+          if cnt!=0
+	    if cnt<8 and i!=i_len
+	      cnt2=cnt
+	    else
+	      obuf += (0x40|cnt).chr #emit immediate 01zzzzzz
+	    end
+          end
+        else
+	  if cnt2!=0
+	    #pp cnt,cnt2
+	    obuf += (0x80 | (cnt2<<4) | cnt).chr # 1zzzxxxx
+	  else
+	    obuf += cnt.chr   #00xxxxxx
+	  end
+	  obuf += buf[i-cnt,cnt]
+	  cnt2=0
+        end
+	cnt=0;
+        state0 = nst0
+      end
+      cnt+=1
+    }
+    obuf
+  end
   def decode(inbuf)
     inbuf=inbuf.dup
     outbuf=""
@@ -567,6 +674,26 @@ class Reader_V4
       else
         outbuf += inbuf.lcut(ctrl)
       end
+    end
+    outbuf
+  end
+  def decode2(inbuf)
+    inbuf=inbuf.dup
+    outbuf=""
+    while inbuf.length != 0
+      ctrl = inbuf.lcut(1)[0]
+      zeros=0
+      if ctrl &0x80 != 0
+	zeros = (ctrl>>4) & 0x7
+	ctrl &= 0x0f
+      else
+	if ctrl &0x40 != 0
+	  zeros = ctrl&0x3f
+	  ctrl  = 0
+	end
+      end
+      outbuf += 0.chr * zeros
+      outbuf += inbuf.lcut(ctrl)
     end
     outbuf
   end
@@ -595,6 +722,7 @@ class Reader_V4
     when 3  ;   return "EEGeneral_r119_3          ",CStruct::EEGeneral_r119
     when 4  ;   return "EEGeneral_r150            ",CStruct::EEGeneral_r150
     when 5  ;   return "EEGeneral_r150_5          ",CStruct::EEGeneral_r150
+    when 6  ;   return "EEGeneral_r192            ",CStruct::EEGeneral_r192
     else;
       hlp=CStruct::ModelData_helper.new()
       hlp.fromBin(buf)
@@ -607,6 +735,7 @@ class Reader_V4
 	when 2; return 	"ModelData_r143'#{hlp.name}'",CStruct::ModelData_r143
 	when 3; return 	"ModelData_r167'#{hlp.name}'",CStruct::ModelData_r167
 	when 4; return 	"ModelData_r171'#{hlp.name}'",CStruct::ModelData_r171
+	when 5; return 	"ModelData_r192'#{hlp.name}'",CStruct::ModelData_r192
 	else;     	return 	"ModelData??   '#{hlp.name}'",nil
 	end
       end
@@ -660,28 +789,59 @@ Options
       $opt_v  = v.to_i   if v =~ /^\d+$/
       $opt_v += v.length if v =~ /^v+$/
     }
+    $opt_ee="eeprom.bin"
+    opts.on("-ifile",     "eeprom file (#{$opt_ee})") { |$opt_ee|}
+    $opt_o="out.bin"
+    opts.on("-ofile",     "output file (#{$opt_o})") { |$opt_o|}
     opts.parse!
-    cmd=ARGV.shift || "info"
+    cmd=ARGV.shift || "ls"
     send(cmd)
   end
   def export()
-    file = ARGV[0] || 'eeprom.bin'
-    dir  = ARGV[1] || 'export'
+    dir  = ARGV[0] || 'export'
     Dir.mkdir(dir) if !File.directory?(dir)
-    r=read(file)
+    r=read($opt_ee)
     r.export(dir)
   end
-  def info()
-    file = ARGV[0] || 'eeprom.bin'
-    r=read(file)
-    #puts "eeprom version: #{@vers}"
-    r.info
+  def test()
+    i  = ARGV[0].to_i
+    r=read($opt_ee)
+    s1=0
+    s2=0
+    (0..19).each{|i|
+      code1=r.fbuf[i] 
+      full=r.fbufdec[i]
+      code2=r.encode2(full) 
+      full2=r.decode2(code2) 
+      full==full2 or raise "#{full} != #{full2}"
+      dx=code1.length-code2.length
+      s1+=code1.length
+      s2+=dx
+      puts "f=#{full.length} c1=#{code1.length} c2=#{code2.length} dx=#{dx}"
+    }
+    pp s1,s2
   end
+  def get()
+    i  = ARGV[0].to_i
+    r=read($opt_ee)
+    File.open($opt_o,"w"){|f| 
+      if ARGV[1] =~ /r/
+	f.write(r.fbuf[i]) 
+      else
+	f.write(r.fbufdec[i])
+      end
+    }
+  end
+  def ls()
+    r=read($opt_ee)
+    #puts "eeprom version: #{@vers}"
+    r.info ARGV.shift
+  end
+  alias :info :ls
   def convert
-    file = ARGV[0] || 'eeprom.bin'
-    dir  = ARGV[1] || 'export'
+    dir  = ARGV[0] || 'export'
     Dir.mkdir(dir) if !File.directory?(dir)
-    dv1=read(file).data
+    dv1=read($opt_ee).data
     puts dv1.modelData[0]
     rv4=Reader_V4.new
     rv4.format
