@@ -20,6 +20,9 @@
   the functions below are from int-level
 ******************************************************************************/
 
+uint16_t pulses2MHz[60];
+
+
 void setupPulses() 
 {
   switch(g_model.protocol)
