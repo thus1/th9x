@@ -306,9 +306,12 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
   if(togButPpm->getState()){
     for(int i=0; i<8; i++){
       g_ppmIns[i]=knobsppm[i]->getValue()-1500;
+      if(g_ppmIns[i]<-400){
+        g_trainerSlaveActiveChns = i;
+        s_trainerLast10ms    = g_tmr10ms;
+	break;
+      }
     }
-    g_trainerSlaveActive = 1;
-    s_trainerLast10ms    = g_tmr10ms;
   }
 
   per10ms();

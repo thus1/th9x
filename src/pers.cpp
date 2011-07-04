@@ -48,7 +48,16 @@ void generalDefault()
 bool eeLoadGeneral()
 {
   theFile.openRd(FILE_GENERAL);
-  uint8_t sz = theFile.readRlc((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
+  uint8_t sz = 0;
+  if(theFile.readRlc2((uint8_t*)&g_eeGeneral, 1)==1){
+    theFile.openRd(FILE_GENERAL);
+    if(g_eeGeneral.myVers < GENVERS192){
+      sz = theFile.readRlc1((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
+    }else{
+      sz = theFile.readRlc2((uint8_t*)&g_eeGeneral, sizeof(g_eeGeneral));
+    }
+  }
+
   //uint16_t sum=0;
   if( sz == sizeof(EEGeneral_r0) && g_eeGeneral.myVers == GENVERS0 ){
     printf("converting EEGeneral data from < 119\n");
@@ -205,7 +214,7 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
     //eeprom_read_block(buf,(void*)modelEeOfs(id),sizeof(g_model.name));
     theFile.openRd(FILE_MODEL(id));
     memset(buf,' ',len);
-    if(theFile.readRlc((uint8_t*)buf,sizeof(g_model.name)+1) == (sizeof(g_model.name)+1) )
+    if(theFile.readRlc2((uint8_t*)buf,sizeof(g_model.name)+1) == (sizeof(g_model.name)+1) )
     {
       uint8_t  vers = buf[sizeof(g_model.name)];
       uint16_t sz   = theFile.size();
@@ -244,7 +253,15 @@ void eeLoadModel(uint8_t id)
   if(id>=MAX_MODELS) return; //paranoia
 
   theFile.openRd(FILE_MODEL(id));
-  uint8_t sz = theFile.readRlc((uint8_t*)&g_model, sizeof(g_model)); 
+  uint8_t sz = 0;
+  if(theFile.readRlc2((uint8_t*)&g_model,sizeof(g_model.name)+1) == (sizeof(g_model.name)+1)){
+    theFile.openRd(FILE_MODEL(id));
+    if(g_model.mdVers < MDVERS192){
+      sz = theFile.readRlc1((uint8_t*)&g_model, sizeof(g_model)); 
+    }else{
+      sz = theFile.readRlc2((uint8_t*)&g_model, sizeof(g_model)); 
+    }
+  }
 
 // #if 0
 //   if( sz == sizeof(ModelData_r0) ){
@@ -432,11 +449,11 @@ void eeReadAll()
 #endif
     EeFsFormat();
     generalDefault();
-    theFile.writeRlc(FILE_GENERAL,FILE_TYP_GENERAL,(uint8_t*)&g_eeGeneral, 
+    theFile.writeRlc2(FILE_GENERAL,FILE_TYP_GENERAL,(uint8_t*)&g_eeGeneral, 
                      sizeof(g_eeGeneral),200);
 
     modelDefault(0);
-    theFile.writeRlc(FILE_MODEL(0),FILE_TYP_MODEL,(uint8_t*)&g_model, 
+    theFile.writeRlc2(FILE_MODEL(0),FILE_TYP_MODEL,(uint8_t*)&g_model, 
                      sizeof(g_model),200);
   }
   eeLoadModel(g_eeGeneral.currModel);
@@ -459,7 +476,7 @@ void eeCheck(bool immediately)
   if( !immediately && ((g_tmr10ms - s_eeDirtyTime10ms) < WRITE_DELAY_10MS)) return;
   s_eeDirtyMsk = 0;
   if(msk & EE_GENERAL){
-    if(theFile.writeRlc(FILE_TMP, FILE_TYP_GENERAL, (uint8_t*)&g_eeGeneral, 
+    if(theFile.writeRlc2(FILE_TMP, FILE_TYP_GENERAL, (uint8_t*)&g_eeGeneral, 
                         sizeof(g_eeGeneral),20) == sizeof(g_eeGeneral))
     {   
       EFile::swap(FILE_GENERAL,FILE_TMP);
@@ -476,7 +493,7 @@ void eeCheck(bool immediately)
   }
   else if(msk & EE_MODEL){
     g_model.mdVers = MDVERS_TOP;
-    if(theFile.writeRlc(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
+    if(theFile.writeRlc2(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
     {
       EFile::swap(FILE_MODEL(g_eeGeneral.currModel),FILE_TMP);

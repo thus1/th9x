@@ -122,12 +122,7 @@ int8_t EeFsck()
     uint8_t *startP = i==MAXFILES ? &eeFs.freeList : &eeFs.files[i].startBlk;
     uint8_t lastBlk = 0;
     blk = *startP;
-      //if(i == MAXFILES) blk = eeFs.freeList;
-      //    else              blk = eeFs.files[i].startBlk;
     while(blk){
-      //      if(blk <  FIRSTBLK ) goto err_1; //bad blk index
-      //      if(blk >= BLOCKS   ) goto err_2; //bad blk index
-      //      if(bufp[blk])        goto err_3; //blk double usage
       if( (   blk <  FIRSTBLK ) //goto err_1; //bad blk index
           || (blk >= BLOCKS   ) //goto err_2; //bad blk index
           || (bufp[blk]       ))//goto err_3; //blk double usage
@@ -155,15 +150,6 @@ int8_t EeFsck()
       EeFsFlushFreelist();
     }
   }
-  //  if(0){
-    //err_4: ret--;
-    //err_3: ret--;
-    //    err_2: ret--;
-    //    err_1: ret--;
-    //#ifdef SIM
-    //    printf("ERROR fsck %d blk=%d\n",ret,blk);
-    //#endif
-  //  }
   return ret;
 }
 void EeFsFormat()
@@ -221,6 +207,7 @@ uint8_t EFile::openRd(uint8_t i_fileId){
   m_pos      = 0;
   m_currBlk  = eeFs.files[m_fileId].startBlk; 
   m_ofs      = 0;
+  m_zeroes   = 0;
   m_bRlc     = 0;
   m_err      = ERR_NONE;       //error reasons
   return  eeFs.files[m_fileId].typ; 
@@ -242,7 +229,8 @@ uint8_t EFile::read(uint8_t*buf,uint8_t i_len){
   m_pos += i_len - len;
   return i_len - len;
 }
-uint16_t EFile::readRlc(uint8_t*buf,uint16_t i_len){
+#if 0
+uint16_t EFile::readRlc1(uint8_t*buf,uint16_t i_len){
   uint16_t i;
   for( i=0; i<i_len; ){
     if((m_bRlc&0x7f) == 0) {
@@ -261,6 +249,47 @@ uint16_t EFile::readRlc(uint8_t*buf,uint16_t i_len){
     m_bRlc -= l;
   }
   return i;
+}
+#endif
+
+uint16_t EFile::readRlc12(uint8_t*buf,uint16_t i_len, bool rlc2){
+  uint16_t i=0;
+  for( ; 1; ){
+    uint8_t l=min<uint16_t>(m_zeroes,i_len-i);
+    memset(&buf[i],0,l);
+    i        += l;
+    m_zeroes -= l;
+    if(m_zeroes)           break; //noch nullen da, buf voll
+
+    l=min<uint16_t>(m_bRlc,i_len-i);
+    uint8_t lr = read(&buf[i],l);
+    i        += lr ;
+    m_bRlc   -= lr;
+    if(m_bRlc)             break; //noch data notw. aber buf voll oder keine rohdaten mehr vorh.
+
+    if(read(&m_bRlc,1)!=1) break;
+
+    assert(m_bRlc & 0x7f);
+    if(!rlc2){
+      if(m_bRlc&0x80){
+        m_zeroes  = m_bRlc & 0x7f;
+        m_bRlc    = 0;
+      }
+    }else{
+      if(m_bRlc&0x80){
+        m_zeroes  =(m_bRlc>>4) & 0x7;
+        m_bRlc    = m_bRlc & 0x0f;
+      }else if(m_bRlc&0x40){
+        m_zeroes  = m_bRlc & 0x3f;
+        m_bRlc    = 0;
+      }
+      //else   m_bRlc
+    }
+  }
+  return i;
+}
+uint8_t EFile::write1(uint8_t b){
+  return write(&b,1);
 }
 uint8_t EFile::write(uint8_t*buf,uint8_t i_len){
   uint8_t len=i_len;
@@ -315,7 +344,8 @@ void EFile::closeTrunc()
   if(fri) EeFsFree( fri );  //chain in
 }
 
-uint16_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_len, uint8_t maxTme10ms){
+#if 0
+uint16_t EFile::writeRlc1(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_len, uint8_t maxTme10ms){
   create(i_fileId,typ,maxTme10ms);
   bool    state0 = true;
   uint8_t cnt    = 0;
@@ -362,8 +392,66 @@ uint16_t EFile::writeRlc(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_le
   closeTrunc();
   return i_len;
 }
+#endif
+uint16_t EFile::writeRlc2(uint8_t i_fileId, uint8_t typ,uint8_t*buf,uint16_t i_len, uint8_t maxTme10ms){
+  create(i_fileId,typ,maxTme10ms);
+  bool    run0   = buf[0] == 0;
+  uint8_t cnt    = 1;
+  uint8_t cnt0   = 0;
+  uint16_t i     = 0;
+  if(i_len==0) goto close;
+  for( i=1; 1 ; i++) // !! laeuft ein byte zu weit !!
+  {
+    bool cur0 = buf[i] == 0;
+    if(cur0 != run0 || cnt==0x3f || (cnt0 && cnt==0xf)|| i==i_len){
+      if(run0){
+	assert(cnt0==0);
+	if(cnt<8 && i!=i_len)
+	  cnt0 = cnt; //aufbew fuer spaeter
+	else {
+	  if( write1(cnt|0x40)!=1)                goto error;//-cnt&0x3f
+	}
+      }else{
+	if(cnt0){
+	  if( write1(0x80 | (cnt0<<4) | cnt)!=1)  goto error;//-cnt0xx-cnt
+	  cnt0 = 0;
+	}else{
+	  if( write1(cnt) !=1)                    goto error;//-cnt
+	}
+        uint8_t ret=write(&buf[i-cnt],cnt);
+        if( ret !=cnt) { cnt-=ret;                goto error;}//-cnt
+      }
+      cnt=0;
+      if(i==i_len) break;
+      run0 = cur0;
+    }
+    cnt++;
+  }
+  if(0){
+    error:
+    i-=cnt+cnt0;
+#ifdef SIM
+    switch(m_err){
+      default:
+      case ERR_NONE:
+        assert(!"missing errno");
+        break;  
+      case ERR_FULL:
+        printf("ERROR filesystem overflow! written: %d missing: %d\n",i,i_len-i);
+        break;  
+      case ERR_TMO:
+        printf("ERROR filesystem write timeout %d 0ms\n",(int16_t)(m_stopTime10ms - g_tmr10ms));
+        break;  
+    }
+#endif
+  }
+  close:
+  closeTrunc();
+  return i;
+}
 
 #ifdef TEST
+#include <stdlib.h>
 uint8_t eeprom[EESIZE];
 volatile uint16_t g_tmr10ms=0;
 static void EeFsDump(){
@@ -385,22 +473,22 @@ void eeWriteBlockCmp(const void *i_pointer_ram, void *i_pointer_eeprom, size_t s
   memcpy(&eeprom[(int)i_pointer_eeprom],i_pointer_ram,size);
 }
 
-#define FILES 5
+#define FILES 10
 int main();
 void showfiles()
 {
   printf("------ free: %d\n",EeFsGetFree());
   int8_t err;
   if((err=EeFsck())) printf("ERROR fsck %d\n",err);    
-  EeFsDump();
+  //EeFsDump();
   EFile f;
   for(int i=0; i<MAXFILES; i++){
     if(f.openRd(i)==0) continue;
     printf("file%d %4d ",i,f.size());
-    for(int j=0; j<100; j++){ 
+    for(int j=0; j<1000; j++){ 
       uint8_t buf[2];
-      if(f.readRlc(buf,1)==0) break;
-      printf("%c",buf[0]);
+      if(f.readRlc2(buf,1)==0) break;
+      printf("%c",buf[0] ? buf[0] : '.');
     }
     printf("\n");
   }
@@ -412,6 +500,7 @@ int main()
   showfiles();
   EFile    f[FILES];
   uint8_t buf[1000];
+  uint8_t buf2[1000];
   //for(int i=0; i<FILES; i++){ f[i].create(i,5); }
 
   
@@ -420,7 +509,7 @@ int main()
       buf[j*2]=i+'0';
       buf[j*2+1]=j+'a';
     }
-    f[i].writeRlc(i,3,buf,15,100);
+    f[i].writeRlc2(i,3,buf,15,100);
   }
   //for(int i=0; i<FILES; i++){ f[i].trunc(); }
   
@@ -431,13 +520,20 @@ int main()
   EFile::rm(5);
   EFile::rm(6);
   showfiles();
-  
-  //f[0].create(6,6);
-  for(int i=0; i<1000; i++) buf[i]='6'+i%4;
-  f[0].writeRlc(6,6,buf,300,100);   
-  //f[0].trunc(); 
 
-  f[0].writeRlc(5,5,buf,5,100);   
+  for(int i=0; i<FILES; i++){
+    for(int j=0; j<20; j++){ 
+      buf[j]=j+'a';
+      if(j<i || (j<(20)&&j>(19-i)))buf[j]=0;
+    }
+    f[i].writeRlc2(i,3,buf,20,100);
+  }
+  showfiles();
+  
+  for(int i=0; i<1000; i++) buf[i]='6'+i%4;
+  f[0].writeRlc2(6,6,buf,300,100);   
+
+  f[0].writeRlc2(5,5,buf,5,100);   
 
   showfiles();
 
@@ -445,14 +541,29 @@ int main()
   uint16_t sz=0;
   for(int i=0; i<500; i++){ 
     uint8_t b; 
-    uint16_t n=f[0].readRlc(&b,1);   
+    uint16_t n=f[0].readRlc2(&b,1);   
     if(n) assert(b==('6'+sz%4));
     sz+=n;
   }
   assert(sz==300);
-//f[0].trunc(); 
 
   showfiles();
+
+
+  for(int i=0; i<10000; i++)
+  {
+    int size=rand()%1000;
+    for(int j=0; j<size; j++)
+    {
+      buf[j] = rand() < (RAND_MAX/10000*i) ? 0 : (j&0xff);
+    }
+    f[0].writeRlc2(5,5,buf,size,100);   
+    printf("size=%4d red=%4d\n",size,f[0].size());
+    f[0].openRd(5);
+    uint16_t n=f[0].readRlc2(buf2,size+1);   
+    assert(n==size);
+    assert(memcmp(buf,buf2,size)==0);
+  }
 }
 
 

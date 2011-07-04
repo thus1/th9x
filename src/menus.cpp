@@ -884,7 +884,7 @@ void menuProcExpoAll(uint8_t event)
   do{
     failed=false;
     FL_INST.init(g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0]));
-    for(uint8_t i=0; i<DIM(g_model.mixData)&&ed[i].mode3;i++)
+    for(uint8_t i=0; i<DIM(g_model.expoTab)&&ed[i].mode3;i++)
     {
       if(! FL_INST.addDat(ed[i].chn+1,i)){
         failed = true;
@@ -1405,9 +1405,9 @@ void menuProcTrainer(uint8_t event)
   edit = (sub==4);
   y    = 6*FH;
   lcd_putsAtt(  0*FW, y, PSTR("Cal"),(sub==4) ? BLINK : 0);
-  if(g_trainerSlaveActive){
+  if(g_trainerSlaveActiveChns){
     uint8_t x = 7*FW;
-    for(uint8_t i=0; i<8; i++)
+    for(uint8_t i=0; i<g_trainerSlaveActiveChns; i++)
     {
       if(i==4){y+=FH;x=7*FW;}
       lcd_outdezAtt( x , y, (g_ppmIns[i]-g_eeGeneral.trainer.calib[i])*2,PREC1 );
@@ -1877,8 +1877,9 @@ void menuProc0(uint8_t event)
   uint8_t x=FW*2;
   lcd_putsAtt(x,0,PSTR("Th9x"),sub==0 ? INVERS : 0);
   lcd_putsnAtt(x+ 5*FW,   0*FH, g_model.name ,sizeof(g_model.name),sub==1 ? BSS_INVERS : BSS_NO_INV);
-  if(g_trainerSlaveActive){
-    lcd_putsAtt(x,1*FH,PSTR("Stud"), BLINK);
+  if(g_trainerSlaveActiveChns){
+    lcd_putsAtt(x,      1*FH,PSTR("TRN"), BLINK);
+    lcd_putcAtt(x+3*FW ,1*FH,g_trainerSlaveActiveChns+'0',BLINK);
   }
   lcd_puts_P(  x+ 5*FW,   1*FH,    PSTR("BAT"));
   putsVBat(x+ 8*FW,1*FH, g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0);
@@ -2060,7 +2061,8 @@ uint16_t slopeFull100ms(uint8_t speed) //zeit fuer anstieg von -512 bis 512 in 1
 
 void perOut(int16_t *chanOut)
 {
-  static int16_t anas       [NUM_XCHNRAW];
+  //  static int16_t anas       [NUM_XCHNRAW];
+  static int16_t anas       [SRC_MAX+1];
   static int16_t anas2      [4];
   static bool    trimAssym  [4]; //assymetric trim, at neg end
 
@@ -2114,7 +2116,8 @@ void perOut(int16_t *chanOut)
     int16_t v = anas[iLog];
 
     TrainerData1_r0*  td = &g_eeGeneral.trainer.chanMix[iLog];
-    if(g_trainerSlaveActive && td->mode && getSwitch(td->swtch,1)){
+    if(g_trainerSlaveActiveChns && td->mode && getSwitch(td->swtch,1) &&
+       td->srcChn<g_trainerSlaveActiveChns){
       uint8_t chStud = td->srcChn;
       int16_t vStud  = (g_ppmIns[chStud]- g_eeGeneral.trainer.calib[chStud])*
 	td->studWeight/31;
@@ -2187,13 +2190,13 @@ void perOut(int16_t *chanOut)
 
   //Mixer loop anas[hw7+2+4]
   for(uint8_t stage=1; stage<=2; stage++){
-    if(stage==2){
-      for(uint8_t i = DST_X1;  i<(DST_X1+NUM_VIRT); i++){
-        uint8_t   j = i - DST_X1 + SRC_X1;
-        if(chans[i]) anas[j]=(chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
-        else         anas[j]=0;
-      }
-    }
+    // if(stage==2){
+    //   for(uint8_t i = DST_X1;  i<(DST_X1+NUM_VIRT); i++){
+    //     uint8_t   j = i - DST_X1 + SRC_X1;
+    //     if(chans[i]) anas[j]=(chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+    //     else         anas[j]=0;
+    //   }
+    // }
     for(uint8_t i=0;i<MAX_MIXERS;i++){
       MixData_r192 &md = g_model.mixData[i];
 
@@ -2222,14 +2225,23 @@ void perOut(int16_t *chanOut)
       //  (md.srcRaw == 5 || md.srcRaw == 6 || md.srcRaw == 7 || md.srcRaw == 9 )
       //                              ? -512 : 0) : anas[md.srcRaw-1];
       if(getSwitch(md.swtch,1)){
-	if(md.srcRaw==SRC_CUR)
-	  v=(chans[destCh-1] + (chans[destCh-1]>0 ? 100/2 : -100/2)) / 100;
-	else if(md.srcRaw>=SRC_T1){
-	  uint8_t i=md.srcRaw-SRC_T1;
-	  v=(g_ppmIns[i]- g_eeGeneral.trainer.calib[i]);
+	if(md.srcRaw<SRC_X1){
+          if(md.srcRaw==SRC_CUR)
+            v=(chans[destCh-1] + (chans[destCh-1]>0 ? 100/2 : -100/2)) / 100;
+          else
+            v=anas[md.srcRaw];
+        }else{
+          if(md.srcRaw>=SRC_T1){
+            uint8_t i=md.srcRaw-SRC_T1;
+            if(i<g_trainerSlaveActiveChns)
+              v=(g_ppmIns[i]- g_eeGeneral.trainer.calib[i]);
+          }else {
+            uint8_t i;
+            if(md.srcRaw>=SRC_CH1) i=md.srcRaw-SRC_CH1;
+            else                   i=md.srcRaw-SRC_X1+8;
+            v=(chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
+          }
 	}
-	else
-	  v=anas[md.srcRaw];
       }else
 	switch(md.switchMode){
 	case 0: currMixerVal=0; goto mixend;  // Zeile abgeschaltet
