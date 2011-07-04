@@ -191,7 +191,7 @@ mode4 ail thr ele rud
 EEGeneral_TOP g_eeGeneral;
 ModelData_TOP g_model;
 uint16_t       s_trainerLast10ms;
-uint8_t        g_trainerSlaveActive;
+uint8_t        g_trainerSlaveActiveChns;
 uint16_t  g_badAdc,g_allAdc;
 #ifdef WITH_ADC_STAT
 uint16_t  g_rawVals[7];
@@ -635,7 +635,7 @@ void   perChecks() //ca 10ms
       break;
     case 3:
       if((g_tmr10ms - s_trainerLast10ms) > 50 ){
-        g_trainerSlaveActive = 0;
+        g_trainerSlaveActiveChns = 0;
       }
       break;
     case 4:
@@ -858,9 +858,10 @@ void evalCaptures()
     if(ppmInState && ppmInState<=8){
       if(val>800 && val <2200){
         g_ppmIns[ppmInState++ - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
-        if(ppmInState==8){
+        if(ppmInState>=3){
           s_trainerLast10ms = g_tmr10ms;
-          g_trainerSlaveActive  = 1;
+          if(g_trainerSlaveActiveChns < ppmInState)
+	    g_trainerSlaveActiveChns  = ppmInState;
         }
       }else{
         ppmInState=0; //not triggered

@@ -216,7 +216,7 @@ enum EnumKeys {
 ///number of real output channels (CH1-CH8) plus virtual output channels X1-X4
 #define NUM_XCHNOUT (NUM_CHNOUT+NUM_VIRT)
 ///number of real input channels (1-9) plus virtual input channels X1-X4
-#define NUM_XCHNRAW (7+3+2+  NUM_VIRT + 8)
+#define NUM_XCHNRAW (7+3+2+  NUM_VIRT + 8 +8)
 
 #define DST_CH1  0 //..CH8
 #define DST_X1   8 //..X4
@@ -234,14 +234,17 @@ enum EnumKeys {
 #define SRC_MAX 10
 #define SRC_CUR 11
 #define SRC_X1  12 //..X4
-#define SRC_T1  16 //..T8
+#define SRC_CH1 16 //..CH8
+#define SRC_T1  24 //..T8
 #define SRC_STR "RUD\t""ELE\t""THR\t""AIL\t"\
                 " P1\t"" P2\t"" P3\t"\
                 " p1\t"" p2\t"" p3\t"\
                 "MAX\t""CUR\t"\
                 " X1\t"" X2\t"" X3\t"" X4\t" \
+                "CH1\t""CH2\t""CH3\t""CH4\t" \
+                "CH5\t""CH6\t""CH7\t""CH8\t" \
                 " T1\t"" T2\t"" T3\t"" T4\t" \
-                " T5\t"" T6\t"" T7\t"" T8"
+                " T5\t"" T6\t"" T7\t"" T8\t" \
 
 
 #define TMRMODE_NONE     0
@@ -497,7 +500,7 @@ extern uint16_t           pulses2MHz[60];
 extern int16_t            g_ppmIns[8];
 extern int16_t            g_chans512[NUM_CHNOUT];
 extern uint8_t            g_sumAna;
-extern uint8_t            g_trainerSlaveActive;
+extern uint8_t            g_trainerSlaveActiveChns;
 extern uint16_t           g_lightAct1s;
 extern uint16_t           g_actTime1s;
 extern uint16_t g_badAdc,g_allAdc;
