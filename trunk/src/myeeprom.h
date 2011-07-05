@@ -240,13 +240,13 @@ typedef struct t_ModelData_r84 {
   uint16_t  tmrVal;               // 2
   uint8_t   protocol;             // 1
   char      res[3];               // 3
-  LimitData_r84 limitData[NUM_CHNOUT];// 4*8
+  LimitData_r84 limitData[NUM_CHNOUT];// 3*8
   ExpoData_r84  expoData[4];          // 5*4
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r0  trimData[4];          // 3*4
-} __attribute__((packed)) ModelData_r84; //210
+} __attribute__((packed)) ModelData_r84; //202
 
 #define MDVERS143 2
 typedef struct t_ModelData_r143 {
@@ -256,14 +256,14 @@ typedef struct t_ModelData_r143 {
   uint16_t  tmrVal;               // 2
   uint8_t   protocol;             // 1
   char      res[3];               // 3
-  LimitData_r84 limitData[NUM_CHNOUT];// 4*8
+  LimitData_r84 limitData[NUM_CHNOUT];// 3*8
   ExpoData_r84  expoData[4];          // 5*4
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r143; //211
+} __attribute__((packed)) ModelData_r143; //203
 
 #define MDVERS167 3
 typedef struct t_ModelData_r167 {
@@ -273,14 +273,14 @@ typedef struct t_ModelData_r167 {
   uint16_t  tmrVal;               // 2
   uint8_t   protocol;             // 1
   char      res[3];               // 3
-  LimitData_r167 limitData[NUM_CHNOUT];// 4*8
+  LimitData_r167 limitData[NUM_CHNOUT];// 3*8
   ExpoData_r84  expoData[4];          // 5*4
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r167; //211
+} __attribute__((packed)) ModelData_r167; //203
 
 #define MDVERS171 4
 typedef struct t_ModelData_r171 {
@@ -290,14 +290,14 @@ typedef struct t_ModelData_r171 {
   uint16_t  tmrVal;               // 2
   uint8_t   protocol;             // 1
   char      res[3];               // 3
-  LimitData_r167 limitData[NUM_CHNOUT];// 4*8
-  ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 4*15
+  LimitData_r167 limitData[NUM_CHNOUT];// 3*8
+  ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 3*15
   MixData_r0   mixData[MAX_MIXERS];  //0 4*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r171; //251
+} __attribute__((packed)) ModelData_r171; //228
 
 #define MDVERS192 5
 typedef struct t_ModelData_r192 {
@@ -307,14 +307,14 @@ typedef struct t_ModelData_r192 {
   uint16_t  tmrVal;               // 2
   uint8_t   protocol;             // 1
   char      res[3];               // 3
-  LimitData_r167 limitData[NUM_CHNOUT];// 4*8
-  ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 4*15
+  LimitData_r167 limitData[NUM_CHNOUT];// 3*8
+  ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 3*15
   MixData_r192   mixData[MAX_MIXERS];  //0 5*25
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r192; //276
+} __attribute__((packed)) ModelData_r192; //253
 
 
 #define MDVERS_TOP    MDVERS192

@@ -385,6 +385,7 @@ void eeLoadModel(uint8_t id)
 	continue;
       }
       memmove(&md192.weight,&md0.weight,3);
+      //                       0  1   2   3   4  5  6  7   8   9
       uint8_t sr=md0.srcRaw; //0 RUD ELE THR AIL P1 P2 P3 MAX FUL X1-4
       memset(&md192,0,2);
       md192.destCh =dc;
@@ -392,9 +393,10 @@ void eeLoadModel(uint8_t id)
 	if(sr<=9) md192.switchMode=1; //P1-3, FUL I=-1
 	if(sr==8) md192.switchMode=2; //MAX I=0
 	if(sr==9) sr=8; //FUL->MAX
+        if(sr>9)  sr+=8;//space for ch1-ch8
         if(sr>7)  sr+=3;//space for p1-3
       }
-      md192.srcRaw =sr-1;
+      md192.srcRaw =sr-1; //now start with 0
       if(md192.weight<0 && md192.curve){
         md192.weight   = -md192.weight;
         md192.curveNeg = 1;

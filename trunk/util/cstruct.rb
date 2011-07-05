@@ -247,6 +247,7 @@ module CStruct
       END
       #puts d
       CStruct.module_eval d
+      puts "#{tname}.sizeof() = #{@pos}"
     end
     def doAlign(typ)
       g=[CStruct.module_eval("#{typ}.granu"),CStruct.alignment].min

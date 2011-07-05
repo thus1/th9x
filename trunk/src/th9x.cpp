@@ -36,7 +36,7 @@ todo
 + show foldedlist lines number
 - show curves ref count, curve type
 - issue 59 more output chans, soft switches
-- outputs as inputs? calc sequence
++ outputs as inputs? calc sequence
 - issue 57 chan recursion
 - subtrim before limits? issue 61
 + dual rate interface issue62
@@ -979,7 +979,7 @@ int main(void)
   DDRC = 0x3e;  PORTC = 0xc1; //pullups nc
   DDRD = 0x00;  PORTD = 0xff; //pullups keys
   DDRE = 0x08;  PORTE = 0xff-(1<<OUT_E_BUZZER); //pullups + buzzer 0
-  DDRF = 0x00;  PORTF = 0xff; //anain
+  DDRF = 0x00;  PORTF = 0x00; //anain
   DDRG = 0x10;  PORTG = 0xff; //pullups + SIM_CTL=1 = phonejack = ppm_in
   lcd_init();
 

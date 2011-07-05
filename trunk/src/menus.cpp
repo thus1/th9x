@@ -1473,7 +1473,8 @@ void menuProcSetup1(uint8_t event)
     }
   }
 }
-static prog_uint8_t APM s_istTmrVals[]={ 5,10,20,40,80}; 
+static prog_uint8_t APM s_istTmrVals1[]={ 0,10,20,40}; 
+static prog_uint8_t APM s_istTmrVals2[]={ 5,10,20,40}; 
 void menuProcSetup0(uint8_t event)
 {
   static MState2 mstate2;
@@ -1520,19 +1521,20 @@ void menuProcSetup0(uint8_t event)
         if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVol,0,3);
         break;
       case 4:// "instant trim switch"
-	putsDrSwitches(0*FW,y,g_eeGeneral.iTrimSwitch,attr);
+#define TrimSwitch (MAX_DRSWITCH-1-g_eeGeneral.iTrimSwitch)
+	putsDrSwitches(0*FW,y,TrimSwitch,attr);
         if(attr){
-          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimSwitch, 0, MAX_DRSWITCH-1);
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimSwitch, 0, MAX_DRSWITCH-2);
         }
         break;
       case 5:// "instant trim switch"
-        lcd_outdezAtt( FW*16, y-FH, pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme1+1]),attr+PREC1);
+        lcd_outdezAtt( FW*16, y-FH, pgm_read_byte(&s_istTmrVals1[g_eeGeneral.iTrimTme1]),attr+PREC1);
         if(attr){
           CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme1, 0, 3);
         }
         break;
       case 6:// "instant trim switch"
-        lcd_outdezAtt( FW*20, y-2*FH, pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme2]),attr+PREC1);
+        lcd_outdezAtt( FW*20, y-2*FH, pgm_read_byte(&s_istTmrVals2[g_eeGeneral.iTrimTme2]),attr+PREC1);
         if(attr){
           CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme2, 0, 3);
         }
@@ -1958,7 +1960,7 @@ void menuProc0(uint8_t event)
       switch(g_istTrimState){
       case IST_WAITKEY:
 	lcd_putsAtt(2*FW,6*FH,PSTR("press "), BLINK);
-	putsDrSwitches(8*FW,6*FH,g_eeGeneral.iTrimSwitch,BLINK);
+	putsDrSwitches(8*FW,6*FH,TrimSwitch,BLINK);
 
 	break;
       case IST_PREPARE:
@@ -2150,26 +2152,26 @@ void perOut(int16_t *chanOut)
     static uint16_t s_istAnas[4];
     switch(g_istTrimState){
     case IST_CHECKKEY:
-      s_istInitKey = getSwitch(g_eeGeneral.iTrimSwitch,0);
+      s_istInitKey = getSwitch(TrimSwitch,0);
       g_istTrimState = IST_WAITKEY;
       break;
     case IST_WAITKEY:
-      if(s_istInitKey != getSwitch(g_eeGeneral.iTrimSwitch,0)){
+      if(s_istInitKey != getSwitch(TrimSwitch,0)){
 	g_istTrimState = IST_PREPARE;
-	s_istTmr=pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme1+1])*10;
+	s_istTmr=pgm_read_byte(&s_istTmrVals1[g_eeGeneral.iTrimTme1])*10;
       }
       break;
     case IST_PREPARE:
-      if(--s_istTmr%50==0)beepTmr();
-      if(s_istTmr == 0){
+      if(s_istTmr%50==0)beepTmr();
+      if(s_istTmr-- == 0){
 	memcpy(s_istAnas,anas,sizeof(s_istAnas));
 	g_istTrimState = IST_FIX;
-	s_istTmr=pgm_read_byte(&s_istTmrVals[g_eeGeneral.iTrimTme2])*10;
+	s_istTmr=pgm_read_byte(&s_istTmrVals2[g_eeGeneral.iTrimTme2])*10;
       }
       break;
     case IST_FIX:
-      if(--s_istTmr%5==0)beepTmr();
-      if(s_istTmr == 0){
+      if(s_istTmr%5==0)beepTmr();
+      if(s_istTmr-- == 0){
 	g_istTrimState = IST_CHECKKEY;
 	s_istTmr=0;
 	for(uint8_t i=0; i<4;i++){
@@ -2211,21 +2213,10 @@ void perOut(int16_t *chanOut)
       }
       if(destCh==0) break;
 
-      //achtung 0=NC heisst switch nicht verwendet -> Zeile immer aktiv
-
-      //if( md.switchMode==0 && !getSwitch(md.swtch,1) 
-	  //          (md.srcRaw <= 4 ||  md.srcRaw > 9) //! P1 P2 P3 MAX FUL
-      //      ){
-      //  currMixerVal=0;
-      //  goto mixend;     // Zeile abgeschaltet nicht wenn src==MAX oder FULL
-      //}
 
       int16_t v=0;
-      //v = !getSwitch(md.swtch,1) ? ( //P1 P2 P3     FUL
-      //  (md.srcRaw == 5 || md.srcRaw == 6 || md.srcRaw == 7 || md.srcRaw == 9 )
-      //                              ? -512 : 0) : anas[md.srcRaw-1];
       if(getSwitch(md.swtch,1)){
-	if(md.srcRaw<SRC_X1){
+	if(md.srcRaw<SRC_CH1){
           if(md.srcRaw==SRC_CUR)
             v=(chans[destCh-1] + (chans[destCh-1]>0 ? 100/2 : -100/2)) / 100;
           else
@@ -2236,9 +2227,7 @@ void perOut(int16_t *chanOut)
             if(i<g_trainerSlaveActiveChns)
               v=(g_ppmIns[i]- g_eeGeneral.trainer.calib[i]);
           }else {
-            uint8_t i;
-            if(md.srcRaw>=SRC_CH1) i=md.srcRaw-SRC_CH1;
-            else                   i=md.srcRaw-SRC_X1+8;
+            uint8_t i=md.srcRaw-SRC_CH1;
             v=(chans[i] + (chans[i]>0 ? 100/2 : -100/2)) / 100;
           }
 	}

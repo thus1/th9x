@@ -233,16 +233,16 @@ enum EnumKeys {
 #define SRC_p3   9
 #define SRC_MAX 10
 #define SRC_CUR 11
-#define SRC_X1  12 //..X4
-#define SRC_CH1 16 //..CH8
+#define SRC_CH1 12 //..CH8
+#define SRC_X1  20 //..X4
 #define SRC_T1  24 //..T8
 #define SRC_STR "RUD\t""ELE\t""THR\t""AIL\t"\
                 " P1\t"" P2\t"" P3\t"\
                 " p1\t"" p2\t"" p3\t"\
                 "MAX\t""CUR\t"\
-                " X1\t"" X2\t"" X3\t"" X4\t" \
                 "CH1\t""CH2\t""CH3\t""CH4\t" \
                 "CH5\t""CH6\t""CH7\t""CH8\t" \
+                " X1\t"" X2\t"" X3\t"" X4\t" \
                 " T1\t"" T2\t"" T3\t"" T4\t" \
                 " T5\t"" T6\t"" T7\t"" T8\t" \
 
