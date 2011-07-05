@@ -43,7 +43,7 @@ def chnInTo_s(idx)
   %w(EOF RUD ELE THR AIL P1 P2 P3 MAX FUL X1 X2 X3 X4)[idx]
 end
 def chnIn192To_s(idx)
-  %w(RUD ELE THR AIL P1 P2 P3 p1 p2 p3 MAX CUR X1 X2 X3 X4 T1 T2 T3 T4 T5 T6 T7 T8)[idx]
+  %w(RUD ELE THR AIL P1 P2 P3 p1 p2 p3 MAX CUR CH1 CH2 CH3 CH4 CH5 CH6 CH7 CH8 X1 X2 X3 X4 T1 T2 T3 T4 T5 T6 T7 T8)[idx]
 end
 def crvTo_s(idx) 
   idx==0?"    " : "Crv#{idx}" 
@@ -445,8 +445,10 @@ CStruct.defStruct "EeFs_V4",<<-"END_TYP"
   DirEnt_V4   files[#{MAXFILES_V4}];
   END_TYP
 
-  
-  
+#x=CStruct::ModelData_r84.new
+#x.fromBin("\0"*500)
+#puts x 
+#  exit
 class ErrorBadNextIndex < Exception; end
 class Reader_V4
   def deepCopy(dst,src,key="")
@@ -492,7 +494,7 @@ class Reader_V4
 
     @fat=Array.new(@blocks.length/16,nil)
     @fbuf=[]
-    @fbufdec=[]
+    #@fbufdec=[]
 
     MAXFILES_V4.times{|fi|
       bi  = @eefs.files[fi].startBlk
@@ -509,7 +511,7 @@ class Reader_V4
         true
       }
       @fbuf[fi]    = buf[0,sz]
-      @fbufdec[fi] = decode(@fbuf[fi])
+      # @fbufdec[fi] = decode(@fbuf[fi])
     }
     #free chain
     @freeBlks=0
@@ -664,25 +666,42 @@ class Reader_V4
     }
     obuf
   end
-  def decode(inbuf)
+  def decode1(inbuf,len=10000)
     inbuf=inbuf.dup
     outbuf=""
-    while inbuf.length != 0
+    while inbuf.length != 0 and len!=0
       ctrl = inbuf.lcut(1)[0]
       if ctrl &0x80 != 0
-        outbuf += 0.chr * (ctrl&0x7f)
+        ctrl &= 0x7f
+        l=[ctrl,len].min
+        outbuf += 0.chr * (l)
       else
-        outbuf += inbuf.lcut(ctrl)
+        l=[ctrl,len].min
+        outbuf += inbuf.lcut(l)
       end
+      len -= l
     end
     outbuf
   end
-  def decode2(inbuf)
+  def decode2(inbuf,len=10000)
     inbuf=inbuf.dup
     outbuf=""
-    while inbuf.length != 0
+    zeros=0
+    ctrl=0
+    while 1 #inbuf.length != 0 and len!=0
+      l=[zeros,len].min
+      outbuf += 0.chr * l
+      zeros  -= l
+      len    -= l
+      return outbuf if zeros!=0
+      l=[ctrl,len].min
+      outbuf += inbuf.lcut(l)
+      ctrl   -= l
+      len    -= l
+      return outbuf if ctrl!=0
+      return outbuf if inbuf.length == 0
+
       ctrl = inbuf.lcut(1)[0]
-      zeros=0
       if ctrl &0x80 != 0
 	zeros = (ctrl>>4) & 0x7
 	ctrl &= 0x0f
@@ -692,8 +711,6 @@ class Reader_V4
 	  ctrl  = 0
 	end
       end
-      outbuf += 0.chr * zeros
-      outbuf += inbuf.lcut(ctrl)
     end
     outbuf
   end
@@ -712,50 +729,56 @@ class Reader_V4
     end
   end
   def infoFileTyp(fi)
-    buf=@fbufdec[fi]
+    buf=decode1(@fbuf[fi],11)
     return nil,nil if buf == ""
     hlp=CStruct::EEGeneral_helper.new()
     hlp.fromBin(buf)
     case v=hlp.myVers
-    when 1  ;   return "EEGeneral_r0              ",CStruct::EEGeneral_r0
-    when 2  ;   return "EEGeneral_r119            ",CStruct::EEGeneral_r119
-    when 3  ;   return "EEGeneral_r119_3          ",CStruct::EEGeneral_r119
-    when 4  ;   return "EEGeneral_r150            ",CStruct::EEGeneral_r150
-    when 5  ;   return "EEGeneral_r150_5          ",CStruct::EEGeneral_r150
-    when 6  ;   return "EEGeneral_r192            ",CStruct::EEGeneral_r192
+    when 1  ;   return "EEGeneral_r0              ",1,CStruct::EEGeneral_r0
+    when 2  ;   return "EEGeneral_r119            ",1,CStruct::EEGeneral_r119
+    when 3  ;   return "EEGeneral_r119_3          ",1,CStruct::EEGeneral_r119
+    when 4  ;   return "EEGeneral_r150            ",1,CStruct::EEGeneral_r150
+    when 5  ;   return "EEGeneral_r150_5          ",1,CStruct::EEGeneral_r150
+    when 6  ;   return "EEGeneral_r192            ",2,CStruct::EEGeneral_r192
     else;
       hlp=CStruct::ModelData_helper.new()
       hlp.fromBin(buf)
       #p hlp
-      if buf.length==CStruct::ModelData_r0.new().sizeof
-	return 			"ModelData_r0  '#{hlp.name}'",CStruct::ModelData_r0
-      else
-	case hlp.mdVers
-	when 1;	return 	"ModelData_r84 '#{hlp.name}'",CStruct::ModelData_r84
-	when 2; return 	"ModelData_r143'#{hlp.name}'",CStruct::ModelData_r143
-	when 3; return 	"ModelData_r167'#{hlp.name}'",CStruct::ModelData_r167
-	when 4; return 	"ModelData_r171'#{hlp.name}'",CStruct::ModelData_r171
-	when 5; return 	"ModelData_r192'#{hlp.name}'",CStruct::ModelData_r192
-	else;     	return 	"ModelData??   '#{hlp.name}'",nil
-	end
+      if hlp.mdVers<=3
+        buf=decode1(@fbuf[fi])
+        if buf.length==CStruct::ModelData_r0.new().sizeof
+          return 	"ModelData_r0  '#{hlp.name}'",1,CStruct::ModelData_r0
+        end
+      end
+
+      case hlp.mdVers
+      when 1;	return 	"ModelData_r84 '#{hlp.name}'",1,CStruct::ModelData_r84
+      when 2; return 	"ModelData_r143'#{hlp.name}'",1,CStruct::ModelData_r143
+      when 3; return 	"ModelData_r167'#{hlp.name}'",1,CStruct::ModelData_r167
+      when 4; return 	"ModelData_r171'#{hlp.name}'",1,CStruct::ModelData_r171
+      when 5; return 	"ModelData_r192'#{hlp.name}'",2,CStruct::ModelData_r192
+      else;   return 	"ModelData??   '#{hlp.name}'",0,nil
       end
     end
   end
   def infoFileFull(fi)
-    cmt,cls = infoFileTyp(fi)
-    puts "--- File #{fi} '#{cmt}': ---------------------------------"
+    cmt,dec,cls = infoFileTyp(fi)
+    puts "--- File #{fi} '#{cmt}' D#{dec}: ---------------------------------"
     return if !cls
     obj=cls.new
-    obj.fromBin(@fbufdec[fi])
+    #obj.fromBin(@fbufdec[fi])
+    fbufdec = (dec==1 ? decode1(@fbuf[fi]) : decode2(@fbuf[fi]))
+    puts "szRaw=#{@fbuf[fi].length} szDec=#{fbufdec.length}"
+    obj.fromBin(fbufdec)
     puts obj
   end
   def infoFile(fi)
     bi  = @eefs.files[fi].startBlk
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
-    cmt,cls = infoFileTyp(fi)
-
-    printf("%s  %4d %2d  %3d %s",(fi+?a).chr,sz,typ,@fbufdec[fi] ? @fbufdec[fi].length : 0,cmt)
+    cmt,dec,cls = infoFileTyp(fi)
+    fbufdec = (dec==1 ? decode1(@fbuf[fi]) : decode2(@fbuf[fi]))
+    printf("%s  %4d %2d  %3d %s D#{dec}",(fi+?a).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
   end
@@ -814,6 +837,8 @@ Options
       code2=r.encode2(full) 
       full2=r.decode2(code2) 
       full==full2 or raise "#{full} != #{full2}"
+      puts "#{code1[0,10].inspect} #{code2[0,10].inspect}"
+
       dx=code1.length-code2.length
       s1+=code1.length
       s2+=dx
@@ -850,7 +875,7 @@ Options
       buf = dv4.toBin
       pp buf
       buf2 = rv4.encode(buf)
-      buf == rv4.decode(buf2) or raise
+      buf == rv4.decode1(buf2) or raise
       pp buf2
       #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
       rv4.write(m+1,2,buf2)
