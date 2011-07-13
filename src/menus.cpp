@@ -55,7 +55,7 @@ MenuFuncP_PROGMEM APM menuTabDiag[] = {
   menuProcDiagAna, 
   menuProcDiagCalib
 #ifdef SIM
-  ,menuProcDisplayTest
+  //  ,menuProcDisplayTest
 #endif
 };
 
@@ -442,7 +442,7 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
     case 1:   lcd_outdezAtt(x-FW*0,y,md2.weight,attr);
       if(edit) CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
       break;
-    case 2:   lcd_putsmAtt(x-FW*2,y,PSTR("+=\t*=\t:="), md2.mixMode,attr);
+    case 2:   lcd_putsmAtt(x-FW*1,y,PSTR("+\t*\t="), md2.mixMode,attr);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.mixMode, 0,2);
       break;
     case 3:   
@@ -472,9 +472,9 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
     case 5:   
       if(!md2.swtch)break;
       if(which==15)
-	lcd_putsmAtt(x-FW*2, y, PSTR("  \t-1\t=0\t+1"),md2.switchMode,attr);
+	lcd_putsmAtt(x-FW*2+2, y, PSTR("  \ti-\ti0\ti+"),md2.switchMode,attr);
       else
-	lcd_putsmAtt(x, y, PSTR("O=off\tI=-1\tI=0\tI=+1"),md2.switchMode,attr);
+	lcd_putsmAtt(x, y, PSTR("oOff\tiNeg\tiNul\tiPos"),md2.switchMode,attr);
       //}
       if(edit){
 	CHECK_INCDEC_H_MODELVAR_BF( event,md2.switchMode , 0,3);
@@ -526,7 +526,7 @@ void menuProcMixOne(uint8_t event)
   uint8_t  y = FH*1;
   for(uint8_t i=0;i<=8;i++){
     uint8_t  x = FW*7;
-    if(i==2){x+=FW*9; y-=FH;}
+    if(i==2){x+=FW*8; y-=FH;}
     if(i==5){x+=FW*7;y-=FH;}
     if(i==7){x+=FW*11;y-=FH;}
     if(i==8){y+=FH;}
@@ -601,7 +601,7 @@ void menuProcMix(uint8_t event)
       editMixVals(event,3, sel && subHor==1, 14*FW-4,   y,line->idt); //3crv
       editMixVals(event,4, sel && subHor==2, 18*FW-4,   y,line->idt); //4sw
       editMixVals(event,15,sel && subHor==3, 20*FW-3,   y,line->idt); //2sw
-      if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '+',0);
+      if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '}',0);
       if(att2) lcd_barAtt( 4*FW,y,16*FW,att2);
     }
     if(FL_INST.isSelectedCh()) {
@@ -1390,8 +1390,8 @@ void menuProcTrainer(uint8_t event)
     if(edit) td->studWeight = checkIncDec_hg( event, td->studWeight, -31,31); //!! bitfield
 
     edit = (sub==iLog && subSub==3);
-    lcd_putsmAtt(  12*FW, y, PSTR("ch1\tch2\tch3\tch4"),td->srcChn, edit ? BLINK : 0);
-    if(edit) td->srcChn = checkIncDec_hg( event, td->srcChn, 0,3); //!! bitfield
+    lcd_putsmAtt(  12*FW, y, PSTR("ch1\tch2\tch3\tch4\tch5\tch6\tch7\tch8"),td->srcChn, edit ? BLINK : 0);
+    if(edit) td->srcChn = checkIncDec_hg( event, td->srcChn, 0,7); //!! bitfield
 
     edit = (sub==iLog && subSub==4);
     putsDrSwitches(15*FW, y, td->swtch, edit ? BLINK : 0);
@@ -1785,15 +1785,15 @@ void menuProc0(uint8_t event)
       break;
     case EVT_KEY_FIRST(KEY_RIGHT):
       //if(getEventDbl(event)==2 && s_lastPopMenu[1]){
+      if(sub<1) { //!! used in ENTRY_UP
+        sub=sub+1;
+        beepKey();
+      }
       if(getEventDbl(event)==2){
         pushMenu(menuProcModelSelect);//menuProcExpoAll); 
         //pushMenu(s_lastPopMenu[1]);
         killEvents(event);
         break;
-      }
-      if(sub<1) {
-        sub=sub+1;
-        beepKey();
       }
       break;
     case EVT_KEY_LONG(KEY_RIGHT):
@@ -1805,14 +1805,14 @@ void menuProc0(uint8_t event)
       killEvents(event);
       break;
     case EVT_KEY_FIRST(KEY_LEFT):
+      if(sub>0) { //!! used in ENTRY_UP
+        sub=sub-1;
+        beepKey();
+      }
       //if(getEventDbl(event)==2 && s_lastPopMenu[0]){
       //  pushMenu(s_lastPopMenu[0]);
       //  break;
       //}
-      if(sub>0) {
-        sub=sub-1;
-        beepKey();
-      }
       break;
     case EVT_KEY_LONG(KEY_LEFT):
       if(s_lastPopMenu[0]){
