@@ -857,12 +857,13 @@ void evalCaptures()
     captureRd = (captureRd + 1)  % DIM(captureRing); //next read
     if(ppmInState && ppmInState<=8){
       if(val>800 && val <2200){
-        g_ppmIns[ppmInState++ - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
+        g_ppmIns[ppmInState - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
         if(ppmInState>=3){
           s_trainerLast10ms = g_tmr10ms;
           if(g_trainerSlaveActiveChns < ppmInState)
 	    g_trainerSlaveActiveChns  = ppmInState;
         }
+        ppmInState++;
       }else{
         ppmInState=0; //not triggered
       }
