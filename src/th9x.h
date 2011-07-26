@@ -253,14 +253,18 @@ enum EnumKeys {
 #define TMRMODE_THR_REL  3
 #define MAX_ALERT_TIME   30
 
-#define PROTO_PPM        0
-#define PROTO_SILV_A     1
-#define PROTO_SILV_B     2
-#define PROTO_SILV_C     3
+#define PROTO_PPM            0
+#define PROTO_SILV_A         1
+#define PROTO_SILV_B         2
+#define PROTO_SILV_C         3
 #define PROTO_TRACER_CTP1009 4
-#define PROT_MAX         4
-#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\t"
-//#define PROT_STR_LEN     6
+#define PROTO_SILV_PICCOZA   5
+#define PROTO_SILV_PICCOZB   6
+#define PROTO_SILV_PICCOZC   7
+#define PROTO_HELI_IR        8
+#define PROTO_DSM2           9
+#define PROT_MAX             9
+#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2\t"
 
 typedef void (*MenuFuncP)(uint8_t event);
 
@@ -472,10 +476,10 @@ void menuProcStatistic(uint8_t event);
 void menuProc0(uint8_t event);
 void menuProcDisplayTest(uint8_t event);
 
-void setupPulses();
-void setupPulsesPPM();
-void setupPulsesSilver();
-void setupPulsesTracerCtp1009();
+extern "C" bool setupPulses();
+//void setupPulsesPPM();
+//void setupPulsesSilver();
+//void setupPulsesTracerCtp1009();
 
 extern int16_t intpol(int16_t, uint8_t);
 
