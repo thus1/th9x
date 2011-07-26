@@ -9,6 +9,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+ //hfuse 0x89 -> usbprog.rb  wrFuseHigh 0x81 eeprom save
 
 bugs:
 + contrast in alarm?
@@ -679,19 +680,25 @@ uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
 uint8_t heartbeat;
 
-extern uint16_t g_tmr1Latency_max;
-extern uint16_t g_tmr1Latency_min;
+extern uint8_t g_tmr1Latency_max;
+extern uint8_t g_tmr1Latency_min;
 
 //ISR(TIMER1_OVF_vect)
-ISR(TIMER1_COMPA_vect) //2MHz pulse generation
+/*
+ISR(TIMER1_COMPA_vectx) //2MHz pulse generation
 {
   static uint8_t   pulsePol;
   static uint16_t *pulsePtr = pulses2MHz;
 
   uint8_t i = 0;
-  while((TCNT1L < 10) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
-    ;
-  uint16_t dt=TCNT1;//-OCR1A;
+  //while((TCNT1L < 1) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
+    //  ;
+  //uint8_t dt=TCNT1L;//-OCR1A;
+  uint8_t dt;
+  do{
+    dt=TCNT1L;//-OCR1A;
+    i++;
+  }while(dt<1 && i<5);
 
   if(pulsePol)
   {
@@ -716,6 +723,103 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     setupPulses();
     cli();
     TIMSK |= (1<<OCIE1A);
+  }
+  heartbeat |= HEART_TIMER2Mhz;
+}
+*/
+ISR(TIMER1_COMPA_vect) //2MHz pulse generation
+{
+  //static uint8_t   pulsePol;
+  static uint16_t *pulsePtr = pulses2MHz;
+  //static uint8_t pulseIdx;
+
+  //  while((TCNT1L < 10) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
+  //    ;
+  uint8_t i = 0;
+  uint8_t dt;
+  do{
+    dt=TCNT1L;//-OCR1A;
+  }while(dt<4 && i++<5);
+  g_tmr1Latency_max = max(dt,g_tmr1Latency_max);
+  g_tmr1Latency_min = min(dt,g_tmr1Latency_min);
+
+  PORTB ^= (1<<OUT_B_PPM);
+
+  /*
+  OCR1A       = *pulsePtr++;
+     a70:	a0 91 00 01 	lds	r26, 0x0100
+     a74:	b0 91 01 01 	lds	r27, 0x0101
+     a78:	fd 01       	movw	r30, r26
+     a7a:	81 91       	ld	r24, Z+
+     a7c:	91 91       	ld	r25, Z+
+     a7e:	9b bd       	out	0x2b, r25	; 43
+     a80:	8a bd       	out	0x2a, r24	; 42
+     a82:	f0 93 01 01 	sts	0x0101, r31
+     a86:	e0 93 00 01 	sts	0x0100, r30
+  //OCR1A = pulses2MHz[pulseIdx++];
+  */
+  uint16_t next;
+  asm volatile(
+    " lds  r30, %A[pulsePtr]  \n\t"
+    " lds  r31, %B[pulsePtr]  \n\t"
+    " ld   %A[next],Z+        \n\t"
+    " ld   %B[next],Z+        \n\t"
+    " out  %B[ocr1a],%B[next]      \n\t"
+    " out  %A[ocr1a],%A[next]      \n\t"
+    " sts  %A[pulsePtr],r30  \n\t"
+    " sts  %B[pulsePtr],r31  \n\t"
+    " ld   %A[next],Z+        \n\t"
+    " ld   %B[next],Z+        \n\t"
+    : [next]"=r"(next)
+    : [pulsePtr]"m"(pulsePtr)
+    , [ocr1a]   "I"(_SFR_IO_ADDR(OCR1A))
+    : "r30", "r31"
+  );
+
+  //if( pulses2MHz[pulseIdx] == 0) {
+  //if( *pulsePtr == 0) {
+  if( next == 0) {
+    //currpulse=0;
+    pulsePtr = pulses2MHz;
+
+    //TIMSK &= ~(1<<OCIE1A); //stop reentrance 
+    //sei();
+    //pulseIdx = 0; 
+    uint8_t ret;
+    //  if( setupPulses() ) { //start with 1
+    //http://www.nongnu.org/avr-libc/user-manual/FAQ.html#faq_reg_usage
+    //Call-used registers (r18-r27, r30-r31)
+    asm volatile(
+      " push   r18              \n\t"
+      " push   r19              \n\t"
+      " push   r20              \n\t"
+      " push   r21              \n\t"
+      " push   r22              \n\t"
+      " push   r23              \n\t" //r24,25 r30,r31 are already saved
+      " push   r26              \n\t"
+      " push   r27              \n\t"
+      " call   setupPulses      \n\t"
+      " mov    %A[ret],r24      \n\t"
+      " pop    r27              \n\t"
+      " pop    r26              \n\t"
+      " pop    r23              \n\t"
+      " pop    r22              \n\t"
+      " pop    r21              \n\t"
+      " pop    r20              \n\t"
+      " pop    r19              \n\t"
+      " pop    r18              \n\t"
+      : [ret]"=r"(ret)
+      
+    );
+    if( ret ) { //start with 1
+      PORTB &= ~(1<<OUT_B_PPM);
+    }else{
+      PORTB |=  (1<<OUT_B_PPM);
+    }
+    //cli();
+    //TIMSK |= (1<<OCIE1A);
+    //for(int j=0; j<600; j++){asm("");  }
+
   }
   heartbeat |= HEART_TIMER2Mhz;
 }
@@ -796,7 +900,7 @@ void setupAdc(void)
 
 volatile uint8_t g_tmr16KHz;
 
-ISR(TIMER0_OVF_vect) //continuous timer 16ms (16MHz/1024)
+ISR(TIMER0_OVF_vect, ISR_NOBLOCK) //continuous timer 16ms (16MHz/1024)
 {
   g_tmr16KHz++;
 }

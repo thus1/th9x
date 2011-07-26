@@ -231,7 +231,7 @@ int8_t* curveTab(uint8_t idx)
 
 void menuProcCurveOne(uint8_t event) {
   static MState2 mstate2;
-  uint8_t x = TITLE("CURVE ");
+  uint8_t x = TITLE("CURVE f");
   lcd_putcAtt(x, 0, s_curveChan + '1', INVERS);
 
 /*  bool    cv9 = s_curveChan >= 2;
@@ -323,8 +323,8 @@ void menuProcCurve(uint8_t event) {
   uint8_t y    = 1*FH;
   for (uint8_t i = 0; i < 7; i++) {
     uint8_t attr = sub == i ? BLINK : 0;
-    lcd_putsAtt(   FW*0, y,PSTR("CV"),attr);
-    lcd_outdezAtt( FW*3, y,i+1 ,attr);
+    lcd_putsAtt(   FW*0, y,PSTR("f"),attr);
+    lcd_outdezAtt( FW*2, y,i+1 ,attr);
 
   uint8_t cvTyp=curveTyp(i);
   int8_t *crv = curveTab(i);
@@ -1663,8 +1663,8 @@ void trace(uint8_t val)
 }
 
 
-uint16_t g_tmr1Latency_max;
-uint16_t g_tmr1Latency_min = 0x7ff;
+uint8_t g_tmr1Latency_max;
+uint8_t g_tmr1Latency_min = 0xff;
 uint16_t g_timeMain;
 uint16_t g_timePerOut;
 void menuProcStatistic2(uint8_t event)
@@ -1673,7 +1673,7 @@ void menuProcStatistic2(uint8_t event)
   switch(event)
   {
     case EVT_KEY_FIRST(KEY_MENU):
-      g_tmr1Latency_min = 0x7ff;
+      g_tmr1Latency_min = 0xff;
       g_tmr1Latency_max = 0;
       g_timeMain    = 0;
       g_timePerOut  = 0;
@@ -1689,9 +1689,9 @@ void menuProcStatistic2(uint8_t event)
       break;
   }
   lcd_puts_P( 0*FW,  1*FH, PSTR("tmr1Lat max    us"));
-  lcd_outdez(14*FW , 1*FH, g_tmr1Latency_max/2 );
+  lcd_outdezAtt(14*FW , 1*FH, g_tmr1Latency_max*5,PREC1);
   lcd_puts_P( 0*FW,  2*FH, PSTR("tmr1Lat min    us"));
-  lcd_outdez(14*FW , 2*FH, g_tmr1Latency_min/2 );
+  lcd_outdezAtt(14*FW , 2*FH, g_tmr1Latency_min*5,PREC1 );
   lcd_puts_P( 0*FW,  3*FH, PSTR("tmr1 Jitter    us"));
   lcd_outdez(14*FW , 3*FH, (g_tmr1Latency_max - g_tmr1Latency_min) /2 );
   lcd_puts_P( 0*FW,  4*FH, PSTR("tmain          ms"));
