@@ -34,8 +34,8 @@ Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nong
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 || || USB || LPT ||
-|| erfolgreich || [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer], AVR ISP MKII, USB-ASP [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB], [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
-|| problematisch || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab], AVR-Dragon || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer] ||
+|| erfolgreich || [http://www.sparkfun.com/commerce/product_info.php?products_id=9231 Pocket AVR Programmer], AVR ISP MKII, USB-ASP [http://shop.myavr.de/Programmer/mySmartUSB%2520MK2%2520(Programmer%2520und%2520Bridge).htm?sp=article.sp.php&artID=42 MySmartUSB MKII], [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB] || [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer], [http://cgi.ebay.de/AVR-Atmel-ISP-parallel-Programmer-/170491386034?cmd=ViewItem&pt=Bauteile&hash=item27b21418b2#ht_1489wt_889 AVR Atmel ISP parallel Programmer]||
+|| problematisch || [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab], AVR-Dragon, [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] || [http://s-huehn.de/elektronik/avr-prog/avr-prog.htm Primitiv Parallelport programmer] ||
 
 Vermutlich wird ein USB programmer dem LPT pendant bevorzugt. Abgesehen von der Stromversorgung und der Schnittstellenwahl in AVRdude ist das meiste allerdings gleich.
 
