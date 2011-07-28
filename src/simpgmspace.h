@@ -28,7 +28,7 @@ typedef const int8_t prog_int8_t;
 #define PROGMEM
 #define pgm_read_byte(address_short) (*(uint8_t*)(address_short))
 #define pgm_read_word(address_short) (*(uint16_t*)(address_short))
-#define pgm_read_adr(address_short) (*(int*)(address_short))
+#define pgm_read_adr(address_short) *address_short
 #define pgm_read_stringP(adr) ((adr))
 #define PSTR(adr) adr
 #define _delay_us(a)
@@ -53,7 +53,7 @@ typedef const int8_t prog_int8_t;
 #define PING  ~ping
 #define EEMEM
 
-extern unsigned char pinb,pind,pine,ping,portb;
+extern volatile unsigned char pinb,portb,pinc,pind,pine,ping;
 extern unsigned char dummyport;
 //extern uint16_t anaIn(uint8_t chan);
 //void eeprom_write_block (const void *pointer_ram,

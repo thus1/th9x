@@ -260,13 +260,11 @@ void setupPulsesDsm2()
     sendByteDsm2(0);
   }else if(state<=9){ //2..9
     uint8_t      i = state-2;
-    uint16_t pulse = g_chans512[i];
-    //sendByteDsm2(0);
-    //sendByteDsm2(0);
+    uint16_t pulse = limit(0, g_chans512[i]+512,1023);
     sendByteDsm2((i<<2) | ((pulse>>8)&0x03));
     sendByteDsm2(pulse&0xff);
     if(state==9){
-      *(pulses2MHzPtr-1) += 20000*2 -1;
+      pulses2MHzPtr[-1] += 20000u*2 -1;
       state = 0; 
     }
   }
