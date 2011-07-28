@@ -24,8 +24,7 @@
 #include <ctype.h>
 
 
-unsigned char pinb,portb,pind;
-unsigned char pine,ping;
+volatile unsigned char pinb,portb,pinc,pind,pine,ping;
 unsigned char dummyport;
 char g_title[80];
 const char *eepromFile = "eeprom.bin";
@@ -371,26 +370,37 @@ void Th9xSim::refreshDiplay()
     for(unsigned i=0; i<DIM(keys2);i++){
       if(getApp()->getKeyState(keys2[i])) pind |= (1<<i);
     }
-    // /usr/local/include/fox-1.6/fxkeys.h
-    static FXuint keys3[]={
-      KEY_1, (FXuint)&pine,  INP_E_ThrCt,    0,
-      KEY_2, (FXuint)&ping,  INP_G_RuddDR,   0,
-      KEY_3, (FXuint)&pine,  INP_E_ElevDR,   0,
-      //KEY_4, (FXuint)&ping,  INP_G_ID1,      0,
-      //KEY_5, (FXuint)&pine,  INP_E_ID2,      0,
-      KEY_6, (FXuint)&pine,  INP_E_AileDR,   0,
-      KEY_7, (FXuint)&pine,  INP_E_Gear,     0,
-      KEY_8, (FXuint)&pine,  INP_E_Trainer,  0
+    
+    struct SwitchKey {
+      FXuint key;
+      volatile unsigned char& pin;
+      unsigned char shift;
+      unsigned char value;
     };
-    for(unsigned i=0; i<DIM(keys3)/4;i+=1){ int j=i*4;
-      bool ks=getApp()->getKeyState(keys3[j]);
-      if(ks != keys3[j+3]){
-        if(ks){
-          *(unsigned char*)keys3[j+1] ^=  (1<<keys3[j+2]);
-        }
-        keys3[j+3] = ks;
+    
+    static SwitchKey keys3[] = {
+#if defined(JETI) || defined(FRSKY)
+      { KEY_1, pinc,  INP_C_ThrCt, 0 },
+      { KEY_6, pinc,  INP_C_AileDR, 0 },
+#else
+      { KEY_1, pine,  INP_E_ThrCt, 0 },
+      { KEY_6, pine,  INP_E_AileDR, 0 },
+#endif
+      { KEY_2, ping,  INP_G_RuddDR, 0 },
+      { KEY_3, pine,  INP_E_ElevDR, 0 },
+      //KEY_4, ping,  INP_G_ID1,      0,
+      //KEY_5, pine,  INP_E_ID2,      0,
+      { KEY_7, pine,  INP_E_Gear, 0 },
+      { KEY_8, pine,  INP_E_Trainer, 0 } };
+
+    for(unsigned i=0; i<DIM(keys3); i++){
+      bool ks = getApp()->getKeyState(keys3[i].key);
+      if (ks != keys3[i].value) {
+        if (ks) keys3[i].pin ^= (1<<keys3[i].shift);
+        keys3[i].value = ks;
       }
     }
+    
       //     INP_G_ID1 INP_E_ID2
       // id0    0        1
       // id1    1        1

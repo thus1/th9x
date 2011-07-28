@@ -421,6 +421,10 @@ template<class t> inline t abs(t a){ return a >  0 ? a : (t)-a; }
 template<class t> inline t min(t a, t b){ return a<b?a:b; }
 /// liefert das Maximum der Argumente
 template<class t> inline t max(t a, t b){ return a>b?a:b; }
+
+template<class t> inline t limit(t mi, t x, t ma){ return min(max(mi,x),ma); }
+
+
 #define MAX(a,b) (a>b?a:b)
 template<class t> inline int8_t sgn(t a){ return a>0 ? 1 : (a < 0 ? (t)-1 : (t)0); }
 int8_t add7Bit(int8_t a,int8_t b);
