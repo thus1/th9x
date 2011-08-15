@@ -249,7 +249,7 @@ void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
 }
 
 
-void setupPulsesDsm2()
+void setupPulsesDsm2(uint8_t chns)
 {
   static uint8_t state = 0;
 
@@ -258,12 +258,12 @@ void setupPulsesDsm2()
     //DSM2_Header = 0,0;
     sendByteDsm2(0);
     sendByteDsm2(0);
-  }else if(state<=9){ //2..9
+  }else if(state<=(chns+1)){ //2..9
     uint8_t      i = state-2;
     uint16_t pulse = limit(0, g_chans512[i]+512,1023);
     sendByteDsm2((i<<2) | ((pulse>>8)&0x03));
     sendByteDsm2(pulse&0xff);
-    if(state==9){
+    if(state==(chns+1)){
       pulses2MHzPtr[-1] += 20000u*2 -1;
       state = 0; 
     }
@@ -377,8 +377,8 @@ bool setupPulses()
     case PROTO_HELI_IR:
       setupPulsesHeliIR();
       break;
-    case PROTO_DSM2:
-      setupPulsesDsm2();
+    case PROTO_DSM2_6:
+      setupPulsesDsm2(6);
       break;
   }
   uint16_t n=pulses2MHzPtr-pulses2MHz;

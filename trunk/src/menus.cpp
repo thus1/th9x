@@ -2323,9 +2323,9 @@ void perOut(int16_t *chanOut)
     sei();
   }
 
-#ifdef xSIM
+#ifdef SIM
   static int s_cnt;
-  if(s_cnt++%100==0){
+  if(s_cnt++<20){
     setupPulses();
     for(unsigned j=0; j<DIM(pulses2MHz); j++){
       printf(" %d:%d",j&1,pulses2MHz[j]);
