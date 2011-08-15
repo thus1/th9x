@@ -262,9 +262,9 @@ enum EnumKeys {
 #define PROTO_SILV_PICCOZB   6
 #define PROTO_SILV_PICCOZC   7
 #define PROTO_HELI_IR        8
-#define PROTO_DSM2           9
+#define PROTO_DSM2_6         9
 #define PROT_MAX             9
-#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2\t"
+#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2_6\t"
 
 typedef void (*MenuFuncP)(uint8_t event);
 
