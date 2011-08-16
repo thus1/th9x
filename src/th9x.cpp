@@ -785,7 +785,7 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     //TIMSK &= ~(1<<OCIE1A); //stop reentrance 
     //sei();
     //pulseIdx = 0; 
-    uint8_t ret;
+    //uint8_t ret;
     //  if( setupPulses() ) { //start with 1
     //http://www.nongnu.org/avr-libc/user-manual/FAQ.html#faq_reg_usage
     //Call-used registers (r18-r27, r30-r31)
@@ -799,7 +799,7 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
       " push   r26              \n\t"
       " push   r27              \n\t"
       " call   setupPulses      \n\t"
-      " mov    %A[ret],r24      \n\t"
+      //      " mov    %A[ret],r24      \n\t"
       " pop    r27              \n\t"
       " pop    r26              \n\t"
       " pop    r23              \n\t"
@@ -808,14 +808,15 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
       " pop    r20              \n\t"
       " pop    r19              \n\t"
       " pop    r18              \n\t"
-      : [ret]"=r"(ret)
-      
+      : // [ret]"=r"(ret)
+      :
+      : "r24","r25"
     );
-    if( ret ) { //start with 1
-      PORTB &= ~(1<<OUT_B_PPM);
-    }else{
-      PORTB |=  (1<<OUT_B_PPM);
-    }
+//     if( ret ) { //start with 1
+//       PORTB &= ~(1<<OUT_B_PPM);
+//     }else{
+//       PORTB |=  (1<<OUT_B_PPM);
+//     }
     //cli();
     //TIMSK |= (1<<OCIE1A);
     //for(int j=0; j<600; j++){asm("");  }

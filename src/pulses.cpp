@@ -353,9 +353,10 @@ void setupPulsesPiccoZ()
 
 
 
-bool setupPulses() 
+void setupPulses() 
 {
   pulses2MHzPtr = pulses2MHz;
+  uint8_t pol=0;
   switch(g_model.protocol)
   {
     case PROTO_PPM:
@@ -380,12 +381,22 @@ bool setupPulses()
     case PROTO_DSM2_6:
       setupPulsesDsm2(6);
       break;
+    case PROTO_DSM2_6i:
+      pol=1;
+      setupPulsesDsm2(6);
+      break;
   }
   uint16_t n=pulses2MHzPtr-pulses2MHz;
   if( n & 1 ) alert(PSTR("pulse tab odd length"));
   if( n >= DIM(pulses2MHz)) alert(PSTR("pulse tab overflow"));
   *pulses2MHzPtr = 0;
-  return 0;
+  if( pol ) { //start with 1
+    PORTB &= ~(1<<OUT_B_PPM);
+  }else{
+    PORTB |=  (1<<OUT_B_PPM);
+  }
+
+  //return 0;
 }
 
 
