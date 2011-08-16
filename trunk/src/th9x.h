@@ -263,8 +263,9 @@ enum EnumKeys {
 #define PROTO_SILV_PICCOZC   7
 #define PROTO_HELI_IR        8
 #define PROTO_DSM2_6         9
-#define PROT_MAX             9
-#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2_6\t"
+#define PROTO_DSM2_6i       10
+#define PROT_MAX            10
+#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2_6\tDSM2_6i\t"
 
 typedef void (*MenuFuncP)(uint8_t event);
 
@@ -480,7 +481,7 @@ void menuProcStatistic(uint8_t event);
 void menuProc0(uint8_t event);
 void menuProcDisplayTest(uint8_t event);
 
-extern "C" bool setupPulses();
+extern "C" void setupPulses();
 //void setupPulsesPPM();
 //void setupPulsesSilver();
 //void setupPulsesTracerCtp1009();
