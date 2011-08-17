@@ -204,7 +204,7 @@ void setupPulsesTracerCtp1009()
 
 //dsm2
 //http://www.rcgroups.com/forums/showpost.php?p=18554028&postcount=237
-///home/thus/txt/flieger/PPMtoDSM.c
+// /home/thus/txt/flieger/PPMtoDSM.c
 /*
   125000 Baud 8n1      _ xxxx xxxx - ---
 #define DSM2_CHANNELS      6                // Max number of DSM2 Channels transmitted
@@ -234,8 +234,11 @@ void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
 {
   bool    lev = 0;
   uint8_t len = BITLEN_DSM2; //max val: 9*16 < 256
+  printf("%02x,",b);
+  if(b==0) printf("\n");
   for( uint8_t i=0; i<=8; i++){ //8Bits + Stop=1
-    bool nlev = b & 0x80;
+    //bool nlev = b & 0x80;
+    bool nlev = b & 1; //lsb first
     if(lev == nlev){
       len += BITLEN_DSM2;
     }else{
@@ -243,7 +246,8 @@ void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
       len  = BITLEN_DSM2;
       lev  = nlev;
     }
-    b = (b<<1) + 1; //shift in stop bit
+    //b = (b<<1) + 1; //shift in stop bit
+    b = (b>>1) | 0x80; //shift in stop bit
   }
   *pulses2MHzPtr++ = len + 10*BITLEN_DSM2 -1; //some more space-time for security
 }
