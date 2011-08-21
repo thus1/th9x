@@ -43,6 +43,8 @@
 
 //extern unsigned char font_5x8_x20_x7f[];
 extern void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode);
+extern void lcd_fill(uint8_t x,uint8_t y,uint8_t w,uint8_t h);
+extern void lcd_rect(uint8_t x,uint8_t y,uint8_t w,uint8_t h);
 
 extern void lcd_putcAtt(unsigned char x,unsigned char y,const char c,uint8_t mode);
 extern unsigned char lcd_putsAtt(unsigned char x,unsigned char y,const prog_char * s,uint8_t mode);
@@ -72,6 +74,6 @@ extern void lcd_clear();
 extern void refreshDiplay();
 extern void lcdSetRefVolt(unsigned char val);
 #define BLINK_ON_PHASE (g_blinkTmr10ms & (1<<6))
-#define BLINK_SYNC      g_blinkTmr10ms = (3<<5)
+#define BLINK_SYNC      g_blinkTmr10ms = (0x40-10)
 #endif
 /*eof*/

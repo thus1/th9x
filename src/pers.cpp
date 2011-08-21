@@ -253,7 +253,7 @@ void eeLoadModel(uint8_t id)
   if(id>=MAX_MODELS) return; //paranoia
 
   theFile.openRd(FILE_MODEL(id));
-  uint8_t sz = 0;
+  uint16_t sz = 0;
   if(theFile.readRlc2((uint8_t*)&g_model,sizeof(g_model.name)+1) == (sizeof(g_model.name)+1)){
     theFile.openRd(FILE_MODEL(id));
     if(g_model.mdVers < MDVERS192){
@@ -405,6 +405,14 @@ void eeLoadModel(uint8_t id)
     
     sz = sizeof(ModelData_r192);
     model171->mdVers = MDVERS192;
+  }
+  if( sz == sizeof(ModelData_r192) && g_model.mdVers == MDVERS192) {
+    printf("converting model data from r192 to r204\n");
+    ModelData_r204 *model204 = (ModelData_r204*)&g_model;
+    memset(model204->switchTab,0,sizeof(model204->switchTab));
+
+    sz = sizeof(ModelData_r204);
+    model204->mdVers = MDVERS204;
   }
   if( sz == sizeof(ModelData_TOP) && g_model.mdVers == MDVERS_TOP) {
     return;

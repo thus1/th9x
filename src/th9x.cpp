@@ -31,25 +31,17 @@ bugs:
 + submenu in calib
 + timer_table progmem
 todo
-+ instant trim issue63 par:switch,t1,t2
+
+- Beschleunigungssensor BMA020 oder BMA180 http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5lbHYuZGUvMy1BY2hzZW4tQmVzY2hsZXVuaWd1bmdzc2Vuc29yLTNELUJTLC1Lb21wbGV0dGJhdXNhdHoveC5hc3B4L2NpZF83NC9kZXRhaWxfMTAvZGV0YWlsMl8yODUxNQ==
 - ensure load-save combi
 - fast slopes after load
-+ show foldedlist lines number
 - show curves ref count, curve type
 - issue 59 more output chans, soft switches
-+ outputs as inputs? calc sequence
 - issue 57 chan recursion
 - subtrim before limits? issue 61
-+ dual rate interface issue62
 - serial communication
 - timer mit thr-switch
 - standard mixer in slave mode (virtual model number?)
-+ switch mode off -1 0 +1 
-+ mixline mode + * =
-+ chain src
-+ potis FUL/HALF
-+ trainer 1-8 as src 
-+ neg curves,
 - fast multiply 8*16 > 32
 - format eeprom
 - more curves with parameters?
@@ -63,6 +55,16 @@ doku
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ outputs as inputs? calc sequence
++ show foldedlist lines number
++ dual rate interface issue62
++ switch mode off -1 0 +1 
++ mixline mode + * =
++ chain src
++ potis FUL/HALF
++ trainer 1-8 as src 
++ neg curves,
++ instant trim issue63 par:switch,t1,t2
 + beep on list overflow
 + expo menu multiline
 + limit scaling/cutoff issue 55
@@ -249,30 +251,32 @@ void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 }
 
 
-#define SWITCHES_STR "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN"
 
-
-void putsDrSwitches(uint8_t x,uint8_t y,int8_t idx1,uint8_t att)//, bool nc)
+void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att)//, bool nc)
 {
-  switch(idx1){
-    case  0:            lcd_putsAtt(x+FW,y,PSTR("   "),att);return; 
-    case  MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR(" ON"),att);return; 
-    case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
-  }
-  lcd_putcAtt(x+2,y, idx1<0 ? '!' : ' ',att);  
-  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*(abs(idx1)-1),3,att);  
+  if(swtch==0){ lcd_putsAtt(x+FW,y,PSTR("   "),att);return; }
+  if(swtch<MIN_DRSWITCH) swtch+=32;
+  //switch(swtch){
+  //  case  0:            lcd_putsAtt(x+FW,y,PSTR("   "),att);return; 
+      //  case  MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR(" ON"),att);return; 
+      //case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
+      //}
+  lcd_putcAtt(x+2,y, swtch<0 ? '!' : ' ',att);  
+  lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*(abs(swtch)-1),3,att);  
 }
 bool getSwitch(int8_t swtch, bool nc)
 {
-  switch(swtch){
-    case  0:            return nc; 
-    case  MAX_DRSWITCH: return true; 
-    case -MAX_DRSWITCH: return false; 
+  if(swtch==0) return nc; 
+  if(swtch<MIN_DRSWITCH) swtch+=32; //5Bit int-val, but used asymetric -14..+17
+  if(abs(swtch)<=MAX_DRSWITCH_R){
+    if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch-1));
+    else        return   keyState((EnumKeys)(SW_BASE+swtch-1));
+  }else{
+    if(swtch<0) return ! g_virtSw[-swtch-MAX_DRSWITCH_R-1]; 
+    else        return   g_virtSw[ swtch-MAX_DRSWITCH_R-1]; 
   }
-  if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch-1));
-  return               keyState((EnumKeys)(SW_BASE+swtch-1));
 }
-uint8_t checkLastSwitch(uint8_t sw,uint8_t flg)
+uint8_t checkLastSwitch(uint8_t sw,uint8_t flg) //recognize switch changes
 {
   static bool lastState[SW_Trainer-SW_BASE+1];
   uint8_t newSw = sw;
@@ -293,14 +297,13 @@ uint8_t checkLastSwitch(uint8_t sw,uint8_t flg)
   if(flg&(EE_MODEL|EE_GENERAL)) eeDirty(flg&(EE_MODEL|EE_GENERAL));
   return newSw;
 }
-void checkSwitches()
+void checkSwitches() //initial check
 {
   if(! WARN_SW) return;
   uint8_t i;
   for(i=SW_BASE_DIAG; i< SW_Trainer; i++)
   {
     if(i==SW_ID0) continue;
-    //if(getSwitch(i-SW_BASE,0)) break;
     if(keyState((EnumKeys)i)) break;
   }
   if(i==SW_Trainer) return;
@@ -608,7 +611,7 @@ void   perChecks() //ca 10ms
       break;
     case 1:
       {
-        int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH;
+        int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH_R;
         if(mins <= 0){
           if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
           else                                  PORTB &= ~(1<<OUT_B_LIGHT);
@@ -675,155 +678,9 @@ uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 #ifndef SIM
 #include <avr/interrupt.h>
 //#include <avr/wdt.h>
-#define HEART_TIMER2Mhz 1;
-#define HEART_TIMER10ms 2;
 
 uint8_t heartbeat;
 
-extern uint8_t g_tmr1Latency_max;
-extern uint8_t g_tmr1Latency_min;
-
-//ISR(TIMER1_OVF_vect)
-/*
-ISR(TIMER1_COMPA_vectx) //2MHz pulse generation
-{
-  static uint8_t   pulsePol;
-  static uint16_t *pulsePtr = pulses2MHz;
-
-  uint8_t i = 0;
-  //while((TCNT1L < 1) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
-    //  ;
-  //uint8_t dt=TCNT1L;//-OCR1A;
-  uint8_t dt;
-  do{
-    dt=TCNT1L;//-OCR1A;
-    i++;
-  }while(dt<1 && i<5);
-
-  if(pulsePol)
-  {
-    PORTB |=  (1<<OUT_B_PPM);
-    pulsePol = 0;
-  }else{
-    PORTB &= ~(1<<OUT_B_PPM);
-    pulsePol = 1;
-  }
-  g_tmr1Latency_max = max(dt,g_tmr1Latency_max);    // max hat Sprung, deshalb unterschiedlich lang
-  g_tmr1Latency_min = min(dt,g_tmr1Latency_min);    // min hat Sprung, deshalb unterschiedlich lang
-
-  OCR1A  = *pulsePtr++;
-
-  if( *pulsePtr == 0) {
-    //currpulse=0;
-    pulsePtr = pulses2MHz;
-    pulsePol = 0;
-
-    TIMSK &= ~(1<<OCIE1A); //stop reentrance 
-    sei();
-    setupPulses();
-    cli();
-    TIMSK |= (1<<OCIE1A);
-  }
-  heartbeat |= HEART_TIMER2Mhz;
-}
-*/
-ISR(TIMER1_COMPA_vect) //2MHz pulse generation
-{
-  //static uint8_t   pulsePol;
-  static uint16_t *pulsePtr = pulses2MHz;
-  //static uint8_t pulseIdx;
-
-  //  while((TCNT1L < 10) && (++i < 50))  // Timer zu schnell auslesen funktioniert nicht, deshalb i
-  //    ;
-  uint8_t i = 0;
-  uint8_t dt;
-  do{
-    dt=TCNT1L;//-OCR1A;
-  }while(dt<4 && i++<5);
-  g_tmr1Latency_max = max(dt,g_tmr1Latency_max);
-  g_tmr1Latency_min = min(dt,g_tmr1Latency_min);
-
-  PORTB ^= (1<<OUT_B_PPM);
-
-  /*
-  OCR1A       = *pulsePtr++;
-     a70:	a0 91 00 01 	lds	r26, 0x0100
-     a74:	b0 91 01 01 	lds	r27, 0x0101
-     a78:	fd 01       	movw	r30, r26
-     a7a:	81 91       	ld	r24, Z+
-     a7c:	91 91       	ld	r25, Z+
-     a7e:	9b bd       	out	0x2b, r25	; 43
-     a80:	8a bd       	out	0x2a, r24	; 42
-     a82:	f0 93 01 01 	sts	0x0101, r31
-     a86:	e0 93 00 01 	sts	0x0100, r30
-  //OCR1A = pulses2MHz[pulseIdx++];
-  */
-  uint16_t next;
-  asm volatile(
-    " lds  r30, %A[pulsePtr]  \n\t"
-    " lds  r31, %B[pulsePtr]  \n\t"
-    " ld   %A[next],Z+        \n\t"
-    " ld   %B[next],Z+        \n\t"
-    " out  %B[ocr1a],%B[next]      \n\t"
-    " out  %A[ocr1a],%A[next]      \n\t"
-    " sts  %A[pulsePtr],r30  \n\t"
-    " sts  %B[pulsePtr],r31  \n\t"
-    " ld   %A[next],Z+        \n\t"
-    " ld   %B[next],Z+        \n\t"
-    : [next]"=r"(next)
-    : [pulsePtr]"m"(pulsePtr)
-    , [ocr1a]   "I"(_SFR_IO_ADDR(OCR1A))
-    : "r30", "r31"
-  );
-
-  //if( pulses2MHz[pulseIdx] == 0) {
-  //if( *pulsePtr == 0) {
-  if( next == 0) {
-    //currpulse=0;
-    pulsePtr = pulses2MHz;
-
-    //TIMSK &= ~(1<<OCIE1A); //stop reentrance 
-    //sei();
-    //pulseIdx = 0; 
-    //uint8_t ret;
-    //  if( setupPulses() ) { //start with 1
-    //http://www.nongnu.org/avr-libc/user-manual/FAQ.html#faq_reg_usage
-    //Call-used registers (r18-r27, r30-r31)
-    asm volatile(
-      " push   r18              \n\t"
-      " push   r19              \n\t"
-      " push   r20              \n\t"
-      " push   r21              \n\t"
-      " push   r22              \n\t"
-      " push   r23              \n\t" //r24,25 r30,r31 are already saved
-      " push   r26              \n\t"
-      " push   r27              \n\t"
-      " call   setupPulses      \n\t"
-      //      " mov    %A[ret],r24      \n\t"
-      " pop    r27              \n\t"
-      " pop    r26              \n\t"
-      " pop    r23              \n\t"
-      " pop    r22              \n\t"
-      " pop    r21              \n\t"
-      " pop    r20              \n\t"
-      " pop    r19              \n\t"
-      " pop    r18              \n\t"
-      : // [ret]"=r"(ret)
-      :
-      : "r24","r25"
-    );
-//     if( ret ) { //start with 1
-//       PORTB &= ~(1<<OUT_B_PPM);
-//     }else{
-//       PORTB |=  (1<<OUT_B_PPM);
-//     }
-    //cli();
-    //TIMSK |= (1<<OCIE1A);
-    //for(int j=0; j<600; j++){asm("");  }
-
-  }
-  heartbeat |= HEART_TIMER2Mhz;
-}
 
 class AutoLock
 {
@@ -834,8 +691,8 @@ public:
     cli();
   };
   ~AutoLock(){
-    if(m_saveFlags & (1<<SREG_I)) sei();
-    //SREG = m_saveFlags;// & (1<<SREG_I)) sei();
+    //if(m_saveFlags & (1<<SREG_I)) sei();
+    SREG = m_saveFlags;// & (1<<SREG_I)) sei();
   };
 };
 
@@ -1036,12 +893,25 @@ int8_t val2idx30_100(int8_t val)
   else             i = uval;
   return val < 0 ? -i : i;
 }
-int16_t idx2val50_150(int8_t idx)
+int16_t idx2val50_150_512(int8_t idx)
 {
   //ruby  -e 'x=0; [[1,10],[2,50],[5,155]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
   //0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150
   // idx  0  10  30   50
   // val  0  10  50  150
+  uint8_t i   = abs(idx);
+  uint16_t uval= 0;
+  if(i>10){
+    if(i<=30) uval = 10*(i-5); // (i-10)*2 + 10
+    else      uval = 25*(i-20);             // (i-30)*5 + 50
+  }else{
+    uval=i*5;//*5.12
+  }
+  // *512/500
+  return (idx < 0) ? -uval : uval;
+}
+int16_t idx2val50_150(int8_t idx)
+{
   uint8_t i   = abs(idx);
   uint8_t uval= i;
   if(i>10){
@@ -1081,7 +951,7 @@ void init() //common init for simu and target
 int main(void)
 {
   DDRA = 0xff;  PORTA = 0x00;
-  DDRB = 0x81;  PORTB = 0x7e; //pullups keys+nc
+  DDRB = 0x80;  PORTB = 0x7f; //pullups keys+nc+OUT_B_PPM
   DDRC = 0x3e;  PORTC = 0xc1; //pullups nc
   DDRD = 0x00;  PORTD = 0xff; //pullups keys
   DDRE = 0x08;  PORTE = 0xff-(1<<OUT_E_BUZZER); //pullups + buzzer 0
@@ -1095,10 +965,6 @@ int main(void)
   OCR0   = 156;
   TIMSK |= (1<<OCIE0) |  (1<<TOIE0);
 
-  // TCNT1 2MHz Pulse generator
-  TCCR1A = (0<<WGM10);
-  TCCR1B = (1 << WGM12) | (2<<CS10); // CTC OCR1A, 16MHz / 8
-  //TIMSK |= (1<<OCIE1A); enable immediately before mainloop
 
   TCCR3A  = 0;
   TCCR3B  = (1<<ICNC3) | (2<<CS30);      //ICNC3 16MHz / 8
@@ -1109,7 +975,14 @@ int main(void)
   init();
 
   setupPulses();
+  DDRB |=  (1<<OUT_B_PPM); //now pulse output enabled, before was default by resistors
   wdt_enable(WDTO_500MS);
+
+  // TCNT1 2MHz Pulse generator
+  TCNT1=0;
+  OCR1A=1000*2-1; //; first pulse after 1ms
+  TCCR1A = (0<<WGM10);
+  TCCR1B = (1 << WGM12) | (2<<CS10); // CTC OCR1A, 16MHz / 8
   TIMSK |= (1<<OCIE1A); // Pulse generator enable immediately before mainloop
   while(1){
     uint16_t old10ms=g_tmr10ms;
