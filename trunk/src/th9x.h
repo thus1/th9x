@@ -152,6 +152,7 @@ int8_t  val2idx15_100(int8_t val);
 int8_t  idx2val30_100(int8_t idx);
 int8_t  val2idx30_100(int8_t val);
 int16_t idx2val50_150(int8_t idx);
+int16_t idx2val50_150_512(int8_t idx);
 int8_t  val2idx50_150(int16_t val);
 
 
@@ -185,7 +186,30 @@ enum EnumKeys {
 #define SW_BASE      SW_ThrCt
 #define SW_BASE_DIAG SW_ThrCt
 //see SWITCHES_STR
-#define MAX_DRSWITCH (1+SW_Trainer-SW_ThrCt+1)
+//real switches
+#define MAX_DRSWITCH_R  (9)
+#define MIN_DRSWITCH_R -(9)
+//real + virtual switches
+#define MAX_DRSWITCH    (17)
+#define MIN_DRSWITCH   -(14)
+#define SWITCHES_STR "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN""SW1""SW2""SW3""SW4""SW5""SW6""SW7""SW8"
+
+// 0                                                10
+// nc "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN" on
+//    "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN" off
+
+// 0                                       8                            15  -16 -15
+// on "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN" SW1 SW2 SW3 SW4 SW5 SW6 SW7 SW8
+//    "THR""RUD""ELE""ID0""ID1""ID2""AIL""GEA""TRN" SW1 SW2 SW3 SW4 SW5
+//
+// op2   x  < <= = != > >=  y
+//
+
+// dst:3 1..8
+// op2:2  = pos neg
+// op1:2  < <= = !=
+// src1:5
+// src2:5 imm?
 
 #define NUM_KEYS TRM_RH_UP+1
 #define TRM_BASE TRM_LH_DWN
@@ -261,11 +285,12 @@ enum EnumKeys {
 #define PROTO_SILV_PICCOZA   5
 #define PROTO_SILV_PICCOZB   6
 #define PROTO_SILV_PICCOZC   7
-#define PROTO_HELI_IR        8
-#define PROTO_DSM2_6         9
-#define PROTO_DSM2_6i       10
-#define PROT_MAX            10
-#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPIZ_A\tPIZ_B\tPIZ_C\tHELI2\tDSM2_6\tDSM2_6i\t"
+#define PROTO_HELI_SWIFTA    8
+#define PROTO_HELI_SWIFTB    9
+#define PROTO_HELI_SWIFTC   10
+#define PROTO_DSM2_6        11
+#define PROT_MAX            11
+#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPICZ_A\tPICZ_B\tPICZ_C\tSWIFT_A\tSWIFT_B\tSWIFT_C\tDSM2-6\t"
 
 typedef void (*MenuFuncP)(uint8_t event);
 
@@ -481,7 +506,7 @@ void menuProcStatistic(uint8_t event);
 void menuProc0(uint8_t event);
 void menuProcDisplayTest(uint8_t event);
 
-extern "C" void setupPulses();
+extern "C" uint8_t* setupPulses();
 //void setupPulsesPPM();
 //void setupPulsesSilver();
 //void setupPulsesTracerCtp1009();
@@ -500,13 +525,16 @@ extern uint8_t            g_vbat100mV;
 extern volatile uint16_t  g_tmr10ms;
 extern volatile uint16_t  g_tmr1s;
 extern volatile uint8_t   g_blinkTmr10ms;
-// extern uint8_t            g_beepCnt;
-// extern uint8_t            g_beepVal[4];
 extern volatile uint8_t   g_nextBeep;
-//extern const PROGMEM char modi12x3[];
-//extern uint16_t           pulses2MHz[9];
-extern uint16_t           pulses2MHz[60];
+
+#define HEART_TIMER2Mhz 1;
+#define HEART_TIMER10ms 2;
+
+extern uint8_t            heartbeat;
+
+
 extern int16_t            g_ppmIns[8];
+extern uint8_t            g_virtSw[8];
 extern int16_t            g_chans512[NUM_CHNOUT];
 extern uint8_t            g_sumAna;
 extern uint8_t            g_trainerSlaveActiveChns;

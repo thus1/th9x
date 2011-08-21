@@ -19,6 +19,7 @@
 //#define EE_VERSION 2
 #define MAX_MODELS 16
 #define MAX_MIXERS 25
+#define MAX_SWITCHES 16
 #define MAX_EXPOS  15
 
 
@@ -149,6 +150,13 @@ typedef struct t_EEGeneral_r192 {
 /////////////////////////////////////////////////////////////////////////////
 
 
+typedef struct t_SwitchData_r204 {
+  uint8_t sw:3; //0..7
+  uint8_t opCmp:2; //< <= == !=
+  uint8_t opRes:3; //0= = 2=end 3=on 4=off 5=&
+  int8_t val1; //
+  int8_t val2; //
+} __attribute__((packed)) SwitchData_r204; //
 typedef struct t_ExpoData_r84 {
   int8_t  expNorm;
   int8_t  expDr;
@@ -316,9 +324,25 @@ typedef struct t_ModelData_r192 {
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
 } __attribute__((packed)) ModelData_r192; //253
 
-
-#define MDVERS_TOP    MDVERS192
-#define ModelData_TOP ModelData_r192
+#define MDVERS204 6
+typedef struct t_ModelData_r204 {
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[NUM_CHNOUT];// 3*8
+  ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 3*15
+  MixData_r192   mixData[MAX_MIXERS];  //0 5*25
+  int8_t    curves3[3][3];        // 9  new143
+  int8_t    curves5[2][5];        // 10
+  int8_t    curves9[2][9];        // 18
+  TrimData_r143  trimData[4];    // 3*4 -> 1*4
+  SwitchData_r204 switchTab[MAX_SWITCHES];//
+} __attribute__((packed)) ModelData_r204; //253
+#define MDVERS_TOP    MDVERS204
+#define ModelData_TOP ModelData_r204
 
 
 extern EEGeneral_TOP g_eeGeneral;

@@ -69,6 +69,21 @@ void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode)
     *p++ ^= 0xff;
   }
 }
+
+void lcd_fill(uint8_t x,uint8_t y,uint8_t w,uint8_t h)
+{
+  while(w--){
+    lcd_vline(x++,y,h);
+  }
+}
+void lcd_rect(uint8_t x,uint8_t y,uint8_t w,uint8_t h)
+{
+  lcd_hline(x,y,w);
+  lcd_hline(x,y+h-1,w);
+  lcd_vline(x,y+1,h-2);
+  lcd_vline(x+w-1,y+1,h-2);
+}
+
 /// invers: 0 no 1=yes 2=blink
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
