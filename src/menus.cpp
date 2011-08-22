@@ -2419,8 +2419,7 @@ void perOut(int16_t *chanOut)
 
   //Mixer loop anas[hw7] -> chanSum32[]
   //   for(uint8_t stage=1; stage<=2; stage++){
-  static bool chanSeen[sizeof(chanSum32)];
-  memset(chanSeen,0,sizeof(chanSum32));	  // Ausgaenge noch alt, 
+  int8_t currSeen = -1;
   //memset(chanSum32,0,sizeof(chanSum32));// Alle Ausgaenge auf 0
   for(uint8_t i=0;i<MAX_MIXERS;i++){
     MixData_r192 &md = g_model.mixData[i];
@@ -2434,11 +2433,16 @@ void perOut(int16_t *chanOut)
     //       }else{
     //         if(destCh>NUM_CHNOUT) break;     //im zweiten Durchlauf alle outputs CH1-CH8
     //       }
-    if(destCh==0xff) break;
-    if(!chanSeen[destCh]){
-      chanSum32[destCh]    = 0;   //allow usage of the last values of higher
-      chanSeen[destCh] = true;//numbered chans in switches or in mixlines
+    int8_t destCh2 = destCh;
+    if(destCh==0xff) destCh2=NUM_XCHNOUT-1;
+    while(currSeen < destCh2 ){
+      chanSum32[++currSeen] = 0;
     }
+    if(destCh==0xff) break;
+//     if(!chanSeen[destCh]){
+//       chanSum32[destCh]    = 0;   //allow usage of the last values of higher
+//       chanSeen[destCh] = true;//numbered chans in switches or in mixlines
+//     }
 
     int16_t v=0;
     if(getSwitch(md.swtch,1)){
