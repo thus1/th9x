@@ -152,8 +152,8 @@ typedef struct t_EEGeneral_r192 {
 
 typedef struct t_SwitchData_r204 {
   uint8_t sw:3; //0..7
-  uint8_t opCmp:2; //< <= == !=
-  uint8_t opRes:3; //0= = 2=end 3=on 4=off 5=&
+  uint8_t opCmp:2; //< & | ^
+  uint8_t opRes:3; //0 => 1=> 0=> !=> & | ^
   int8_t val1; //
   int8_t val2; //
 } __attribute__((packed)) SwitchData_r204; //

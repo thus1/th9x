@@ -104,6 +104,7 @@ public:
 #define FoldedListCntUp    5
 #define FoldedListCntDown  6
   static uint8_t doEvent(uint8_t event, bool subChanged);
+  static void    rmCurrLine();
 
 };
 
