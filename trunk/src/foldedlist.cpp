@@ -209,6 +209,16 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
     memset(inst.arrayElt(inst.m_currIDT),0,inst.m_prepSzeElt);
   STORE_MODELVARS;
   return ret;
-
 }
+void FoldedList::rmCurrLine()
+{
+  memmove(
+    inst.arrayElt(inst.m_currIDT),
+    inst.arrayElt(inst.m_currIDT+1),
+    (uint8_t)(inst.m_prepSzeElt * (uint8_t)(inst.m_prepDimArr-inst.m_currIDT-1))
+  );
+  memset(inst.arrayElt(inst.m_prepDimArr-1),0,inst.m_prepSzeElt);
+  STORE_MODELVARS;
+}
+
 

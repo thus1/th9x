@@ -45,9 +45,9 @@ MenuFuncP_PROGMEM APM menuTabModel[] = {
   menuProcModel, 
   menuProcExpoAll, 
   menuProcMix, 
+  menuProcSwitches,
   menuProcTrim, 
   menuProcLimits,
-  menuProcSwitches,
   menuProcCurve
 };
 
@@ -213,139 +213,6 @@ MState2 mstate2;
 #define TITLEP(pstr) lcd_putsAtt(0,0,pstr,INVERS)  
 #endif
 #define TITLE(str)   TITLEP(PSTR(str))
-void editSwitchVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
-{
-  uint8_t  invBlk = edit ? BLINK : 0;
-  SwitchData_r204 &sd = g_model.switchTab[idt];
-  switch(which)
-  {
-    case 0:
-    case 2:
-      {
-        int8_t val = which==0 ? sd.val1 : sd.val2;
-        if(val>0){
-          putsChnRaw( x-FW*3,y,val-1,invBlk);
-        }else{
-          lcd_outdezAtt(  x, y, idx2val50_150(val+50),invBlk);
-        }
-        if(edit) {
-          CHECK_INCDEC_H_MODELVAR_BF( event, val, -100,NUM_XCHNRAW);
-          
-        }
-        if(which==0) sd.val1=val; else sd.val2=val;
-      }
-      break; 
-    case 1:
-      lcd_putsmAtt(x-FW*2,y,PSTR("<\t<=\t==\t!="), sd.opCmp,invBlk);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opCmp, 0,3);
-      break; 
-    case 3:
-      lcd_putsmAtt(x-FW*2,y,PSTR("\t=>\ton\toff\t&"), sd.opRes,invBlk);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opRes, 1,4);
-      break; 
-  }  
-}
-
-
-void menuProcSwitches(uint8_t event)
-{
-  static MState2 mstate2;
-  TITLE("SWITCHES");  
-  int8_t subOld  = mstate2.m_posVert;
-  MSTATE_TAB = {4,4};
-  MSTATE_CHECK_VxH(7,menuTabModel,2+FL_INST.numSeqs()-1);
-  int8_t  sub    = mstate2.m_posVert;
-  int8_t  subHor = mstate2.m_posHorz;
-
-  SwitchData_r204 *sd = g_model.switchTab;
-  bool failed;
-  do{
-    failed=false;
-    FL_INST.init(g_model.switchTab,DIM(g_model.switchTab),sizeof(g_model.switchTab[0]));
-    for(uint8_t i=0; i<DIM(g_model.switchTab)&&sd[i].opRes;i++)
-    {
-//       if(! FL_INST.addDat(ed[i].chn+1,i)){
-      if(! FL_INST.addDat(sd[i].sw+1,i)){
-        failed = true;
-        eeDirty(EE_MODEL);
-        break; //data ist resorted, try once more
-      }
-    }
-  }while(failed);
-
-  FL_INST.fill(8+1);
-
-  lcd_outdez(  18*FW-1, 0, FL_INST.fillLevel()); //fill level
-
-
-  for(uint8_t i=0; i<4; i++)
-  {
-    lcd_putsmAtt( 5*FW+i*(4*FW), 1*FH,PSTR("Val\tCmp\tVal\tRes"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
-  }
-  if(sub==1){
-    checkIncDecGen2(event, &mstate2.m_posHorz, 0, 3, 0);
-  }
-
-  uint8_t y = 2*FH;
-  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
-      line;
-      line=FL_INST.nextLine(6), y+=FH
-      )
-  {
-    if(line->showCh){  
-      lcd_puts_P( 0, y,PSTR("SW"));
-      lcd_putc( 0+2*FW, y,line->chId+'0');
-    }
-    if(FL_INST.isSelectedCh()) {
-      if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
-    }
-    if(line->showDat){ //show data 
-      bool sel = FL_INST.isSelectedDat(); 
-      bool selEdit = 0;
-      if(sel && FL_INST.editMode()) {sel=0; selEdit=true;}
-
-      editSwitchVals(event,0,sel && subHor==0, 8*FW,   y,line->idt);
-      editSwitchVals(event,1,sel && subHor==1,11*FW+3, y,line->idt);
-      editSwitchVals(event,2,sel && subHor==2,16*FW,   y,line->idt);
-      editSwitchVals(event,3,sel && subHor==3,20*FW,   y,line->idt);
-      if(selEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
-    }
-  }
-  switch(FL_INST.doEvent(event,subOld != sub))
-  {
-    case FoldedListNew:
-      {
-        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDT()];
-        sd->sw              = FL_INST.currDestCh()-1; //1;   //
-        sd->opRes           = 1;
-      }
-      //fallthrough
-    case FoldedListEdit:
-//       pushMenu(menuProcExpoOne);
-      break;
-    case   FoldedListCntUp:
-      {
-        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDTOld()];
-        if(sd->sw < 7) sd->sw++; 
-        else FL_INST.editModeOff();
-      }
-      break;
-    case   FoldedListCntDown:   
-      {
-        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDTOld()];
-        if(sd->sw > 0) sd->sw--; 
-        else FL_INST.editModeOff();
-      }
-      break;
-    case FoldedListDup:
-    case FoldedListSwap:
-    default:;
-      break;
-  }
-
-
-
-}
 
 
 
@@ -454,6 +321,7 @@ void menuProcCurve(uint8_t event) {
     if (sub >= 0) {
       s_curveChan = sub;
       pushMenu(menuProcCurveOne);
+      return;
     }
     break;
   }
@@ -479,7 +347,7 @@ void menuProcLimits(uint8_t event)
   static MState2 mstate2;
   TITLE("LIMITS");  
   MSTATE_TAB = { 5,5};
-  MSTATE_CHECK_VxH(6,menuTabModel,8+1+1);
+  MSTATE_CHECK_VxH(7,menuTabModel,8+1+1);
 
   int8_t  sub    = mstate2.m_posVert;// - 1;
   uint8_t subSub = mstate2.m_posHorz + 1;
@@ -565,27 +433,293 @@ void menuProcLimits(uint8_t event)
   }
 }
 
+
+int16_t trimVal(uint8_t iLog)
+{
+  return trimExp4(g_model.trimData[iLog].trim);
+}
+
+void menuProcTrim(uint8_t event)
+{
+  static MState2 mstate2;
+  TITLE("TRIM-SUBTRIM");  
+  MSTATE_CHECK_V(5,menuTabModel,4+1);
+  int8_t  sub    = mstate2.m_posVert - 1;
+  static int16_t outHelp[NUM_CHNOUT];
+  if(sub>=0)
+  {
+    int8_t  trimTmp = g_model.trimData[sub].trim;
+    g_model.trimData[sub].trim = 0;
+    perOut(outHelp); //try output calculation without this trim-value
+    g_model.trimData[sub].trim = trimTmp;
+    for(uint8_t i=0; i<NUM_CHNOUT;i++){
+      outHelp[i] = (g_chans512[i] - outHelp[i]) ;
+      outHelp[i] = (outHelp[i] + sgn(outHelp[i])*2) / 5 ;
+    }
+  }
+
+  switch(event)
+  {
+    case  EVT_KEY_FIRST(KEY_RIGHT): 
+      //case  EVT_KEY_REPT(KEY_RIGHT): 
+      if(sub>=0)
+      {
+        for(uint8_t i=0; i<NUM_CHNOUT;i++){
+          g_model.limitData[i].offset += outHelp[i];
+        }
+        g_model.trimData[sub].trim     = 0;
+        STORE_MODELVARS;
+        beepKey();
+      }
+      break;
+  }
+
+  lcd_puts_P( 5*FW, 1*FH,PSTR("Trim   Subtrim"));
+  lcd_puts_P(11*FW, 2*FH,PSTR(      "Ch14 Ch58"));
+  for(uint8_t iLog=0; iLog<4; iLog++)
+  {
+    uint8_t y=iLog*FH+FH*3;
+    uint8_t attr = sub==iLog ? INVERS : 0; 
+    putsChnRaw(0,y,iLog,0);//attr);
+    lcd_outdezAtt( 8*FW, y, trimVal(iLog)*2, attr|PREC1 );
+    if(sub>=0 && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? BLINK|SIGN : 0);
+    else           lcd_outdezAtt(14*FW, y, g_model.limitData[iLog].offset , 0);
+
+    if(sub>=0 && outHelp[iLog+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[iLog+4] , outHelp[iLog+4] ? BLINK|SIGN : 0);
+    else           lcd_outdezAtt(19*FW, y, g_model.limitData[iLog+4].offset , 0);
+  }
+  lcd_puts_P(FW*6,FH*7,PSTR("-->  Rearrange"));  
+}
+
+
+int16_t getSrcVal(uint8_t srcRaw, uint8_t destCh);
+int16_t getSrcValSw(int8_t swId,int8_t opCmp)
+{
+  if(opCmp != 0){
+    return getSwitch(swId,0);
+  }else{
+    uint8_t aswId=abs(swId);
+    int16_t ret;
+    if(aswId <= 50){
+      ret = idx2val50_150_512(aswId);
+    }else{
+      ret = getSrcVal(aswId-51,0);
+    }
+    return swId < 0 ? -ret : ret;
+  }
+}
+
+void editSwitchVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
+{
+  uint8_t  editAtt = edit ? BLINK : 0;
+  SwitchData_r204 &sd = g_model.switchTab[idt];
+  switch(which)
+  {
+    case 0:
+    case 2:
+      {
+        int8_t val = which==0 ? sd.val1 : sd.val2;
+
+        if(sd.opCmp != 0){
+          putsDrSwitches(x-FW*4,  y, val, editAtt);
+          if(edit) {
+            CHECK_INCDEC_H_MODELVAR( event, val, MIN_DRSWITCH, MAX_DRSWITCH);
+          }
+        }else{
+          uint8_t aswId=abs(val);
+          if(aswId  <= 50){
+            lcd_outdezAtt(  x, y, idx2val50_150(val),editAtt);
+          }else{
+            if(val<0)lcd_putcAtt(x-FW*3-5, y, '-',  editAtt);
+            putsChnRaw( x-FW*3,   y, aswId-51,editAtt);
+          }
+          if(edit) {
+            CHECK_INCDEC_H_MODELVAR( event, val, -(NUM_XCHNRAW+50), NUM_XCHNRAW+50);
+          }
+        }
+        if(which==0) sd.val1=val; else sd.val2=val;
+      }
+      break; 
+    case 1:
+      lcd_putsmAtt(x-FW*1,y,PSTR("<\t&\t|\t^"), sd.opCmp,editAtt);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opCmp, 0,3);
+      break; 
+    case 3:
+      lcd_putsmAtt(x-FW*2,y,PSTR("\t=>\t1=>\t0=>\t!=>\t&\t|\t^"), sd.opRes,editAtt);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opRes, 1,7);
+      break; 
+    case 4:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),editAtt);
+      if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
+        FL_INST.rmCurrLine();
+	killEvents(event);
+	popMenu();  
+      }
+      break;
+  }  
+}
+void menuProcSwitchOne(uint8_t event)
+{
+  static MState2 mstate2;
+  uint8_t x=TITLEP(FL_INST.currInsMode() ? PSTR("INSERT ") : PSTR("EDIT "));  
+  //SwitchData_r204 &sd = g_model.switchTab[FL_INST.currIDT()];
+  //  putsChn(x,0,md2.destCh,0);
+  lcd_puts_P( x, 0,PSTR("SW"));
+  lcd_putc( x+2*FW, 0,g_model.switchTab[FL_INST.currIDT()].sw+'1');
+  MSTATE_CHECK0_V(5);
+  int8_t  sub    = mstate2.m_posVert;
+
+
+  uint8_t  y = FH*2;
+  for(uint8_t i=0;i<5;i++){
+    uint8_t  x = FW*7;
+    if(i==3){x+=FW*9;}
+    if(i==4){y+=FH;}
+    lcd_putsmAtt( FW*8, y,PSTR("Val1\tOp1 \tVal2\t Op2\tRM  "),i,INVERS);
+
+    editSwitchVals(event,i,sub==i,x, y,FL_INST.currIDT());
+    y+=FH;
+  }
+}
+
+
+void menuProcSwitches(uint8_t event)
+{
+  static MState2 mstate2;
+  TITLE("SWITCHES");  
+  int8_t subOld  = mstate2.m_posVert;
+  MSTATE_TAB = {4,4};
+  MSTATE_CHECK_VxH(5,menuTabModel,2+FL_INST.numSeqs()-1);
+  int8_t  sub    = mstate2.m_posVert;
+  int8_t  subHor = mstate2.m_posHorz;
+
+  SwitchData_r204 *sd = g_model.switchTab;
+  bool failed;
+  do{
+    failed=false;
+    FL_INST.init(g_model.switchTab,DIM(g_model.switchTab),sizeof(g_model.switchTab[0]));
+    for(uint8_t i=0; i<DIM(g_model.switchTab)&&sd[i].opRes;i++)
+    {
+//       if(! FL_INST.addDat(ed[i].chn+1,i)){
+      if(! FL_INST.addDat(sd[i].sw+1,i)){
+        failed = true;
+        eeDirty(EE_MODEL);
+        break; //data ist resorted, try once more
+      }
+    }
+  }while(failed);
+
+  FL_INST.fill(8+1);
+
+  lcd_outdez(  18*FW-1, 0, FL_INST.fillLevel()); //fill level
+
+
+  for(uint8_t i=0; i<4; i++)
+  {
+    lcd_putsmAtt( 5*FW+i*(4*FW), 1*FH,PSTR("Val\tOp\tVal\tOp2"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
+  }
+  if(sub==1){
+    checkIncDecGen2(event, &mstate2.m_posHorz, 0, 3, 0);
+  }
+
+  uint8_t y = 2*FH;
+  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
+      line;
+      line=FL_INST.nextLine(6), y+=FH
+      )
+  {
+    if(line->showCh){  
+      lcd_puts_P( 0, y,PSTR("SW"));
+      lcd_putc( 0+2*FW, y,line->chId+'0');
+    }
+    if(FL_INST.isSelectedCh()) {
+      if(BLINK_ON_PHASE) lcd_hline(0,y+7,FW*4);
+    }
+    if(line->showDat){ //show data 
+      bool sel = FL_INST.isSelectedDat(); 
+      bool selEdit = 0;
+      if(sel && FL_INST.editMode()) {sel=0; selEdit=true;}
+
+      editSwitchVals(event,0,sel && subHor==0, 8*FW,   y,line->idt);
+      editSwitchVals(event,1,sel && subHor==1,10*FW+3, y,line->idt);
+      editSwitchVals(event,2,sel && subHor==2,16*FW,   y,line->idt);
+      editSwitchVals(event,3,sel && subHor==3,20*FW,   y,line->idt);
+      if(selEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+    }
+  }
+  switch(FL_INST.doEvent(event,subOld != sub))
+  {
+    case FoldedListNew:
+      {
+        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDT()];
+        sd->sw              = FL_INST.currDestCh()-1; //1;   //
+        sd->opRes           = 1;
+      }
+      //fallthrough
+    case FoldedListEdit:
+//       pushMenu(menuProcExpoOne);
+      pushMenu(menuProcSwitchOne);
+      break;
+    case   FoldedListCntUp:
+      {
+        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDTOld()];
+        if(sd->sw < 7) sd->sw++; 
+        else FL_INST.editModeOff();
+      }
+      break;
+    case   FoldedListCntDown:   
+      {
+        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDTOld()];
+        if(sd->sw > 0) sd->sw--; 
+        else FL_INST.editModeOff();
+      }
+      break;
+    case FoldedListDup:
+    case FoldedListSwap:
+    default:;
+      break;
+  }
+}
+
+void showSwitches(uint8_t subSw) //submenu of main
+{
+#define HBAR3 18 
+#define WBAR3  8
+  uint8_t y0       = 32+4+HBAR3/2;
+  for(uint8_t i=0; i<8; i++) {
+    uint8_t x0       = i*12+64-36-6 + (i<4?-3:+3);
+    lcd_rect(x0-WBAR3/2,y0-HBAR3/2,WBAR3,HBAR3);
+    uint8_t y=y0+2;
+    if(g_virtSw[i]) y-=HBAR3/2;
+    lcd_fill(x0-WBAR3/2+2,y,WBAR3-4,HBAR3/2-4);
+    if(subSw==i && !BLINK_ON_PHASE){
+      lcd_fill(x0-WBAR3/2+1,y-1,WBAR3-2,HBAR3/2-2);
+    }
+  }
+}
+
+
+
+
 void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
 {
-  uint8_t  attr = edit ? BLINK : 0;
+  uint8_t  editAtt = edit ? BLINK : 0;
   MixData_r192 &md2 = g_model.mixData[idt];
 #define CURV_STR     "  \t""f1\t""f2\t""f3\t""f4\t""f5\t""f6\t""f7"
 
   switch(which)
   {
-    case 0:   putsChnRaw( x-FW*3,y,md2.srcRaw,attr);
+    case 0:   putsChnRaw( x-FW*3,y,md2.srcRaw,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.srcRaw, 0,NUM_XCHNRAW-1); //!! bitfield
       break;
-    case 1:   lcd_outdezAtt(x-FW*0,y,md2.weight,attr);
+    case 1:   lcd_outdezAtt(x-FW*0,y,md2.weight,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR( event, md2.weight, -125,125);
       break;
-    case 2:   lcd_putsmAtt(x-FW*1,y,PSTR("+\t*\t="), md2.mixMode,attr);
+    case 2:   lcd_putsmAtt(x-FW*1,y,PSTR("+\t*\t="), md2.mixMode,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, md2.mixMode, 0,2);
       break;
     case 3:   
-      //              lcd_putsmAtt(x-FW*3,y,PSTR(" \t-"),  md2.curveNeg,attr);
-      if(md2.curveNeg&&md2.curve) lcd_putcAtt(x-FW*3+3,y,'!', attr);
-      lcd_putsmAtt(x-FW*2,y,PSTR(CURV_STR),  md2.curve,attr);
+      if(md2.curveNeg&&md2.curve) lcd_putcAtt(x-FW*3+3,y,'!', editAtt);
+      lcd_putsmAtt(x-FW*2,y,PSTR(CURV_STR),  md2.curve,editAtt);
 
       if(edit){
 	int8_t cv = md2.curve; if(md2.curveNeg) cv=-cv;
@@ -597,9 +731,10 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
       if(edit && md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
 	s_curveChan = md2.curve-1;
 	pushMenu(menuProcCurveOne);
+        return;
       }
       break;
-    case 4:   putsDrSwitches(x-FW*4,  y,md2.swtch,attr);
+    case 4:   putsDrSwitches(x-FW*4,  y,md2.swtch,editAtt);
       if(edit) {
 	int8_t sw=md2.swtch; if(sw<MIN_DRSWITCH) sw+=32;
 	CHECK_INCDEC_H_MODELVAR( event, sw, MIN_DRSWITCH, MAX_DRSWITCH); //!! bitfield
@@ -611,9 +746,9 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
     case 5:   
       if(!md2.swtch)break;
       if(which==15)
-	lcd_putsmAtt(x-FW*2+2, y, PSTR("  \ti-\ti0\ti+"),md2.switchMode,attr);
+	lcd_putsmAtt(x-FW*2+2, y, PSTR("  \ti-\ti0\ti+"),md2.switchMode,editAtt);
       else
-	lcd_putsmAtt(x, y, PSTR("oOff\tiNeg\tiNul\tiPos"),md2.switchMode,attr);
+	lcd_putsmAtt(x, y, PSTR("oOff\tiNeg\tiNul\tiPos"),md2.switchMode,editAtt);
       //}
       if(edit){
 	CHECK_INCDEC_H_MODELVAR_BF( event,md2.switchMode , 0,3);
@@ -623,8 +758,8 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
       {
 	lcd_puts_P(x-FW*4, y, PSTR("{  s"));
 	uint16_t slope = slopeFull100ms(md2.speedDown);
-	if(slope<100)  lcd_outdezAtt(x-FW*1,y,slope,   attr|PREC1);
-	else           lcd_outdezAtt(x-FW*1,y,slope/10,attr);
+	if(slope<100)  lcd_outdezAtt(x-FW*1,y,slope,   editAtt|PREC1);
+	else           lcd_outdezAtt(x-FW*1,y,slope/10,editAtt);
 	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedDown, 0,15); //!! bitfield
 	break;
       }
@@ -632,19 +767,14 @@ void editMixVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uin
       {
 	lcd_puts_P(x-FW*4, y, PSTR("  s}"));
 	uint16_t slope = slopeFull100ms(md2.speedUp);
-	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   attr|PREC1);
-	else           lcd_outdezAtt(x-FW*2,y,slope/10,attr);
+	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   editAtt|PREC1);
+	else           lcd_outdezAtt(x-FW*2,y,slope/10,editAtt);
 	if(edit)  CHECK_INCDEC_H_MODELVAR_BF( event, md2.speedUp, 0,15); //!! bitfield
 	break;
       }
-    case 8:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),attr);
+    case 8:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),editAtt);
       if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
-	memmove(
-		&g_model.mixData[FL_INST.currIDT()],
-		&g_model.mixData[FL_INST.currIDT()+1],
-		(DIM(g_model.mixData)-(FL_INST.currIDT()+1))*sizeof(g_model.mixData[0]));
-	memset(&g_model.mixData[DIM(g_model.mixData)-1],0,sizeof(g_model.mixData[0]));
-	STORE_MODELVARS;
+        FL_INST.rmCurrLine();
 	killEvents(event);
 	popMenu();  
       }
@@ -764,6 +894,7 @@ void menuProcMix(uint8_t event)
       //fallthrough
     case FoldedListEdit:
       pushMenu(menuProcMixOne);
+      return;
       break;
     case   FoldedListCntUp:
       {
@@ -794,63 +925,6 @@ void menuProcMix(uint8_t event)
 
 
 
-
-int16_t trimVal(uint8_t iLog)
-{
-  return trimExp4(g_model.trimData[iLog].trim);
-}
-
-void menuProcTrim(uint8_t event)
-{
-  static MState2 mstate2;
-  TITLE("TRIM-SUBTRIM");  
-  MSTATE_CHECK_V(5,menuTabModel,4+1);
-  int8_t  sub    = mstate2.m_posVert - 1;
-  static int16_t outHelp[NUM_CHNOUT];
-  if(sub>=0)
-  {
-    int8_t  trimTmp = g_model.trimData[sub].trim;
-    g_model.trimData[sub].trim = 0;
-    perOut(outHelp); //try output calculation without this trim-value
-    g_model.trimData[sub].trim = trimTmp;
-    for(uint8_t i=0; i<NUM_CHNOUT;i++){
-      outHelp[i] = (g_chans512[i] - outHelp[i]) ;
-      outHelp[i] = (outHelp[i] + sgn(outHelp[i])*2) / 5 ;
-    }
-  }
-
-  switch(event)
-  {
-    case  EVT_KEY_FIRST(KEY_RIGHT): 
-      //case  EVT_KEY_REPT(KEY_RIGHT): 
-      if(sub>=0)
-      {
-        for(uint8_t i=0; i<NUM_CHNOUT;i++){
-          g_model.limitData[i].offset += outHelp[i];
-        }
-        g_model.trimData[sub].trim     = 0;
-        STORE_MODELVARS;
-        beepKey();
-      }
-      break;
-  }
-
-  lcd_puts_P( 5*FW, 1*FH,PSTR("Trim   Subtrim"));
-  lcd_puts_P(11*FW, 2*FH,PSTR(      "Ch14 Ch58"));
-  for(uint8_t iLog=0; iLog<4; iLog++)
-  {
-    uint8_t y=iLog*FH+FH*3;
-    uint8_t attr = sub==iLog ? INVERS : 0; 
-    putsChnRaw(0,y,iLog,0);//attr);
-    lcd_outdezAtt( 8*FW, y, trimVal(iLog)*2, attr|PREC1 );
-    if(sub>=0 && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? BLINK|SIGN : 0);
-    else           lcd_outdezAtt(14*FW, y, g_model.limitData[iLog].offset , 0);
-
-    if(sub>=0 && outHelp[iLog+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[iLog+4] , outHelp[iLog+4] ? BLINK|SIGN : 0);
-    else           lcd_outdezAtt(19*FW, y, g_model.limitData[iLog+4].offset , 0);
-  }
-  lcd_puts_P(FW*6,FH*7,PSTR("-->  Rearrange"));  
-}
 
 uint16_t expou(uint16_t x,uint16_t x2, uint8_t k)
 {
@@ -901,52 +975,50 @@ inline int16_t expo(int16_t x, int8_t k)
 
 void editExpoVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, uint8_t idt)
 {
-  uint8_t  invBlk = edit ? BLINK : 0;
+  uint8_t  editAtt = edit ? BLINK : 0;
   ExpoData_r171 &ed = g_model.expoTab[idt];
 
   switch(which)
   {
     case 0:
       x+=4*FW;
-      lcd_outdezAtt(x, y, idx2val15_100(ed.exp5), invBlk);
+      lcd_outdezAtt(x, y, idx2val15_100(ed.exp5), editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF(event,ed.exp5,-15, 15);
       break; 
     case 1:
       x+=1*FW;
-      lcd_putsmAtt( x, y,PSTR(CURV_STR),ed.curve,invBlk);
+      lcd_putsmAtt( x, y,PSTR(CURV_STR),ed.curve,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, ed.curve, 0,7); //!! bitfield
       if(edit && ed.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
 	s_curveChan = ed.curve-1;
 	pushMenu(menuProcCurveOne);
+        return;
       }
       break;
     case 2:
       x+=4*FW;
-      lcd_outdezAtt(x, y, idx2val30_100(ed.weight6), invBlk);
+      lcd_outdezAtt(x, y, idx2val30_100(ed.weight6), editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF(event,ed.weight6,-30,30);
       break; 
     case 3:
-      putsDrSwitches(x,y,ed.drSw,invBlk);
+      putsDrSwitches(x,y,ed.drSw,editAtt);
       if(edit) {
-	CHECK_INCDEC_H_MODELVAR_BF(event,ed.drSw,MIN_DRSWITCH_R,MAX_DRSWITCH_R); 
+	int8_t sw=ed.drSw; if(sw<MIN_DRSWITCH) sw+=32;
+	CHECK_INCDEC_H_MODELVAR(event,sw,MIN_DRSWITCH,MAX_DRSWITCH); 
+	if(sw>15) sw-=32; ed.drSw=sw; 
         CHECK_LAST_SWITCH(ed.drSw,EE_MODEL);
       }
       break; 
     case 4:
       x+=2*FW;
-      lcd_putsmAtt( x, y,PSTR("\t" "<0\t" ">0\t" "  \t" "T-"),ed.mode3,invBlk);
+      lcd_putsmAtt( x, y,PSTR("\t" "<0\t" ">0\t" "  \t" "T-"),ed.mode3,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF(event,ed.mode3, 1,4);
       break;
     case 5:
       x-=2*FW;
-      lcd_putsAtt( x, y,PSTR("[MENU]"),invBlk);
+      lcd_putsAtt( x, y,PSTR("[MENU]"),editAtt);
       if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
-	memmove(
-		&g_model.expoTab[FL_INST.currIDT()],
-		&g_model.expoTab[FL_INST.currIDT()+1],
-		(DIM(g_model.expoTab)-(FL_INST.currIDT()+1))*sizeof(g_model.expoTab[0]));
-	memset(&g_model.expoTab[DIM(g_model.expoTab)-1],0,sizeof(g_model.expoTab[0]));
-	STORE_MODELVARS;
+        FL_INST.rmCurrLine();
 	killEvents(event);
 	popMenu();  
       }
@@ -1084,6 +1156,7 @@ void menuProcExpoAll(uint8_t event)
       //fallthrough
     case FoldedListEdit:
       pushMenu(menuProcExpoOne);
+      return;
       break;
     case   FoldedListCntUp:
       {
@@ -1142,7 +1215,7 @@ void menuProcModel(uint8_t event)
       break;
     case EVT_EXIT: 
       if(! g_model.mdVers )  modelMixerDefault(s_type);
-      break;
+      return;
   }
 
   uint8_t y=1*FH;
@@ -1949,6 +2022,7 @@ void menuProc0(uint8_t event)
         pushMenu(menuProcModelSelect);//menuProcExpoAll); 
         //pushMenu(s_lastPopMenu[1]);
         killEvents(event);
+        return;
         break;
       }
       break;
@@ -1960,6 +2034,7 @@ void menuProc0(uint8_t event)
         pushMenu(menuProcModelSelect);//menuProcExpoAll); 
       }
       killEvents(event);
+      return;
       break;
     case EVT_KEY_FIRST(KEY_LEFT):
       // if(sub>0) { //!! used in ENTRY_UP
@@ -1979,6 +2054,7 @@ void menuProc0(uint8_t event)
         pushMenu(menuProcSetup0);
       }
       killEvents(event);
+      return;
       break;
 #define MAX_VIEWS 4
 #define VIEW_TRIM 3
@@ -2031,7 +2107,7 @@ void menuProc0(uint8_t event)
     case EVT_EXIT:
       view=g_eeGeneral.view;
       g_istTrimState=IST_OFF;
-      break;
+      return;
   }
 
 
@@ -2115,19 +2191,7 @@ void menuProc0(uint8_t event)
       }
       break;
     case 2:
-#define HBAR3 18 
-#define WBAR3  8
-      y0       = 32+4+HBAR3/2;
-      for(uint8_t i=0; i<8; i++) {
-	x0       = i*12+64-36-6 + (i<4?-3:+3);
-	lcd_rect(x0-WBAR3/2,y0-HBAR3/2,WBAR3,HBAR3);
-        uint8_t y=y0+2;
-        if(g_virtSw[i]) y-=HBAR3/2;
-        lcd_fill(x0-WBAR3/2+2,y,WBAR3-4,HBAR3/2-4);
-	if(subSw==i && !BLINK_ON_PHASE){
-          lcd_fill(x0-WBAR3/2+1,y-1,WBAR3-2,HBAR3/2-2);
-        }
-      }
+      showSwitches(subSw);
       break;
     case VIEW_TRIM:
       lcd_putsAtt(2*FW,5*FH,PSTR("Instant Trim"), 0);
@@ -2259,14 +2323,6 @@ int16_t getSrcVal(uint8_t srcRaw, uint8_t destCh)
     }
   }
 }
-int16_t getSrcValSw(int8_t swId)
-{
-  if(swId>0){
-    return getSrcVal(swId-1,0);
-  }else{
-    return idx2val50_150_512(swId+50);
-  }
-}
 
 
 void perOut(int16_t *chanOut)
@@ -2390,30 +2446,48 @@ void perOut(int16_t *chanOut)
   }
 
   // virtual switches
-  bool resTmp[8];
-  memset(resTmp,1,sizeof(resTmp)); //prepare for AND-operation
+  //bool resTmp[8];
+  //memset(resTmp,1,sizeof(resTmp)); //prepare for AND-operation
 
+  int8_t lastSw = -1;
+  int8_t lastOp =  0;
+  bool   currRes=  0;
+  static bool lastTab[MAX_SWITCHES];
   for(uint8_t i=0;i<MAX_SWITCHES;i++){
     SwitchData_r204  &sd = g_model.switchTab[i];
     if(sd.opRes==0) break;
-    int16_t val1 = getSrcValSw(sd.val1);
-    int16_t val2 = getSrcValSw(sd.val2);
+    int16_t val1 = getSrcValSw(sd.val1,sd.opCmp);
+    int16_t val2 = getSrcValSw(sd.val2,sd.opCmp);
     bool    res  = false;
-    switch(sd.opCmp){ //"<\t<=\t==\t!="
-      case 0: res = val1 <  val2; break; //<
-      case 1: res = val1 <= val2; break; //<=
-      case 2: res = val1 == val2; break; //==
-      case 3: res = val1 != val2; break; //!=
+    switch(sd.opCmp){ //"<\t&\t|\t^"
+      case 0: res = val1 <  val2; break;
+      case 1: res = val1 && val2; break;
+      case 2: res = val1 || val2; break;
+      case 3: res = val1 ^  val2; break;
     }
     uint8_t sw=sd.sw;
-    //printf("i=%d,res=%d val1=%d, val2=%d\n",i,res,val1,val2);
-    res = resTmp[sw] = resTmp[sw] && res; //and to result before (case4)
-    switch(sd.opRes){ //"\t=>\ton\toff\t&"
-      case 1: g_virtSw[sw]         = res;   break;
-      case 2: if(res) g_virtSw[sw] = true;  break;
-      case 3: if(res) g_virtSw[sw] = false; break;
-        //case 4: already AND´ed
+    if(lastSw!=sw){
+      lastSw = sw;
+      lastOp = 0;
     }
+    switch(lastOp){
+      case 5:  currRes &= res; break;
+      case 6:  currRes |= res; break;
+      case 7:  currRes ^= res; break;
+      default: currRes  = res; break;
+    }
+    //printf("i=%d,res=%d val1=%d, val2=%d\n",i,res,val1,val2);
+    //res = resTmp[sw] = resTmp[sw] && res; //and to result before (case4)
+    switch(sd.opRes){ //"\t=>\ton\toff\t&"
+      case 1: g_virtSw[sw]             = currRes;   break;
+      case 2: if(currRes) g_virtSw[sw] = true;      break;
+      case 3: if(currRes) g_virtSw[sw] = false;     break;
+      case 4: if(currRes && !lastTab[i]) g_virtSw[sw]^= 1; 
+        lastTab[i]=currRes;
+        break;    
+        //case 4: lastOp = 4;                   break;
+    }
+    lastOp = sd.opRes;
 
   } // virtual switches
 
