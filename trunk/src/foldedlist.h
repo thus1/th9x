@@ -29,6 +29,9 @@
 // 6  _8    
 // 7  _9    
 // 8  _10    
+typedef uint8_t ChProc(uint8_t*line, uint8_t setCh);
+
+
 class FoldedList
 {
 public:
@@ -36,7 +39,7 @@ public:
   struct Line{
     bool   showCh:1;// show the dest chn
     bool   showDat:1;// show the data info
-    int8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
+    uint8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
     int8_t islCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t idt;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
@@ -56,6 +59,8 @@ public:
   void*   m_prepArray;
   uint8_t m_prepDimArr;
   uint8_t m_prepSzeElt;
+  ChProc* m_chProc;
+  uint8_t m_numChn;
 
   uint8_t m_iterOfsIFL;
   uint8_t m_iterPosIFL;
@@ -72,10 +77,11 @@ public:
   bool    m_currInsMode;  // *
 
 private:
-  static void*   arrayElt(uint8_t idx){return (char*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
+  static uint8_t*   arrayElt(uint8_t idx){return (uint8_t*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
+  static void    editModeOff()  { inst.m_editMode=false;}
   
 public:  
-  static uint8_t fillLevel()    {return inst.m_prepCurrIDT+1;}
+  static uint8_t fillLevel()    {return inst.m_prepCurrIDT;}
   static uint8_t currIDT()      {return inst.m_currIDT;}
   static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
   static uint8_t currDestCh()   {return inst.m_currDestCh;}
@@ -83,13 +89,12 @@ public:
   static bool    isSelectedCh() {return inst.m_isSelectedCh;}
   static bool    isSelectedDat(){return inst.m_isSelectedDat;}
   static bool    editMode()     {return inst.m_editMode;}
-  static void    editModeOff()  { inst.m_editMode=false;}
   /// iterate one time to fill the list (init loop)
   /// init(); addDat addDat addDat ..
-  static void init(void*array,uint8_t dimArr, uint8_t szeElt);
-  static bool addDat(uint8_t ch, uint8_t idx);
+  static void init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,uint8_t numChn);
+  static inline bool addDat(uint8_t ch, uint8_t idx);
   static void show();           //helper func for debug
-  static bool fill(uint8_t ch); //helper func for construction
+  static bool fill(uint8_t ch, uint8_t idt); //helper func for construction
 
   /// iterate one time through the filled list (show loop)
   /// with firstLine,nextLine nextLine ..
@@ -101,8 +106,6 @@ public:
 #define FoldedListEdit     2
 #define FoldedListNew      3
 #define FoldedListSwap     4
-#define FoldedListCntUp    5
-#define FoldedListCntDown  6
   static uint8_t doEvent(uint8_t event, bool subChanged);
   static void    rmCurrLine();
 

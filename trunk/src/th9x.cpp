@@ -255,23 +255,23 @@ void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 void putsDrSwitches(uint8_t x,uint8_t y,int8_t swtch,uint8_t att)//, bool nc)
 {
   if(swtch==0){ lcd_putsAtt(x+FW,y,PSTR("   "),att);return; }
+  if(swtch<-16 || swtch>MAX_DRSWITCH ) {
+    lcd_putcAtt(x+2,y, '?',att);  
+    return;
+  }
   if(swtch<MIN_DRSWITCH) swtch+=32;
-  //switch(swtch){
-  //  case  0:            lcd_putsAtt(x+FW,y,PSTR("   "),att);return; 
-      //  case  MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR(" ON"),att);return; 
-      //case -MAX_DRSWITCH: lcd_putsAtt(x+FW,y,PSTR("OFF"),att);return; 
-      //}
   lcd_putcAtt(x+2,y, swtch<0 ? '!' : ' ',att);  
   lcd_putsnAtt(x+FW,y,PSTR(SWITCHES_STR)+3*(abs(swtch)-1),3,att);  
 }
 bool getSwitch(int8_t swtch, bool nc)
 {
   if(swtch==0) return nc; 
+  if(swtch<-16 || swtch>MAX_DRSWITCH ) return nc; 
   if(swtch<MIN_DRSWITCH) swtch+=32; //5Bit int-val, but used asymetric -14..+17
   if(abs(swtch)<=MAX_DRSWITCH_R){
     if(swtch<0) return ! keyState((EnumKeys)(SW_BASE-swtch-1));
     else        return   keyState((EnumKeys)(SW_BASE+swtch-1));
-  }else{
+  }else {
     if(swtch<0) return ! g_virtSw[-swtch-MAX_DRSWITCH_R-1]; 
     else        return   g_virtSw[ swtch-MAX_DRSWITCH_R-1]; 
   }

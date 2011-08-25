@@ -18,54 +18,68 @@
 FoldedList FoldedList::inst;
 
 
-void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt)
+void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,uint8_t numChn)
 {
-  inst.m_prepCurrCh  = 0;
-  inst.m_prepCurrIFL = 0;
-  inst.m_prepCurrISL = 1;
-  inst.m_prepCurrIDT =-1;
   inst.m_prepArray   =array;
   inst.m_prepDimArr  =dimArr;
   inst.m_prepSzeElt  =szeElt;
-
-  memset(inst.m_lines,0,sizeof(inst.m_lines));
+  inst.m_chProc      =chProc;
+  inst.m_numChn      =numChn;
   // inst.m_iterOfsIFL   = 0; only on entry
+
+  bool failed;
+  uint8_t idt;
+  do{
+    failed=false;
+    inst.m_prepCurrCh  = 0;
+    inst.m_prepCurrIFL = 0;
+    inst.m_prepCurrISL = 1;
+    //inst.m_prepCurrIDT = -1;
+    memset(inst.m_lines,0,sizeof(inst.m_lines));
+    for( idt=0; idt < dimArr && *arrayElt(idt); idt++)
+    {
+      uint8_t ch=chProc(arrayElt(idt),0);
+      if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
+        printf("resort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
+        memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
+        inst.m_editMode=false;
+        failed = true;
+        eeDirty(EE_MODEL);
+        break; //data ist resorted, try once more
+      }
+      bool ret=fill(ch,idt);
+      Line &l=inst.m_lines[inst.m_prepCurrIFL++];
+      l.showCh   = ret;//true;
+      l.chId     = inst.m_prepCurrCh;
+      l.idt      = idt;//inst.m_prepCurrIDT = idt;
+      l.showDat  = true;
+      l.islDat   = inst.m_prepCurrISL++;
+    }
+    inst.m_prepCurrIDT = idt;
+  }while(failed);
+
+  inst.fill(numChn+1,idt);
+  //inst.m_prepCurrIDT++;
 }
-bool FoldedList::fill(uint8_t ch) //helper func for construction
+
+bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
 {
   if(ch > inst.m_prepCurrCh) {
     while(1){
       if(inst.m_prepCurrIFL>0) inst.m_lines[inst.m_prepCurrIFL-1].islCh=inst.m_prepCurrISL++;
       inst.m_prepCurrCh++;
       if(inst.m_prepCurrCh>=ch) break;
-      inst.m_lines[inst.m_prepCurrIFL].showCh = true;
-      inst.m_lines[inst.m_prepCurrIFL].chId   = inst.m_prepCurrCh;
-      inst.m_lines[inst.m_prepCurrIFL].idt    = inst.m_prepCurrIDT; //insert behind
-      inst.m_prepCurrIFL++;
+      Line &l=inst.m_lines[inst.m_prepCurrIFL++];
+      l.showCh = true;
+      l.chId   = inst.m_prepCurrCh;
+      l.idt    = idt-1;//inst.m_prepCurrIDT; //insert behind
+      //inst.m_prepCurrIFL++;
       assert(inst.m_prepCurrIFL<=DIM(inst.m_lines));
     }
     return true;
   }else{
     return false;
   }
-}
-bool FoldedList::addDat(uint8_t ch, uint8_t idt)
-{
-  if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
-    printf("resort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
-    memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
-    inst.m_editMode=false;
-    return false; //failed
-  }
-
-  if(fill(ch))
-    inst.m_lines[inst.m_prepCurrIFL].showCh = true;
-  inst.m_lines[inst.m_prepCurrIFL].chId     = inst.m_prepCurrCh;
-  inst.m_lines[inst.m_prepCurrIFL].idt      = inst.m_prepCurrIDT = idt;
-  inst.m_lines[inst.m_prepCurrIFL].showDat  = true;
-  inst.m_lines[inst.m_prepCurrIFL].islDat   = inst.m_prepCurrISL++;
-  inst.m_prepCurrIFL++;
-  return true; //ok
 }
 void FoldedList::show(){
 #ifdef SIM
@@ -170,14 +184,23 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
   {
     STORE_MODELVARS;
     if(inst.m_currInsMode){
-      return inst.m_currIDTOld <  inst.m_currIDT ? FoldedListCntUp : FoldedListCntDown;
+      uint8_t chn = inst.m_chProc(arrayElt(currIDTOld()),0);
+      if( inst.m_currIDTOld <  inst.m_currIDT){ //? FoldedListCntUp//         ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDTOld()];
+//         if(ed->chn < 3) ed->chn++; 
+//         else FL_INST.editModeOff();
+        if(chn < inst.m_numChn) chn++;
+        else inst.editModeOff();
+      }else{ //: FoldedListCntDown;
+        if(chn > 1) chn--;
+        else inst.editModeOff();
+      }
+      inst.m_chProc(arrayElt(currIDTOld()),chn);
+      return 0;
+      //      return inst.m_currIDTOld <  inst.m_currIDT ? FoldedListCntUp : FoldedListCntDown;
     }else{
       //swap
       if( (inst.m_currIDTOld<inst.fillLevel()) && (inst.m_currIDT<inst.fillLevel())){
         printf("swap %d %d %d\n",inst.m_currIDTOld,inst.m_currIDT,inst.m_prepCurrIDT);
-        //memswap((char*)array + (uint8_t)(szeElt * (inst.m_currIDT)),
-        //        (char*)array + (uint8_t)(szeElt * (inst.m_currIDTOld)),
-        //        szeElt);
         memswap(inst.arrayElt(inst.m_currIDT),
                 inst.arrayElt(inst.m_currIDTOld),
                 inst.m_prepSzeElt);
