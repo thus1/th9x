@@ -479,13 +479,24 @@ then 32 data bits each taking 1ms and coded by pulse length
 "0" - 0,7ms high & 0,3ms low). 
 The last bit is the stop bit "1".
 
-38KHz Traeger ~ 13us/halfper
-    preamble       "1"   "0"      stop="1"  next ppm
-   3.6ms  1ms    .3 .7   .7 .3    .3         2.4ms?
-   ------_____    -__    ---_      -__      _________
 
-0.3ms ~ 22.8 halfs 22
-0.7ms ~ 53.2 halfs 54
+
+
+Promix Messung tiny: 28 Pules/30ms  gap~27.5ms
+tiny code
+00000000
+00001111
+10011100
+11111010
+1
+
+thus code: 30 Pules/30ms
+00111100
+11110000
+11100001
+11011100
+1
+
 
 MSB transmitted first
 --|--B3--------------
@@ -525,7 +536,22 @@ MSB transmitted first
 01| ...
 00| LSB CRC
 --|------------------
+
+38KHz Traeger ~ 13us/halfper
+    preamble       "1"   "0"      stop="1"  next ppm
+   3.6ms  1ms    .3 .7   .7 .3    .3         27.5ms?  2.4ms?
+   ------_____    -__    ---_      -__      _________
+
+0.3ms ~ 22.8 halfs 23
+0.7ms ~ 53.2 halfs 53
 */
+#define LEN_38KHZ (13*2) //= 38,46KHz
+// #define HALFS_1    23     //high-len of 1-bit
+// #define HALFS_0    53     //high-len of 0-bit
+// #define HALFS_FULL 76
+#define HALFS_1    25     //high-len of 1-bit
+#define HALFS_0    55     //high-len of 0-bit
+#define HALFS_FULL 80
 static void setupPulsesHeliSwift(uint8_t chan)
 { 
   static uint8_t state = 0;
@@ -540,7 +566,8 @@ static void setupPulsesHeliSwift(uint8_t chan)
     int8_t  heli_elevator  =   g_chans512[1] / 32;
     int8_t  heli_trim      =   g_chans512[3] / 16;
     values[2] = ((abs(heli_rudder) & 0x0F) << 4) | (abs(heli_elevator) & 0x0F);
-    values[1] = ((heli_rudder <= 0) ? 0x80 : 0) | ((heli_elevator >= 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | (abs(heli_trim) & 0x1F);
+    //values[1] = ((heli_rudder <= 0) ? 0x80 : 0) | ((heli_elevator >= 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | (abs(heli_trim) & 0x1F);
+    values[1] = ((heli_rudder < 0) ? 0x80 : 0) | ((heli_elevator < 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | (abs(heli_trim) & 0x1F);
     values[0] = ((15 + values[3] + values[2] + values[1]) & 0x3F) | (chan^3)<<6;
     state++;
   }else if(state<=32){ //1..32 bit 33=stopbit
@@ -548,19 +575,19 @@ static void setupPulsesHeliSwift(uint8_t chan)
     if(values[idx/8] & (1<<(idx%8))){
       //       //0.3ms ~ 22.8 halfs 23 13us=26-1
       //       //0.7ms ~ 53.2 halfs 53 13us=26-1
-      _send_rep1(13*2-1,23);
-      _send_1   (13*2*53-1);
+      _send_rep1(LEN_38KHZ-1,HALFS_1);
+      _send_1   (LEN_38KHZ*(HALFS_FULL-HALFS_1)-1);
     }else{
       //       //0.7ms ~ 53.2 halfs 53 13us=26-1
       //       //0.3ms ~ 22.8 halfs 23 13us=26-1
-      _send_rep1(13*2-1,53);
-      _send_1   (13*2*23-1);
+      _send_rep1(LEN_38KHZ-1,HALFS_0);
+      _send_1   (LEN_38KHZ*(HALFS_FULL-HALFS_0)-1);
     }
     state++;
     // 
   }else if(state==33){
-    _send_rep1(13*2-1,23); //stop 1
-    _send_1   (2400*2-1);  //+2400us
+    _send_rep1(LEN_38KHZ-1,HALFS_1); //stop 1
+    _send_1   (27500u*2-1);  //27.5ms //+2400us
     state=0;
   }
 }
@@ -642,10 +669,10 @@ uint8_t* setupPulses()
   pulses2MHzPtr[-1] = CTRL_END;
 
 
-#ifdef xSIM
+#ifdef SIM
   static int s_cnt;
   //if(s_cnt++%100==0){
-  if(s_cnt++<10){
+  if(s_cnt++<40){
     uint8_t *p=pulses2MHz;
     bool lev = (stbyLevel&1)^1;
     while(1){
@@ -654,14 +681,17 @@ uint8_t* setupPulses()
       printf(" %d:%d",lev,val);
       if(ctl<0){
 	uint8_t   cnt=*p++;
-	if(--cnt){
-	  *--p=cnt;
-          p+=ctl;
-	  printf("r");
-	}else{
-	  printf("R");
-	  ctl=*p++;
-	}
+// 	if(--cnt){
+// 	  *--p=cnt;
+//           p+=ctl;
+// 	  printf("r");
+// 	}else{
+// 	  printf("R");
+// 	  ctl=*p++;
+// 	}
+        printf("x%d,r=%d",cnt,-ctl/3);
+        if(((ctl/3 * cnt)&1) == 0) lev=!lev;
+        ctl=*p++;
       }
       if(ctl==0) break;
       lev=!lev;
