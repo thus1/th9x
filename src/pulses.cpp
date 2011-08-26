@@ -471,7 +471,7 @@ static void setupPulsesDsm2(uint8_t chns)
 //http://www.rclineforum.de/forum/board49-zubeh-r-elektronik-usw/fernsteuerungen-sender-und-emp/neuer-9-kanal-sender-f-r-70-au/Beitrag_3893851#post3893851
 //http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5yYy1kaXNjb3VudC5kZS9zdG9yZS9wcm9kdWN0X2luZm8ucGhwL3Byb2R1Y3RzX2lkLzEwOTAvcHJvZHVjdC9zd2lmdC12LW1heC0zLWthbmFsLWhlbGktbWl0LWd5cm8va3JlaXNlbC5odG1s
 // http://dangerousprototypes.com/forum/viewtopic.php?f=56&t=1822
-/* /home/thus/txt/flieger/protokolle/at25ppm2ir-swift.c
+/* /home/husteret/txt/flieger/protokolle/at25ppm2ir-swift.c
 Example frame captured during the initial analysis. 
 It begins with a preamble ( high level for 3,6ms then low level for 1ms),
 then 32 data bits each taking 1ms and coded by pulse length 
@@ -595,34 +595,83 @@ static void setupPulsesHeliSwift(uint8_t chan)
 
 
 //picco z
-///home/thus/txt/flieger/protokolle/m168fb_ufo_v08/picooz.c
+//http://home.versanet.de/~b-konze/uni_fb/uni_fb.htm
+// /home/husteret/txt/flieger/protokolle/m168fb_ufo_v08/picooz.c
 //
 // 1900  650 650         1226             650       1226           Stop
 // ----   __  -- __ -- __----__----__     --__      ----____       --__
 /*
-  chn:2
+  chn:2 a=00 b=01 c=10
   pow:4u msb first
   trim:4s  -2,0,1
- direction:3s
-chk:2
+  direction:3s
+  -chk[0]
+  -chk[1]
+  0
+-------
+2-bit sum = 0
+
+chk:2 = chn:2 + pow>>2:2 +pow:2 +  trim>>2:2 +trim:2 dir + direction>>1:2 + direction<<1:2
+
  */
 
-#define PICOOZ_IR_PERIODE (26*2)
-#define PICOOZ_START_1900	 1900/PICOOZ_IR_PERIODE
-#define PICOOZ_START_1226	 1226/PICOOZ_IR_PERIODE
-#define PICOOZ_START_650	 650/PICOOZ_IR_PERIODE
+#define PICOOZ_RC_HIGH	 93 //(1226/13)
+#define PICOOZ_RC_LOW	 49 //(650/13)
 
-#define PICOOZ_RC_HIGH	 1226/PICOOZ_IR_PERIODE
-#define PICOOZ_RC_LOW	 650/PICOOZ_IR_PERIODE
-
-#define PICOOZ_STOP	 650/PICOOZ_IR_PERIODE
-
-static void setupPulsesPiccoZ(uint8_t chan)
+void picco_sendB1(bool bit)
 {
-  //  int16_t direction = minmax(g_chans512[0]+512,-3,3);
-  //  int16_t power     = minmax((g_chans512[1]+512)/(1024/8),0,7);
-  //  int16_t trim      =  minmax(g_chans512[2]+512,0,2);
-  
+  if(bit){
+    _send_rep1(LEN_38KHZ-1, PICOOZ_RC_HIGH);     //ungerade anzahl 10101
+    _send_1   (1226*2 - 1);   //lange 0
+  }else{
+    _send_rep1(LEN_38KHZ-1, PICOOZ_RC_LOW);      //ungerade anzahl 10101
+    _send_1   (650*2  - 1);   //lange 0
+  }
+}
+void picco_sendBn(uint8_t bits, uint8_t n)
+{
+  while(n--) picco_sendB1(bits & (1<<n));
+}
+
+static void setupPulsesPiccoZ(uint8_t chn)
+{
+  // 1900  650 650         1226             650 0bit  1226 1bit      Stop
+  // ----   __  -- __ -- __----__----__     --__      ----____       --__
+  static bool    state = 0;
+  static uint8_t pow;
+  static int8_t  trim;
+  static int8_t  dir;
+  static uint8_t chk;
+  if(state == 0)  {
+    _send_rep1(LEN_38KHZ-1, 147);   // 1900/13  !! must be odd
+    _send_1   (650*2 - 1);//
+    picco_sendBn(0,2);
+    _send_rep1(LEN_38KHZ-1, PICOOZ_RC_HIGH);
+    _send_1   (650*2 - 1);//
+    _send_rep1(LEN_38KHZ-1, PICOOZ_RC_HIGH);
+    _send_1   (650*2 - 1);//
+    //   chn:2 a=00 b=01 c=10
+    //   pow:4u msb first
+    //   trim:4s  -2,0,1
+    //   dir:3s
+    //   -chk[0]
+    //   -chk[1]
+    //   0
+    pow    = (uint16_t)limit<uint16_t>(0, g_chans512[2]+512,1023) / (1024/16);
+    trim   = (uint16_t)limit<int16_t>(-512, g_chans512[1],511) / (512/8);
+    dir    = (uint16_t)limit<int16_t>(-512, g_chans512[0],511) / (512/4);
+    chk    = - (chn+ (pow>>2) + pow + (trim>>2) + trim + (dir>>1) + (dir<<1));
+  }else{
+    picco_sendBn(chn,2);
+    picco_sendBn(pow,4);
+    picco_sendBn(trim,4);
+    picco_sendBn(dir,3);
+    picco_sendB1(chk & (1<<0)); //lsb first, because we are here on a odd bit (dir is only 3 bits)
+    picco_sendB1(chk & (1<<1));
+    _send_rep1(LEN_38KHZ-1, PICOOZ_RC_LOW); //0-bit pulses
+    _send_1   (20000u*2  - 1); //20ms gap ?
+  }
+  state = !state;
 }
 
 
@@ -645,11 +694,12 @@ uint8_t* setupPulses()
     case PROTO_TRACER_CTP1009: // Achtung !! 0 am Ausgang = sendesignal high
       setupPulsesTracerCtp1009();
       break;
-//     case PROTO_SILV_PICCOZA:
-//     case PROTO_SILV_PICCOZB:
-//     case PROTO_SILV_PICCOZC:
-//       setupPulsesPiccoZ(g_model.protocol-PROTO_SILV_PICCOZA);
-//       break;
+    case PROTO_SILV_PICCOZA:
+    case PROTO_SILV_PICCOZB:
+    case PROTO_SILV_PICCOZC:
+      setupPulsesPiccoZ(g_model.protocol-PROTO_SILV_PICCOZA);
+      stbyLevel=0; //start with 1
+       break;
     case PROTO_HELI_SWIFTA:
     case PROTO_HELI_SWIFTB:
     case PROTO_HELI_SWIFTC:
