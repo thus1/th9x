@@ -610,9 +610,6 @@ uint8_t* setupPulses()
   //  uint16_t* ret = pulses2MHz;
   switch(g_model.protocol)
   {
-    case PROTO_PPM:
-      setupPulsesPPM();
-      break;
     case PROTO_SILV_A:         // Achtung !! 0 am Ausgang = sendesignal high
     case PROTO_SILV_B:
     case PROTO_SILV_C:
@@ -621,11 +618,11 @@ uint8_t* setupPulses()
     case PROTO_TRACER_CTP1009: // Achtung !! 0 am Ausgang = sendesignal high
       setupPulsesTracerCtp1009();
       break;
-    case PROTO_SILV_PICCOZA:
-    case PROTO_SILV_PICCOZB:
-    case PROTO_SILV_PICCOZC:
-      setupPulsesPiccoZ(g_model.protocol-PROTO_SILV_PICCOZA);
-      break;
+//     case PROTO_SILV_PICCOZA:
+//     case PROTO_SILV_PICCOZB:
+//     case PROTO_SILV_PICCOZC:
+//       setupPulsesPiccoZ(g_model.protocol-PROTO_SILV_PICCOZA);
+//       break;
     case PROTO_HELI_SWIFTA:
     case PROTO_HELI_SWIFTB:
     case PROTO_HELI_SWIFTC:
@@ -634,6 +631,10 @@ uint8_t* setupPulses()
       break;
     case PROTO_DSM2_6:
       setupPulsesDsm2(6);
+      break;
+    case PROTO_PPM:
+    default:
+      setupPulsesPPM();
       break;
   }
   uint16_t n=pulses2MHzPtr-pulses2MHz;

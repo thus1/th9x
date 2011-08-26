@@ -52,29 +52,31 @@ public:
 // ISL  select sequence
 // IFL  foldedlist
 // IFLr rel. foldedlist
-  uint8_t m_prepCurrCh; //for construction of s_lines
+  uint8_t m_prepCurrCh;   //for construction init,fill,addDat
   uint8_t m_prepCurrIFL;
   uint8_t m_prepCurrISL;
   uint8_t m_prepCurrIDT;  // *
-  void*   m_prepArray;
-  uint8_t m_prepDimArr;
-  uint8_t m_prepSzeElt;
   ChProc* m_chProc;
   uint8_t m_numChn;
 
-  uint8_t m_iterOfsIFL;
+  void*   m_prepArray;    // user data-tab info
+  uint8_t m_prepDimArr;   // "
+  uint8_t m_prepSzeElt;   // "
+
+  uint8_t m_iterOfsIFL;   //= 0 in EVT_ENTRY 
   uint8_t m_iterPosIFL;
   uint8_t m_iterHitIFL;
-  uint8_t m_subISL;
+  uint8_t m_subISL;       // save the menus sub-var firstline..nextline
   uint8_t m_iterMinISL;
-  bool    m_isSelectedCh; // *
-  bool    m_isSelectedDat;// *
-  bool    m_editMode;     // *
-  uint8_t m_currIDTOld;   // *
 
-  uint8_t m_currIDT;
-  uint8_t m_currDestCh;   // *
-  bool    m_currInsMode;  // *
+  bool    m_isSelectedCh; // * user info after nextline
+  bool    m_isSelectedDat;// *
+
+  bool    m_editMode;     // * user info after doEvent
+  uint8_t m_currIDTOld;   // * user info for move ops
+  uint8_t m_currIDT;      // * user info for move ops, curr user line
+  uint8_t m_currDestCh;   // * for init new lines
+  bool    m_currInsMode;  // * is edit one called by insert or by edit
 
 private:
   static uint8_t*   arrayElt(uint8_t idx){return (uint8_t*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
