@@ -443,7 +443,7 @@ void menuProcTrim(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("TRIM-SUBTRIM");  
-  MSTATE_CHECK_V(5,menuTabModel,4+1);
+  MSTATE_CHECK_V(6,menuTabModel,4+1);
   int8_t  sub    = mstate2.m_posVert - 1;
   static int16_t outHelp[NUM_CHNOUT];
   if(sub>=0)
@@ -1250,7 +1250,7 @@ void menuProcModelSelect(uint8_t event)
   TITLE("MODELSEL");  
   lcd_puts_P(     10*FW, 0, PSTR("free"));
   lcd_outdezAtt(  18*FW, 0, EeFsGetFree(),0);
-  lcd_putsAtt(128-FW*3,0,PSTR("1/7"),INVERS);
+  lcd_putsAtt(128-FW*3,0,PSTR("1/8"),INVERS);
   int8_t subOld  = mstate2.m_posVert;
   MSTATE_CHECK0_V(MAX_MODELS);
   int8_t  sub    = mstate2.m_posVert;
