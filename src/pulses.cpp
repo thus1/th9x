@@ -444,26 +444,42 @@ static void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
 
 static void setupPulsesDsm2(uint8_t chns)
 {
+  static uint8_t dsmDat[2+6*2]={0x80,0,  0x00,0xAA,  0x05,0xFF,  0x09,0xFF,  0x0D,0xFF,  0x13,0x54,  0x14,0xAA};
+
   static uint8_t state = 0;
 
-  ++state;
-  if(state==1){
-    //DSM2_Header = 0,0;
-    sendByteDsm2(0);
-    sendByteDsm2(0);
-  }else {
-    uint8_t      i = state-2;
-    if(i<chns){ //0..7
-      uint16_t pulse = limit(0, g_chans512[i]+512,1023);
-      sendByteDsm2((i<<2) | ((pulse>>8)&0x03));
-      sendByteDsm2(pulse&0xff);
-      if(i==(chns-1)){
-	pulses2MHzPtr-=3; //remove last stopbits and 
-	_send_1(20000u*2 -1); //prolong them
-	state = 0; 
+  if(state==0){
+    
+    if((dsmDat[0] == 0) || ! keyState(SW_Trainer) ){
+      dsmDat[0]=0; dsmDat[1]=0;  //DSM2_Header = 0,0;
+      for(uint8_t i=0; i<chns; i++){
+        uint16_t pulse = limit(0, g_chans512[i]+512,1023);
+        dsmDat[2+2*i] = (i<<2) | ((pulse>>8)&0x03);
+        dsmDat[3+2*i] = pulse & 0xff;
       }
     }
   }
+  sendByteDsm2(dsmDat[state++]);
+  sendByteDsm2(dsmDat[state++]);
+  if(state >= 2+chns*2){
+    pulses2MHzPtr-=3; //remove last stopbits and 
+    _send_1(20000u*2 -1); //prolong them
+    state=0;
+  }
+// else {
+
+//     uint8_t      i = state-2;
+//     if(i<chns){ //0..7
+//       uint16_t pulse = limit(0, g_chans512[i]+512,1023);
+//       sendByteDsm2((i<<2) | ((pulse>>8)&0x03));
+//       sendByteDsm2(pulse&0xff);
+//       if(i==(chns-1)){
+// 	pulses2MHzPtr-=3; //remove last stopbits and 
+// 	_send_1(20000u*2 -1); //prolong them
+// 	state = 0; 
+//       }
+//     }
+//   }
 }
 
 
