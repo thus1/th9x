@@ -471,7 +471,7 @@ static void setupPulsesDsm2(uint8_t chns)
 //http://www.rclineforum.de/forum/board49-zubeh-r-elektronik-usw/fernsteuerungen-sender-und-emp/neuer-9-kanal-sender-f-r-70-au/Beitrag_3893851#post3893851
 //http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5yYy1kaXNjb3VudC5kZS9zdG9yZS9wcm9kdWN0X2luZm8ucGhwL3Byb2R1Y3RzX2lkLzEwOTAvcHJvZHVjdC9zd2lmdC12LW1heC0zLWthbmFsLWhlbGktbWl0LWd5cm8va3JlaXNlbC5odG1s
 // http://dangerousprototypes.com/forum/viewtopic.php?f=56&t=1822
-/* /home/husteret/txt/flieger/protokolle/at25ppm2ir-swift.c
+/* ~/txt/flieger/protokolle/at25ppm2ir-swift.c
 Example frame captured during the initial analysis. 
 It begins with a preamble ( high level for 3,6ms then low level for 1ms),
 then 32 data bits each taking 1ms and coded by pulse length 
@@ -546,12 +546,12 @@ MSB transmitted first
 0.7ms ~ 53.2 halfs 53
 */
 #define LEN_38KHZ (13*2) //= 38,46KHz
-// #define HALFS_1    23     //high-len of 1-bit
-// #define HALFS_0    53     //high-len of 0-bit
-// #define HALFS_FULL 76
-#define HALFS_1    25     //high-len of 1-bit
-#define HALFS_0    55     //high-len of 0-bit
-#define HALFS_FULL 80
+#define HALFS_1    23     //high-len of 1-bit
+#define HALFS_0    53     //high-len of 0-bit
+#define HALFS_FULL 76
+// #define HALFS_1    25     //high-len of 1-bit
+// #define HALFS_0    55     //high-len of 0-bit
+// #define HALFS_FULL 80
 static void setupPulsesHeliSwift(uint8_t chan)
 { 
   static uint8_t state = 0;
