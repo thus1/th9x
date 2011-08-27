@@ -36,8 +36,8 @@ todo
 - ensure load-save combi
 - fast slopes after load
 - show curves ref count, curve type
-- issue 59 more output chans, soft switches
-- issue 57 chan recursion
++ issue 59 more output chans, soft switches
++ issue 57 chan recursion
 - subtrim before limits? issue 61
 - serial communication
 - timer mit thr-switch
