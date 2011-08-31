@@ -330,7 +330,8 @@ typedef struct t_ModelData_r204 {
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
   uint16_t  tmrVal;               // 2
-  uint8_t   protocol;             // 1
+  uint8_t   protocol:5;           // 1
+  uint8_t   protocolPar:3;        // 
   char      res[3];               // 3
   LimitData_r167 limitData[NUM_CHNOUT];// 3*8
   ExpoData_r171  expoTab[MAX_EXPOS];      // 5*4 -> 3*15

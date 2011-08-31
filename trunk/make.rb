@@ -212,7 +212,8 @@ class Builder
     Dir.indir("OBJS"){
       sys "","avr-size         #{felf}"
       sys "","avr-nm      -C  --print-size #{felf}"
-      sys "","avr-objdump -C -h -s -dlS #{felf}"
+      sys "","avr-objdump -C -h -dlS -s #{felf}"
+      #sys "","avr-objdump -C -h -dlS #{felf}"
 #      sys "","avr-objdump -C -d   #{felf}"
     }
   end
