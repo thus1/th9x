@@ -277,20 +277,31 @@ enum EnumKeys {
 #define TMRMODE_THR_REL  3
 #define MAX_ALERT_TIME   30
 
+// #define PROTO_PPM            0
+// #define PROTO_SILV_A         1
+// #define PROTO_SILV_B         2
+// #define PROTO_SILV_C         3
+// #define PROTO_TRACER_CTP1009 4
+// #define PROTO_SILV_PICCOZA   5
+// #define PROTO_SILV_PICCOZB   6
+// #define PROTO_SILV_PICCOZC   7
+// #define PROTO_HELI_SWIFTA    8
+// #define PROTO_HELI_SWIFTB    9
+// #define PROTO_HELI_SWIFTC   10
+// #define PROTO_DSM2_6        11
+// #define PROT_MAX            11
+// #define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPICZ_A\tPICZ_B\tPICZ_C\tSWIFT_A\tSWIFT_B\tSWIFT_C\tDSM2-6\t"
+
 #define PROTO_PPM            0
-#define PROTO_SILV_A         1
-#define PROTO_SILV_B         2
-#define PROTO_SILV_C         3
-#define PROTO_TRACER_CTP1009 4
-#define PROTO_SILV_PICCOZA   5
-#define PROTO_SILV_PICCOZB   6
-#define PROTO_SILV_PICCOZC   7
-#define PROTO_HELI_SWIFTA    8
-#define PROTO_HELI_SWIFTB    9
-#define PROTO_HELI_SWIFTC   10
-#define PROTO_DSM2_6        11
-#define PROT_MAX            11
-#define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPICZ_A\tPICZ_B\tPICZ_C\tSWIFT_A\tSWIFT_B\tSWIFT_C\tDSM2-6\t"
+#define PROTO_SILV           1 //ABC
+#define PROTO_TRACER_CTP1009 2
+#define PROTO_SILV_PICCOZ    3 //ABC
+#define PROTO_HELI_SWIFT     4 //ABC
+#define PROTO_DSM2_6         5
+#define PROT_MAX             5
+#define PROT_STR "PPM\tSILV\tTRAC09\tPICZ\tSWIFT\tDSM2\t"
+
+
 
 typedef void (*MenuFuncP)(uint8_t event);
 

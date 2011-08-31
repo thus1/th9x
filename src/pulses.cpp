@@ -211,6 +211,35 @@ static void _send_2(uint16_t t0,uint16_t t1)
 }
 
 
+#define BITS  10
+#define BITS2 (BITS-1)
+
+uint8_t reduce7u(int16_t v, uint8_t sfr)
+__attribute__ ((noinline)); 
+uint8_t reduce7u(int16_t v, uint8_t sfr)
+{
+  v += (1<<BITS2);
+  if(v <  0) v=0;
+  if(v >= (1<<BITS)) v=(1<<BITS)-1;
+  return v>>sfr;
+}
+
+int8_t reduce7s(int16_t v, uint8_t sfr, uint8_t sf2, int8_t ofs2)
+__attribute__ ((noinline)); 
+int8_t reduce7s(int16_t v, uint8_t sfr, uint8_t sf2, int8_t ofs2)
+{
+  v += (1<<BITS2)+sf2;
+  if(v&(1<<BITS)) v = (1<<BITS)-1; //no overflow
+  int8_t  i8 = (uint16_t)v>>sfr;
+  if(i8<=0) i8=1;
+  i8-=ofs2;
+  if(i8>=ofs2) i8=ofs2-1;//no overflow
+  return i8;
+}
+//these defines allow the compiler to preclculate constants
+#define getChan7u(i,bitsRes) reduce7u(g_chans512[i],(BITS-bitsRes))
+#define getChan7s(i,bitsRes) reduce7s(g_chans512[i],(BITS-bitsRes),1<<((BITS-bitsRes)-1),1<<(bitsRes-1))
+
 static void setupPulsesPPM()
 {
   //http://www.aerodesign.de/peter/2000/PCM/frame_ppm.gif
@@ -224,12 +253,8 @@ static void setupPulsesPPM()
     int16_t v = g_chans512[i];
     v = 2*v - v/21 + 1200*2; // 24/512 = 3/64 ~ 1/21
     rest-=v;//chans[i];
-    // *pulses2MHzPtr++ = 300*2 -1;
-    // *pulses2MHzPtr++ = v     -1;
     _send_2(300*2-1,v-1);
   }
-  // *pulses2MHzPtr++ = 300*2   -1;
-  // *pulses2MHzPtr++ = rest    -1;
   _send_2(300*2-1,rest-1);
 
 }
@@ -267,25 +292,12 @@ static void send2BitsSilv(uint8_t val)
 }
 static void setupPulsesSilver(int8_t chan)
 {
-  //int8_t chan=1; //chan 1=C 2=B 0=A?
 
   if(chan) chan=3-chan; // A=0->0 B=1->2 C=2->1
-  //switch(g_model.protocol)
-  //{
-  //  case PROTO_SILV_A: chan=0; break;
-  //  case PROTO_SILV_B: chan=2; break;
-  //  case PROTO_SILV_C: chan=1; break;
-  //}
-
-  int8_t m1 = (uint16_t)(g_chans512[0]+512)*4 / 256;
-  int8_t m2 = (uint16_t)(g_chans512[1]+512)*4 / 256;
-  if (m1 < 0)    m1=0;
-  if (m2 < 0)    m2=0;
-  if (m1 > 15)   m1=15;
-  if (m2 > 15)   m2=15;
+  uint8_t m1 = getChan7u(0,4);
+  uint8_t m2 = getChan7u(1,4);
   if (m2 > m1+9) m1=m2-9;
   if (m1 > m2+9) m2=m1-9;
-  //uint8_t i=0;
   send_hilo_silv(5,1); //idx 0 erzeugt pegel=0 am Ausgang, wird  als high gesendet
   send2BitsSilv(0);
   send_hilo_silv(2,1);
@@ -306,8 +318,6 @@ static void setupPulsesSilver(int8_t chan)
 
   send2BitsSilv(sum); //chk
 
-  // sendBitSilv(0);
-  // send_hilo_silv(50,0); //low-impuls (pegel=1) ueberschreiben
   send_hilo_silv(1,50);
 
 
@@ -364,14 +374,10 @@ static void setupPulsesTracerCtp1009()
 {
   static bool phase;
   if( (phase=!phase) ){
-    uint8_t thr = min(127u,(uint16_t)(g_chans512[0]+512+4) /  8u);
-    uint8_t rot;
-    if (g_chans512[1] >= 0)
-    {
-      rot = min(63u,(uint16_t)( g_chans512[1]+8) / 16u) | 0x40;
-    }else{
-      rot = min(63u,(uint16_t)(-g_chans512[1]+8) / 16u);
-    }
+    uint8_t thr = getChan7u(0,7);
+    int8_t  rot = getChan7s(1,7);
+    if(rot<0) rot = -rot | 0x40;
+//     }
     //printf("thr %02x  rot %02x\n",thr,rot);
     sendByteTra(thr);
     sendByteTra(rot);
@@ -379,7 +385,8 @@ static void setupPulsesTracerCtp1009()
     sendByteTra( (chk>>4) | (chk<<4) );
     _send_2( 5000*2-1, 2000*2-1 );
   }else{
-    uint8_t fwd = min(127u,(uint16_t)(g_chans512[2]+512) /  8u) | 0x80;
+    //uint8_t fwd = min(127u,(uint16_t)(g_chans512[2]+512) /  8u) | 0x80;
+    uint8_t fwd = getChan7u(2,7) | 0x80;
     //printf("fwd %02x \n",fwd);
     sendByteTra(fwd);
     sendByteTra(0x8e);
@@ -425,7 +432,6 @@ static void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
   //printf("%02x,",b);
   //if(b==0) printf("\n");
   for( uint8_t i=0; i<=8; i++){ //8Bits + Stop=1
-    //bool nlev = b & 0x80;
     bool nlev = b & 1; //lsb first
     if(lev == nlev){
       len += BITLEN_DSM2;
@@ -437,7 +443,6 @@ static void sendByteDsm2(uint8_t b) //max 10changes 0 10 10 10 10 1
     }
     b = (b>>1) | 0x80; //shift in stop bit
   }
-  //*pulses2MHzPtr++ = len + 10*BITLEN_DSM2 -1; //some more space-time for security
   _send_1(len + 10*BITLEN_DSM2 -1); //some more space-time for security
 }
 
@@ -466,20 +471,6 @@ static void setupPulsesDsm2(uint8_t chns)
     _send_1(20000u*2 -1); //prolong them
     state=0;
   }
-// else {
-
-//     uint8_t      i = state-2;
-//     if(i<chns){ //0..7
-//       uint16_t pulse = limit(0, g_chans512[i]+512,1023);
-//       sendByteDsm2((i<<2) | ((pulse>>8)&0x03));
-//       sendByteDsm2(pulse&0xff);
-//       if(i==(chns-1)){
-// 	pulses2MHzPtr-=3; //remove last stopbits and 
-// 	_send_1(20000u*2 -1); //prolong them
-// 	state = 0; 
-//       }
-//     }
-//   }
 }
 
 
@@ -565,9 +556,6 @@ MSB transmitted first
 #define HALFS_1    23     //high-len of 1-bit
 #define HALFS_0    53     //high-len of 0-bit
 #define HALFS_FULL 76
-// #define HALFS_1    25     //high-len of 1-bit
-// #define HALFS_0    55     //high-len of 0-bit
-// #define HALFS_FULL 80
 static void setupPulsesHeliSwift(uint8_t chan)
 { 
   static uint8_t state = 0;
@@ -576,14 +564,16 @@ static void setupPulsesHeliSwift(uint8_t chan)
     _send_rep1(13*2-1,200);
     _send_rep1(13*2-1,75); //276*13us=3.6 ms
     _send_1(1013*2-1);   //1 ms
-    uint8_t heli_throttle  =  (g_chans512[2]+512)>>3;
-    values[3] = heli_throttle & 0x7F;
-    int8_t  heli_rudder    =   g_chans512[0] / 32;
-    int8_t  heli_elevator  =   g_chans512[1] / 32;
-    int8_t  heli_trim      =   g_chans512[3] / 16;
-    values[2] = ((abs(heli_rudder) & 0x0F) << 4) | (abs(heli_elevator) & 0x0F);
+    uint8_t heli_throttle  = getChan7u(2,7);
+    values[3] = heli_throttle;// & 0x7F;
+    int8_t  heli_rudder    = getChan7s(0,5);
+    int8_t  heli_elevator  = getChan7s(1,5);
+    int8_t  heli_trim      = getChan7s(3,6);
+    //printf("heli_throttle%d heli_rudder%d heli_elevator%d heli_trim%d\n",heli_throttle,heli_rudder,heli_elevator,heli_trim);
+    //values[2] = ((abs(heli_rudder) & 0x0F) << 4) | (abs(heli_elevator) & 0x0F);
+    values[2] = (abs(heli_rudder) << 4) | abs(heli_elevator);
     //values[1] = ((heli_rudder <= 0) ? 0x80 : 0) | ((heli_elevator >= 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | (abs(heli_trim) & 0x1F);
-    values[1] = ((heli_rudder < 0) ? 0x80 : 0) | ((heli_elevator < 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | (abs(heli_trim) & 0x1F);
+    values[1] = ((heli_rudder < 0) ? 0x80 : 0) | ((heli_elevator < 0) ? 0x40 : 0) | ((heli_trim < 0) ? 0x20 : 0) | abs(heli_trim);
     values[0] = ((15 + values[3] + values[2] + values[1]) & 0x3F) | (chan^3)<<6;
     state++;
   }else if(state<=32){ //1..32 bit 33=stopbit
@@ -673,9 +663,9 @@ static void setupPulsesPiccoZ(uint8_t chn)
     //   -chk[0]
     //   -chk[1]
     //   0
-    pow    = (uint16_t)limit<uint16_t>(0, g_chans512[2]+512,1023) / (1024/16);
-    trim   = (uint16_t)limit<int16_t>(-512, g_chans512[1],511) / (512/8);
-    dir    = (uint16_t)limit<int16_t>(-512, g_chans512[0],511) / (512/4);
+    pow  = getChan7u(2,4);
+    trim = getChan7s(1,4);
+    dir  = getChan7s(0,3);
     chk    = - (chn+ (pow>>2) + pow + (trim>>2) + trim + (dir>>1) + (dir<<1));
   }else{
     picco_sendBn(chn,2);
@@ -702,24 +692,18 @@ uint8_t* setupPulses()
   //  uint16_t* ret = pulses2MHz;
   switch(g_model.protocol)
   {
-    case PROTO_SILV_A:         // Achtung !! 0 am Ausgang = sendesignal high
-    case PROTO_SILV_B:
-    case PROTO_SILV_C:
-      setupPulsesSilver(g_model.protocol-PROTO_SILV_A);
+    case PROTO_SILV:         // Achtung !! 0 am Ausgang = sendesignal high
+      setupPulsesSilver(g_model.protocolPar);
       break;
     case PROTO_TRACER_CTP1009: // Achtung !! 0 am Ausgang = sendesignal high
       setupPulsesTracerCtp1009();
       break;
-    case PROTO_SILV_PICCOZA:
-    case PROTO_SILV_PICCOZB:
-    case PROTO_SILV_PICCOZC:
-      setupPulsesPiccoZ(g_model.protocol-PROTO_SILV_PICCOZA);
+    case PROTO_SILV_PICCOZ:
+      setupPulsesPiccoZ(g_model.protocolPar);
       stbyLevel=0; //start with 1
        break;
-    case PROTO_HELI_SWIFTA:
-    case PROTO_HELI_SWIFTB:
-    case PROTO_HELI_SWIFTC:
-      setupPulsesHeliSwift(g_model.protocol-PROTO_HELI_SWIFTA);
+    case PROTO_HELI_SWIFT:
+      setupPulsesHeliSwift(g_model.protocolPar);
       stbyLevel=0; //start with 1
       break;
     case PROTO_DSM2_6:
@@ -735,10 +719,10 @@ uint8_t* setupPulses()
   pulses2MHzPtr[-1] = CTRL_END;
 
 
-#ifdef SIM
+#ifdef xSIM
   static int s_cnt;
-  //if(s_cnt++%100==0){
-  if(s_cnt++<40){
+  if(s_cnt++%100==0){
+    //if(s_cnt++<40){
     uint8_t *p=pulses2MHz;
     bool lev = (stbyLevel&1)^1;
     while(1){

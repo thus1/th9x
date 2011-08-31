@@ -16,6 +16,7 @@
 #include "th9x.h"
 #include "foldedlist.h"
 
+
 int8_t add7Bit(int8_t a,int8_t b){ 
   a  = (a+b) & 0x7f;
   if(a & 0x40) a|=0x80;
@@ -544,7 +545,18 @@ void editSwitchVals(uint8_t event,uint8_t which,bool edit,uint8_t x, uint8_t y, 
       break; 
     case 1:
       lcd_putsmAtt(x-FW*1,y,PSTR("<\t&\t|\t^"), sd.opCmp,editAtt);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opCmp, 0,3);
+      if(edit) {
+        int8_t op = sd.opCmp;
+        
+        CHECK_INCDEC_H_MODELVAR( event, op, -1,3);
+        if(op==-1){
+          int8_t val = sd.val1;
+          sd.val1    = sd.val2;
+          sd.val2    = val;
+        }else{
+          sd.opCmp = op;
+        }
+      }
       break; 
     case 3:
       lcd_putsmAtt(x-FW*2,y,PSTR("\tSet\tOn \tOff\tInv\t&\t|\t^"), sd.opRes,editAtt);
@@ -1150,7 +1162,7 @@ void menuProcModel(uint8_t event)
   uint8_t x=TITLE("SETUP ");  
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
   MSTATE_TAB = { 1,(int8_t)-sizeof(g_model.name),-3,1,1,1};
-  MSTATE_CHECK_VxH(2,menuTabModel,5+1);
+  MSTATE_CHECK_VxH(2,menuTabModel,6+1);
   int8_t  sub    = mstate2.m_posVert-1;
 
   uint8_t subSub = mstate2.m_posHorz;//+1;
@@ -1165,7 +1177,7 @@ void menuProcModel(uint8_t event)
   }
 
   uint8_t y=1*FH;
-  for(uint8_t i=0; i<5; i++)
+  for(uint8_t i=0; i<6; i++)
   {
     y+=FH;
     uint8_t attr = sub==i ? BLINK : 0; 
@@ -1214,11 +1226,29 @@ void menuProcModel(uint8_t event)
             break;
         }
         break;
-      case 2:    
-        lcd_putsmAtt(   6*FW, y, PSTR(PROT_STR),g_model.protocol,attr);
-        if(attr) CHECK_INCDEC_H_MODELVAR(event,g_model.protocol,0,PROT_MAX);
-        break;
-      case 3:
+        {
+          typedef PROGMEM const char* prog_charp;
+          static const prog_char APM p0[]="\x00""-";
+          static const prog_char APM p1[]="\x02""A\tB\tC\t";
+          static const prog_char APM p2[]="\x00""-";
+          static const prog_char APM p3[]="\x02""A\tB\tC\t";
+          static const prog_char APM p4[]="\x02""A\tB\tC\t";
+          static const prog_char APM p5[]="\x00""-";
+          //static const prog_char* protTab[]  ={p0,p1,p2,p3,p4,p5};
+          static prog_charp APM protTab[]  ={p0,p1,p2,p3,p4,p5};
+      case 2:  
+          lcd_putsmAtt(   6*FW, y, PSTR(PROT_STR),g_model.protocol,attr);
+          if(attr) CHECK_INCDEC_H_MODELVAR_BF(event,g_model.protocol,0,PROT_MAX);
+          break;
+      case 3:      
+          y-=FH;
+
+          const prog_char* p = (const prog_char*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
+          lcd_putsmAtt(   14*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),attr);
+          if(attr) CHECK_INCDEC_H_MODELVAR_BF(event,g_model.protocolPar,0,pgm_read_byte(p));
+          break;
+        }
+      case 4:
         if(! g_model.mdVers ){
           lcd_putsAtt(  FW*6, y, modelMixerDefaultName(s_type),attr);
           if(attr){
@@ -1229,7 +1259,7 @@ void menuProcModel(uint8_t event)
         }
         y+=FH;
         break;
-      case 4:
+      case 5:
         //lcd_putsAtt(    0, (7)*FH, PSTR("RM"),attr);
         lcd_putsAtt(  FW*6, y, PSTR("[MENU LONG]"),attr);
         if(attr){
