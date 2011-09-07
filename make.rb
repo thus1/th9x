@@ -279,12 +279,12 @@ class Builder
     mtimeDest = File.exists?(dest) ? File.mtime(dest) : nil
     srces.each{|src|
       p src if $opt_v>=3
-      if !mtimeDest or (mt=File.mtime(src)) > mtimeDest
+      if mtimeDest and File.exists?(src) and (mt=File.mtime(src)) <= mtimeDest
+        puts "#{src} (#{mt}) not newer #{dest} (#{mtimeDest})" if $opt_v>=3
+      else
         puts "#{src} (#{mt}) newer #{dest} (#{mtimeDest})" if $opt_v>=2
         yield
         break
-      else
-        puts "#{src} (#{mt}) not newer #{dest} (#{mtimeDest})" if $opt_v>=3
       end
     }
   end

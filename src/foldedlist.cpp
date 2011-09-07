@@ -81,6 +81,16 @@ bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
     return false;
   }
 }
+uint8_t FoldedList::findChn(uint8_t chn)
+{
+  for(uint8_t i=0; i<DIM(inst.m_lines); i++){
+    if(inst.m_lines[i].chId==chn) {
+      if(inst.m_lines[i].islDat) return inst.m_lines[i].islDat;
+      else                       return inst.m_lines[i].islCh;
+    }
+  }
+  return 0;
+}
 void FoldedList::show(){
 #ifdef SIM
   //for(uint8_t i=0; i<DIM(inst.m_mixTab); i++){
@@ -96,7 +106,7 @@ void FoldedList::show(){
 #endif
 }
 FoldedList::Line* FoldedList::firstLine(int8_t sub){
-  inst.m_currIDTOld  = inst.m_currIDT;
+  inst.m_currIDTOld = inst.m_currIDT;
   inst.m_subISL     = sub;
   inst.m_iterPosIFL = inst.m_iterOfsIFL;
   Line *l=&inst.m_lines[inst.m_iterPosIFL];
@@ -106,7 +116,7 @@ FoldedList::Line* FoldedList::firstLine(int8_t sub){
 }
 FoldedList::Line* FoldedList::nextLine(uint8_t lines){
   int8_t i = inst.m_iterPosIFL-inst.m_iterOfsIFL;
-  Line  *l  = &inst.m_lines[inst.m_iterPosIFL];
+  Line  *l = &inst.m_lines[inst.m_iterPosIFL];
   if(i>=lines  || !(l->showCh || l->showDat) ) {
     //Line *l=&inst.m_lines[inst.m_iterPosIFL-1];
     l--;
@@ -127,15 +137,15 @@ FoldedList::Line* FoldedList::nextLine(uint8_t lines){
   if(inst.m_isSelectedCh){ //handle CHx is selected 
     inst.m_currIDT     = l->idt+1;
     inst.m_currInsMode = true;
-    inst.m_currDestCh     = l->chId;
-    inst.m_iterHitIFL      = i+1;
+    inst.m_currDestCh  = l->chId;
+    inst.m_iterHitIFL  = i+1;
     // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
   }
   if(inst.m_isSelectedDat){ //handle dat is selected 
     inst.m_currIDT     = l->idt;
     inst.m_currInsMode = false;
-    inst.m_currDestCh     = l->chId;
-    inst.m_iterHitIFL      = i+1;
+    inst.m_currDestCh  = l->chId;
+    inst.m_iterHitIFL  = i+1;
     // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
   }
   inst.m_iterPosIFL++;

@@ -20,7 +20,7 @@ LIB=-L/usr/local/lib \
 CFLAGS= -g -Wall
 simu: $(SRC) Makefile src/*.h src/*.lbm eeprom.bin
 	gcc src/stamp.cpp $(SRC) $(CFLAGS) -o$@ $(INC) $(LIB)  -MD -DSIM
-	mv *.dsimu OBJS
+	#mv *.dsimu OBJS
 
 
 eeprom.bin:
