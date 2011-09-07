@@ -33,28 +33,34 @@ bugs:
 todo
 
 - Beschleunigungssensor BMA020 oder BMA180 http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5lbHYuZGUvMy1BY2hzZW4tQmVzY2hsZXVuaWd1bmdzc2Vuc29yLTNELUJTLC1Lb21wbGV0dGJhdXNhdHoveC5hc3B4L2NpZF83NC9kZXRhaWxfMTAvZGV0YWlsMl8yODUxNQ==
+
+- bitwerte im ppm-signal fuer schalter
++ timer mit thr-switch, 
++ timer2
++ switches toggle+but
++ switches-menu as submenu
+- trim versch. scales
 - ensure load-save combi
 - fast slopes after load
 - show curves ref count, curve type
-+ issue 59 more output chans, soft switches
-+ issue 57 chan recursion
 - subtrim before limits? issue 61
 - serial communication
-- timer mit thr-switch
 - standard mixer in slave mode (virtual model number?)
 - fast multiply 8*16 > 32
 - format eeprom
 - more curves with parameters?
 - prc-werte dynamisch 64 werte 1-150
 - curr event global var saves 340Bytes
-- pcm 
 doku
+- doku menu navigation
 - doku switch select
 - doku dblklick fast menu jump
 - doku dblklick fast inc/dec
 - doku subtrim
 - doku light port/ prog beisp. delta/nuri, fahrwerk, sondercurves? /- _/
 done
++ issue 59 more output chans, soft switches
++ issue 57 chan recursion
 + outputs as inputs? calc sequence
 + show foldedlist lines number
 + dual rate interface issue62
@@ -223,12 +229,15 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
   //uint8_t fw=FWNUM; //FW-1;
   //if(att&DBLSIZE) fw+=fw;
   
+  //  -  12   :  34
+  // x    x2 x1   x2+
   lcd_putcAtt(   x,    y, tme<0 ?'-':' ',att);
-  x += (att&DBLSIZE) ? FWNUM*5 : FWNUM*3+2;
-  lcd_putcAtt(   x, y, ':',att);
-  lcd_outdezNAtt(x, y, abs(tme)/60,LEADING0+att,2);
-  x += (att&DBLSIZE) ? FWNUM*5-1 : FWNUM*4-2;
-  lcd_outdezNAtt(x, y, abs(tme)%60,LEADING0+att2,2);
+  uint8_t x1 = x + ( (att&DBLSIZE) ? FWNUM*5-4 : FWNUM*3);
+  uint8_t x2 = x + ( (att&DBLSIZE) ? FWNUM*5-4 : FWNUM*3+2);
+  lcd_putcAtt(   x1, y, ':',att);
+  lcd_outdezNAtt(x2, y, abs(tme)/60,LEADING0+att,2);
+  x2+= (att&DBLSIZE) ? FWNUM*5-1 : FWNUM*3-3;
+  lcd_outdezNAtt(x2, y, abs(tme)%60,LEADING0+att2,2);
 }
 void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {

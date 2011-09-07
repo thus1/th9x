@@ -328,7 +328,8 @@ typedef struct t_ModelData_r192 {
 typedef struct t_ModelData_r204 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
-  uint8_t   tmrMode;              // 1
+  uint8_t   tmrMode:3;            // 1
+  int8_t    tmrSw:5;              // 
   uint16_t  tmrVal;               // 2
   uint8_t   protocol:5;           // 1
   uint8_t   protocolPar:3;        // 

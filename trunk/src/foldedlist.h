@@ -97,6 +97,7 @@ public:
   static inline bool addDat(uint8_t ch, uint8_t idx);
   static void show();           //helper func for debug
   static bool fill(uint8_t ch, uint8_t idt); //helper func for construction
+  static uint8_t findChn(uint8_t chn);
 
   /// iterate one time through the filled list (show loop)
   /// with firstLine,nextLine nextLine ..

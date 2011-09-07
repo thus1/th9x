@@ -28,6 +28,8 @@
 #define NO_INV        0x00
 #define INVERS        0x01
 #define BLINK         0x02
+#define BLINKF        (BLINK|INVERS)
+
 #define LEADING0      0x04
 #define SIGN          0x08
 

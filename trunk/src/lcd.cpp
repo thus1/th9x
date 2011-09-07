@@ -116,13 +116,47 @@ void lcd_putc(uint8_t x,uint8_t y,const char c)
 {
   lcd_putcAtt(x,y,c,false);
 }
+
+//print 0(<0x20) - terminated string
+uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
+{
+  uint8_t  x0 = x;
+  bool blinkf = false;
+  if(mode&BLINK && mode&INVERS){
+    blinkf=true;
+    mode &= ~(BLINKF);
+  }
+
+  //while(char c=pgm_read_byte(s++)) {
+  while(1) {
+    char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
+    if(c<0x20) break;
+    lcd_putcAtt(x,y,c,mode);
+    x+=FW;
+    if(mode&DBLSIZE) x+=FW;
+  }
+  if(blinkf && BLINK_ON_PHASE){
+    lcd_rect(x0,y,x-x0,8);
+  }
+  return x;
+}
+//print n chars string
 void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mode)
 {
+  uint8_t  x0 = x;
+  bool blinkf = false;
+  if(mode&BLINK && mode&INVERS){
+    blinkf=true;
+    mode &= ~(BLINKF);
+  }
   while(len!=0) {
     char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
     lcd_putcAtt(x,y,c,mode);
     x+=FW;
     len--;
+  }
+  if(blinkf && BLINK_ON_PHASE){
+    lcd_rect(x0,y,x-x0,8);
   }
 }
 void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t mode)
@@ -136,26 +170,9 @@ void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t m
   }
   lcd_putsAtt(x,y,s,mode);
 }
-// void lcd_putsn_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t len)
-// {
-//   lcd_putsnAtt( x,y,s,len,0);
-// }
 void lcd_putsm_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip)
 {
   lcd_putsmAtt( x,y,s,skip,0);
-}
-uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
-{
-  //while(char c=pgm_read_byte(s++)) {
-  while(1) {
-    char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
-    if(c<0x20) break;
-    //if(!c) break;
-    lcd_putcAtt(x,y,c,mode);
-    x+=FW;
-    if(mode&DBLSIZE) x+=FW;
-  }
-  return x;
 }
 void lcd_puts_P(uint8_t x,uint8_t y,const prog_char * s)
 {
@@ -177,34 +194,31 @@ void lcd_outdez(uint8_t x,uint8_t y,int16_t val)
 {
   lcd_outdezAtt(x,y,val,0);
 }
-// void lcd_outdezAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode)
-// {
-//   lcd_outdezAtt(x,y,val,mode);
-// }
-//void lcd_outdezAtt(uint8_t x,uint8_t y,int16_t val,uint8_t len,uint8_t mode)
 void lcd_outdezAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode)
 {
   lcd_outdezNAtt( x,y,val,mode,5);
 }
 void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
 {
+  uint8_t  x0 = x;
+  bool blinkf = false;
+  if(mode&BLINK && mode&INVERS){
+    blinkf=true;
+    mode &= ~(BLINKF);
+  }
   uint8_t fw=FWNUM; //FW-1;
   if(mode&DBLSIZE) fw+=fw;
   uint8_t prec=PREC(mode);
   bool neg=val<0;
   if(neg) val=-val;
-  //x+=fw*len;
-  x-=FW;
+  x-=FW;  //??? fw
   for(uint8_t i=0;i<len;i++)
   {
     if( prec && prec==i){
       x-=1;
       lcd_putcAtt(x,y,(val % 10)+'0',mode);
       lcd_plot( x+5, y+7);//komma
-      //lcd_plot( x+5, y+6);//komma
-      //lcd_plot( x+6, y+7);//komma
       lcd_plot( x+6, y+6);//komma
-      //lcd_plot( x+5, y+7);//komma
       prec=0;
     }else{
       lcd_putcAtt(x,y,(val % 10)+'0',mode);
@@ -213,8 +227,12 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
     if(!(mode & LEADING0) && !val && !prec) break;
     x-=fw;
   }
-  if(neg) lcd_putcAtt(x-fw,y,'-',mode);
-  else  if((mode & SIGN)) lcd_putcAtt(x-fw,y,'+',mode);
+  if(neg) lcd_putcAtt((x-=fw),y,'-',mode);
+  else  if((mode & SIGN)) lcd_putcAtt((x-=fw),y,'+',mode);
+
+  if(blinkf && BLINK_ON_PHASE){
+    lcd_rect(x,y,x0-x,8); //!!! no dblsize
+  }
 }
 
 void lcd_plot(uint8_t x,uint8_t y)
