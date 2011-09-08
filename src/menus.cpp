@@ -1390,6 +1390,7 @@ void menuProcModelSelect(uint8_t event)
         break;
       }
       //fallthrough
+    case  EVT_KEY_BREAK(KEY_MENU):
     case  EVT_KEY_FIRST(KEY_RIGHT):
       if(g_eeGeneral.currModel != mstate2.m_posVert)
       {
@@ -1399,20 +1400,24 @@ void menuProcModelSelect(uint8_t event)
         beepKey();
       }
       //case EXIT handled in checkExit
-      if(event==EVT_KEY_FIRST(KEY_RIGHT))  chainMenu(menuProcModel);
+      if(event!=EVT_KEY_FIRST(KEY_EXIT))  chainMenu(menuProcModel);
       break;
-    case  EVT_KEY_FIRST(KEY_MENU):
-      s_editMode = true;
-      beepKey();
-      break;
+//     case  EVT_KEY_FIRST(KEY_MENU):
+//       s_editMode = true;
+//       beepKey();
+//       break;
     case  EVT_KEY_LONG(KEY_MENU):
-      if(s_editMode){
+      if(!s_editMode){
+        s_editMode = true;
+        beepKey();
+      }else{
         if(eeDuplicateModel(sub)) {
           beepKey();
           s_editMode = false;
         }
-        else beepWarn(); //model duplicate not possible
+        else beepWarnNoDup(); //model duplicate not possible
       }
+      killEvents(event);
       break;
 
     case EVT_ENTRY:
@@ -1558,7 +1563,7 @@ void menuProcDiagAna(uint8_t event)
         //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
-      putsVBat(11*FW,y,sub==7 ? BLINK : 0);
+      putsVBat(12*FW,y,sub==7 ? BLINK : 0);
     }
   }
   if(sub==7){
@@ -2217,26 +2222,25 @@ void menuProc0(uint8_t event)
 
 
   uint8_t x=FW*2;
-  lcd_putsAtt(x,0,PSTR("Th9x"),0);//sub==0 ? INVERS : 0);
-  lcd_putsnAtt(x+ 5*FW,   0*FH, g_model.name ,sizeof(g_model.name),BSS_INVERS);//sub==1 ? BSS_INVERS : BSS_NO_INV);
-  if(g_trainerSlaveActiveChns){
-    lcd_putsAtt(x,      1*FH,PSTR("TRN"), BLINK);
-    lcd_putcAtt(x+3*FW ,1*FH,g_trainerSlaveActiveChns+'0',BLINK);
-  }
-  lcd_puts_P(  x+ 5*FW,   1*FH,    PSTR("BAT"));
-  putsVBat(x+ 8*FW,1*FH, g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0);
+  lcd_putsAtt(x-3,0*FH,PSTR("th9x"),INVERS);//sub==0 ? INVERS : 0);
+  //lcd_putsnAtt(x+ 5*FW,   0*FH, g_model.name ,sizeof(g_model.name),BSS_INVERS);
+  lcd_putsnAtt(x+ 4*FW,   0*FH, g_model.name ,sizeof(g_model.name)-3,BSS_NO_INV|DBLSIZE);
+  lcd_putsnAtt(x+ 15*FW+4,   0*FH, g_model.name+sizeof(g_model.name)-3,3,BSS_NO_INV);
+  //lcd_puts_P(  x-3,   2*FH,    PSTR("Bat"));
+  //putsVBat(x+ 8*FW,1*FH, g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0);
+  putsVBat(x-3-(g_vbat100mV<100?FW:3),1*FH, g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0);
 
-  //if(g_model.tmrMode != TMRMODE_NONE){
   if(s_timerState != TMR_OFF){
-    //int16_t tmr = g_model.tmrVal - s_timeCum16/16;
-    uint8_t att = DBLSIZE | 
-      (s_timerState==TMR_BEEPING ? BLINK : 0);
-      //(s_timerState==TMR_BEEPING ? (s_timerVal&1 ? 0 : INVERS) : 0);
-    //putsTime( x+8*FW, FH*2, tmr, att,att);
-    putsTime( x+9*FW, FH*2, g_model.tmrVal==0 ? -s_timerVal:s_timerVal, att,att);
-    lcd_putsmAtt(   x+ 5*FW, FH*2, PSTR("\tTME\tTHR\tTH%"),g_model.tmrMode,0);
-    putsTime( x+4*FW, FH*3, s_timeCumAbs, 0,0);
+    uint8_t att = DBLSIZE | (s_timerState==TMR_BEEPING ? BLINK : 0);
+    putsTime( x+8*FW-2, FH*2, g_model.tmrVal==0 ? -s_timerVal:s_timerVal, att,att);
+    lcd_putsmAtt(   x+4*FW, FH*2, PSTR("\tTME\tTHR\tTH%"),g_model.tmrMode,0);
+    putsTime(       x+3*FW, FH*3, s_timeCumAbs, 0,0);
   }
+  if(g_trainerSlaveActiveChns){
+    lcd_putsAtt(x-3,      3*FH,PSTR("trn"), 0);
+    lcd_putcAtt(x-3+3*FW ,3*FH,g_trainerSlaveActiveChns+'0',0);
+  }
+  lcd_vline(x-3+4*FW,0,4*FH);
   //trim sliders
   for(uint8_t i=0; i<4; i++)
   {
