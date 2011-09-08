@@ -572,15 +572,18 @@ inline void _beep(uint8_t b) {
 }
 
 /// verschiedene beep varianten see drivers.cpp
-#define beepTrim()   _beep(1)
-#define beepKey()    _beep(2)
-#define beepTmr()    _beep(3)
-#define beepStore()  _beep(3)
-#define beepBat()    _beep(3)
-#define beepTmrLong()_beep(4)
-#define beepTmrDbl() _beep(6)
-#define beepWarn()   _beep(4)
-#define beepErr()    _beep(5)
+#define beepKey()           _beep(1)
+#define beepStore()         _beep(1)
+#define beepWarnMax()       _beep(2)
+#define beepTrim()          _beep(3)
+#define beepTmr()           _beep(3)
+#define beepBat()           _beep(3)
+#define beepTmrLong()       _beep(4)
+#define beepTmrDbl()        _beep(6)
+#define beepWarnNoDup()     _beep(4)
+#define beepTrim0()         _beep(4)
+#define beepWarnInactive()  _beep(4)
+#define beepErr()           _beep(5)
 
 
 extern uint8_t modelMixerDefaults;

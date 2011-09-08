@@ -242,8 +242,8 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
 void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {
   //att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
-  lcd_putcAtt(   x+ 4*FW,   y,    'V',att);
-  lcd_outdezAtt( x+ 4*FW,   y,    g_vbat100mV,att|PREC1);
+  lcd_putcAtt(   x+ 3*FW,   y,    'V',att);
+  lcd_outdezAtt( x+ 3*FW,   y,    g_vbat100mV,att|PREC1);
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
@@ -414,7 +414,7 @@ uint8_t checkTrim(uint8_t event)
     if(*ptrim==0) {
       //killEvents(event);
       pauseEvents(event);
-      beepWarn(); //mid trim value reached
+      beepTrim0(); //mid trim value reached
     }
     return 0;
   }
@@ -479,13 +479,13 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   {
     newval = i_max;
     killEvents(event);
-    beepWarn(); //incdec max limit reached 
+    beepWarnMax(); //incdec max limit reached 
   }
   if(newval < i_min)
   {
     newval = i_min;
     killEvents(event);
-    beepWarn(); //incdec min limit reached 
+    beepWarnMax(); //incdec min limit reached 
   }
   if(newval != val){
     if((newval%20)==0) {
@@ -612,7 +612,7 @@ void   perChecks() //ca 10ms
         if(g_eeGeneral.inactivityMin)
         {
           if((uint16_t)(g_tmr1s - g_actTime1s) > g_eeGeneral.inactivityMin*60u){
-            beepWarn(); //inactivity warning
+            beepWarnInactive(); //inactivity warning
             g_actTime1s+=1;
           }
         }
