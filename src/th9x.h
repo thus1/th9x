@@ -277,20 +277,6 @@ enum EnumKeys {
 #define TMRMODE_THR_REL  3
 #define MAX_ALERT_TIME   30
 
-// #define PROTO_PPM            0
-// #define PROTO_SILV_A         1
-// #define PROTO_SILV_B         2
-// #define PROTO_SILV_C         3
-// #define PROTO_TRACER_CTP1009 4
-// #define PROTO_SILV_PICCOZA   5
-// #define PROTO_SILV_PICCOZB   6
-// #define PROTO_SILV_PICCOZC   7
-// #define PROTO_HELI_SWIFTA    8
-// #define PROTO_HELI_SWIFTB    9
-// #define PROTO_HELI_SWIFTC   10
-// #define PROTO_DSM2_6        11
-// #define PROT_MAX            11
-// #define PROT_STR "PPM\tSILV_A\tSILV_B\tSILV_C\tTRAC09\tPICZ_A\tPICZ_B\tPICZ_C\tSWIFT_A\tSWIFT_B\tSWIFT_C\tDSM2-6\t"
 
 #define PROTO_PPM            0
 #define PROTO_SILV           1 //ABC
@@ -599,12 +585,9 @@ inline int16_t trimExp2(int8_t trim)
   //0 1 3 6 10 15
   return trim*(abs(trim)+1)/2;
 }
-int8_t trimRevert4(int16_t val);
-inline int16_t trimExp4(int8_t trim)
-{ 
-  //0 1 2 4 7 10 13 17
-  return trim*(abs(trim)+3)/4;
-}
+int8_t   trimRevertM(int16_t val, uint8_t tmode);
+uint16_t trimExpMu(uint8_t atrim, uint8_t tmode);
+
 
 
 

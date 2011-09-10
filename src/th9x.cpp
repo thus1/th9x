@@ -224,6 +224,135 @@ uint8_t convertMode(uint8_t srcChn)
 }
 
 
+int8_t trimRevert2(int16_t val)
+{
+  uint8_t idx = 0;
+  bool    neg = val<0; val=abs(val);
+  while(val>0){
+    idx++;
+    val-=idx;
+  }
+  return neg ? -idx : idx;
+}
+uint16_t trimExpMu(uint8_t atrim, uint8_t tmode)
+{ 
+  //0 1 2 4 7 10 13 17
+  uint8_t add=4;
+  uint8_t sft=2;
+  switch(tmode){
+  case 1: add =  8;        break;
+  case 2: add = 16;        break;
+  case 3: add = 64; sft=3; break;
+  };
+  return atrim*(atrim + add ) >> sft;
+
+  //  return trim*(abs(trim)+3)/4;
+}
+//      [[4,4],[4,12],[8,64]].each{|a,b|
+//	yi << x.map { |v| v*(v+b)/a }
+
+int8_t trimRevertM(int16_t val, uint8_t tmode)
+{
+  uint8_t idx = 0;
+  bool    neg = val<0; val=abs(val);
+  while((uint16_t)val>trimExpMu(idx,tmode)){
+    idx++;
+  }
+  return neg ? -idx : idx;
+}
+
+int8_t idx2val15_100(int8_t idx)
+{
+  //ruby  -e 'x=0; [[10,50],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  // 0 10 20 30 40 50 55 60 65 70 75 80 85 90 95 100
+  // idx  0  1       5      15
+  // val  0 10 .10. 50 .5. 100
+  uint8_t i   = abs(idx);
+  uint8_t uval;
+  if(i>=5)    uval = 5*(i+5); //
+  else        uval = 10*i;
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx15_100(int8_t val)
+{
+  // idx  0  1       5      15
+  // val  0 10 .10. 50 .5. 100
+  uint8_t uval = abs(val);
+  uint8_t i;
+  if(uval>50) i = (uint8_t)(uval)/5 -  5;
+  else        i = (uint8_t)(uval)/10;
+  return val < 0 ? -i : i;
+}
+
+int8_t idx2val30_100(int8_t idx)
+{
+  //ruby  -e 'x=0; [[1,2],[2,30],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  //0 1 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100
+  // idx  0 1 2     16      30
+  // val  0 1 2 .2. 30 .5. 100
+  uint8_t i   = abs(idx);
+  uint8_t uval= i;
+  if(i>=16){
+    uval = 5*(i-10); //
+  }else{
+    if(i>2){
+      uval = 2*(i-1);
+    }    
+  }
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx30_100(int8_t val)
+{
+  // idx  0 1 2     16      30
+  // val  0 1 2 .2. 30 .5. 100
+  uint8_t uval = abs(val);
+  uint8_t i;
+  if(uval>30)      i = (uint8_t)(uval)/5 + 10;
+  else if(uval>2)  i = (uint8_t)(uval)/2 +  1;
+  else             i = uval;
+  return val < 0 ? -i : i;
+}
+int16_t idx2val50_150_512(int8_t idx)
+{
+  //ruby  -e 'x=0; [[1,10],[2,50],[5,155]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
+  //0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150
+  // idx  0  10  30   50
+  // val  0  10  50  150
+  uint8_t i   = abs(idx);
+  uint16_t uval= 0;
+  if(i>10){
+    if(i<=30) uval = 10*(i-5); // (i-10)*2 + 10
+    else      uval = 25*(i-20);             // (i-30)*5 + 50
+  }else{
+    uval=i*5;//*5.12
+  }
+  // *512/500
+  return (idx < 0) ? -uval : uval;
+}
+int16_t idx2val50_150(int8_t idx)
+{
+  uint8_t i   = abs(idx);
+  uint8_t uval= i;
+  if(i>10){
+    if(i<=30) uval = 2*(i-5); // (i-10)*2 + 10
+    else      uval = 5*(i-20);             // (i-30)*5 + 50
+  }
+  return (idx < 0) ? -uval : uval;
+}
+int8_t val2idx50_150(int16_t val)
+{
+  uint8_t uval = val < 0 ? (uint8_t)-val : val;
+  int8_t  i;
+  if(uval>50)      i = (uint8_t)(uval-50)/5 + 30;
+  else if(uval>10) i = (uint8_t)(uval+10)/2;
+  else             i = uval;
+  return val < 0 ? -i : i;
+}
+
+
+
+
+
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
 {
   //uint8_t fw=FWNUM; //FW-1;
@@ -387,31 +516,29 @@ uint8_t checkTrim(uint8_t event)
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
     bool    up  = k&1;
-    int8_t *ptrim = &g_model.trimData[convertMode(idx)].trim;
+    t_TrimData_r143 &ptrim = g_model.trimData[convertMode(idx)];
+    int8_t itrim=ptrim.itrim;
     if(up){
-      //      if( (*ptrim < 0) ||
-      //          ((*ptrim < 31) &&  IS_KEY_FIRST(event))  //issue 35, 39
-      if(*ptrim >= 0){
+      if(itrim >= 0){
         slowEvents(event);
       }
-      if(*ptrim < 31){
-        (*ptrim)++;
+      if(itrim < 31){
+        (itrim)++;
         STORE_MODELVARS;
         beepTrim();
       }
     }else{
-      //if( (*ptrim > 0) ||
-      //          ((*ptrim > -31) &&  IS_KEY_FIRST(event))
-      if(*ptrim <= 0){
+      if(itrim <= 0){
         slowEvents(event);
       }
-      if(*ptrim > -31){
-        (*ptrim)--;
+      if(itrim > -31){
+        (itrim)--;
         STORE_MODELVARS;
         beepTrim();
       }
     }
-    if(*ptrim==0) {
+    ptrim.itrim = itrim;
+    if(itrim==0) {
       //killEvents(event);
       pauseEvents(event);
       beepTrim0(); //mid trim value reached
@@ -684,6 +811,26 @@ volatile uint8_t  captureRd;
 int16_t g_ppmIns[8];
 uint8_t ppmInState; //0=unsync 1..8= wait for value i-1
 
+#define STARTADCONV (ADCSRA  = (1<<ADEN) | (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADSC) | (1 << ADIE))
+
+void init() //common init for simu and target
+{
+  //g_menuStack[0] =  menuProc0;
+
+  eeReadAll(); //load general setup and selected model
+#ifndef SIM
+  lcdSetRefVolt(g_eeGeneral.contrast);
+
+  //setupAdc();  //before checkTHR
+  ADMUX = (1<<REFS0);      //start with ch0
+  STARTADCONV;
+#endif
+  chainMenu(menuProc0); //call evt_entry
+  checkMem();  //enough eeprom free? 
+  checkTHR();
+  checkSwitches(); //must be last
+}
+
 #ifndef SIM
 #include <avr/interrupt.h>
 //#include <avr/wdt.h>
@@ -705,7 +852,6 @@ public:
   };
 };
 
-#define STARTADCONV (ADCSRA  = (1<<ADEN) | (1<<ADPS0) | (1<<ADPS1) | (1<<ADPS2) | (1<<ADSC) | (1 << ADIE))
 static uint16_t s_anaFilt[8];
 uint16_t anaIn(uint8_t chan)
 {
@@ -757,11 +903,6 @@ ISR(ADC_vect, ISR_NOBLOCK)
   STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec
 }
 
-void setupAdc(void)
-{
-  ADMUX = (1<<REFS0);      //start with ch0
-  STARTADCONV;
-}
 
 
 
@@ -848,114 +989,6 @@ void evalCaptures()
 }
 
 
-#endif
-
-
-int8_t idx2val15_100(int8_t idx)
-{
-  //ruby  -e 'x=0; [[10,50],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
-  // 0 10 20 30 40 50 55 60 65 70 75 80 85 90 95 100
-  // idx  0  1       5      15
-  // val  0 10 .10. 50 .5. 100
-  uint8_t i   = abs(idx);
-  uint8_t uval;
-  if(i>=5)    uval = 5*(i+5); //
-  else        uval = 10*i;
-  return (idx < 0) ? -uval : uval;
-}
-int8_t val2idx15_100(int8_t val)
-{
-  // idx  0  1       5      15
-  // val  0 10 .10. 50 .5. 100
-  uint8_t uval = abs(val);
-  uint8_t i;
-  if(uval>50) i = (uint8_t)(uval)/5 -  5;
-  else        i = (uint8_t)(uval)/10;
-  return val < 0 ? -i : i;
-}
-
-int8_t idx2val30_100(int8_t idx)
-{
-  //ruby  -e 'x=0; [[1,2],[2,30],[5,105]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
-  //0 1 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 35 40 45 50 55 60 65 70 75 80 85 90 95 100
-  // idx  0 1 2     16      30
-  // val  0 1 2 .2. 30 .5. 100
-  uint8_t i   = abs(idx);
-  uint8_t uval= i;
-  if(i>=16){
-    uval = 5*(i-10); //
-  }else{
-    if(i>2){
-      uval = 2*(i-1);
-    }    
-  }
-  return (idx < 0) ? -uval : uval;
-}
-int8_t val2idx30_100(int8_t val)
-{
-  // idx  0 1 2     16      30
-  // val  0 1 2 .2. 30 .5. 100
-  uint8_t uval = abs(val);
-  uint8_t i;
-  if(uval>30)      i = (uint8_t)(uval)/5 + 10;
-  else if(uval>2)  i = (uint8_t)(uval)/2 +  1;
-  else             i = uval;
-  return val < 0 ? -i : i;
-}
-int16_t idx2val50_150_512(int8_t idx)
-{
-  //ruby  -e 'x=0; [[1,10],[2,50],[5,155]].each{|s,e| while x<e; print(" #{x}");x+=s; end }'
-  //0 1 2 3 4 5 6 7 8 9 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 55 60 65 70 75 80 85 90 95 100 105 110 115 120 125 130 135 140 145 150
-  // idx  0  10  30   50
-  // val  0  10  50  150
-  uint8_t i   = abs(idx);
-  uint16_t uval= 0;
-  if(i>10){
-    if(i<=30) uval = 10*(i-5); // (i-10)*2 + 10
-    else      uval = 25*(i-20);             // (i-30)*5 + 50
-  }else{
-    uval=i*5;//*5.12
-  }
-  // *512/500
-  return (idx < 0) ? -uval : uval;
-}
-int16_t idx2val50_150(int8_t idx)
-{
-  uint8_t i   = abs(idx);
-  uint8_t uval= i;
-  if(i>10){
-    if(i<=30) uval = 2*(i-5); // (i-10)*2 + 10
-    else      uval = 5*(i-20);             // (i-30)*5 + 50
-  }
-  return (idx < 0) ? -uval : uval;
-}
-int8_t val2idx50_150(int16_t val)
-{
-  uint8_t uval = val < 0 ? (uint8_t)-val : val;
-  int8_t  i;
-  if(uval>50)      i = (uint8_t)(uval-50)/5 + 30;
-  else if(uval>10) i = (uint8_t)(uval+10)/2;
-  else             i = uval;
-  return val < 0 ? -i : i;
-}
-
-
-void init() //common init for simu and target
-{
-  //g_menuStack[0] =  menuProc0;
-
-  eeReadAll(); //load general setup and selected model
-#ifndef SIM
-  lcdSetRefVolt(g_eeGeneral.contrast);
-  setupAdc();  //before checkTHR
-#endif
-  chainMenu(menuProc0); //call evt_entry
-  checkMem();  //enough eeprom free? 
-  checkTHR();
-  checkSwitches(); //must be last
-}
-
-#ifndef SIM
 //void main(void) __attribute__((noreturn));
 int main(void)
 {
