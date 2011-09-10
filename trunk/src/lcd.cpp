@@ -87,6 +87,12 @@ void lcd_rect(uint8_t x,uint8_t y,uint8_t w,uint8_t h)
 /// invers: 0 no 1=yes 2=blink
 void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 {
+  bool blinkf = false;
+  if(mode&BLINK && mode&INVERS){
+    blinkf=true;
+    mode &= ~(BLINKF);
+  }
+
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
   
   prog_uchar    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
@@ -111,6 +117,9 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
     if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
   }
   assert(p<=DISPLAY_END);
+  if(blinkf && BLINK_ON_PHASE){
+    lcd_rect(x,y,FW,FH);
+  }
 }
 void lcd_putc(uint8_t x,uint8_t y,const char c)
 {

@@ -228,25 +228,6 @@ void eeLoadModelName(uint8_t id,char*buf,uint8_t len)
     }
   }
 }
-int8_t trimRevert2(int16_t val)
-{
-  uint8_t idx = 0;
-  bool    neg = val<0; val=abs(val);
-  while(val>0){
-    idx++;
-    val-=idx;
-  }
-  return neg ? -idx : idx;
-}
-int8_t trimRevert4(int16_t val)
-{
-  uint8_t idx = 0;
-  bool    neg = val<0; val=abs(val);
-  while(val>trimExp4(idx)){
-    idx++;
-  }
-  return neg ? -idx : idx;
-}
 
 void eeLoadModel(uint8_t id)
 {
@@ -287,7 +268,8 @@ void eeLoadModel(uint8_t id)
     ModelData_r143 *model143 = (ModelData_r143*)&g_model;
     for(int8_t i=3; i>=0; i--){
       int16_t val = trimExp2(model84->trimData[i].trim) + model84->trimData[i].trimDef_lt133;
-      model143->trimData[i].trim = trimRevert2(val);
+      model143->trimData[i].itrim = trimRevert2(val);
+      model143->trimData[i].tmode = 0;
     }
     memmove(&model143->curves5, &model84->curves5, sizeof(model84->curves5)+sizeof(model84->curves9));
     memset(model143->curves3, 0, sizeof(model143->curves3));

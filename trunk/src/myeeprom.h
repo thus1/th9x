@@ -183,7 +183,8 @@ typedef struct t_TrimData_r0 {
 } __attribute__((packed)) TrimData_r0;//<r143
 
 typedef struct t_TrimData_r143 {
-  int8_t  trim;    //quadratisch
+  int8_t  itrim:6; //trim index
+  uint8_t tmode:2;
 } __attribute__((packed)) TrimData_r143;
 
 
