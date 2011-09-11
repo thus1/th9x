@@ -219,9 +219,11 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
   uint8_t prec=PREC(mode);
   bool neg=val<0;
   if(neg) val=-val;
-  x-=FW;  //??? fw
+  //x-=FW;  //??? fw
+  //x-=1;
   for(uint8_t i=0;i<len;i++)
   {
+    x-=fw;
     if( prec && prec==i){
       x-=1;
       lcd_putcAtt(x,y,(val % 10)+'0',mode);
@@ -233,7 +235,7 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
     }
     val /= 10;
     if(!(mode & LEADING0) && !val && !prec) break;
-    x-=fw;
+    //x-=fw;
   }
   if(neg) lcd_putcAtt((x-=fw),y,'-',mode);
   else  if((mode & SIGN)) lcd_putcAtt((x-=fw),y,'+',mode);
