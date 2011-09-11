@@ -360,9 +360,9 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
   
   //  -  12   :  34
   // x    x2 x1   x2+
-  lcd_putcAtt(   x,    y, tme<0 ?'-':' ',att);
+  if(tme<0) lcd_putcAtt(   x,    y, '-' ,att);
   uint8_t x1 = x + ( (att&DBLSIZE) ? FWNUM*5-4 : FWNUM*3);
-  uint8_t x2 = x + ( (att&DBLSIZE) ? FWNUM*5-4 : FWNUM*3+2);
+  uint8_t x2 = x + ( (att&DBLSIZE) ? FWNUM*5 : FWNUM*3+2);
   lcd_putcAtt(   x1, y, ':',att);
   lcd_outdezNAtt(x2, y, abs(tme)/60,LEADING0+att,2);
   x2+= (att&DBLSIZE) ? FWNUM*5-1 : FWNUM*3-3;
@@ -371,8 +371,8 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
 void putsVBat(uint8_t x,uint8_t y,uint8_t att)
 {
   //att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
-  lcd_putcAtt(   x+ 3*FW,   y,    'V',att);
   lcd_outdezAtt( x+ 3*FW,   y,    g_vbat100mV,att|PREC1);
+  lcd_putcAtt(   x+ 3*FW,   y,    'V',att);
 }
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
