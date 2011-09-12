@@ -396,9 +396,6 @@ void menuProcLimits(uint8_t event)
     if(i==0){ x-=FW;}
     lcd_putsmAtt(x , 1*FH,PSTR("subT\t""min\t""scl\t""max\t""inv"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
   }
-//   if(sub==1){
-//     checkIncDecGen2(event, &mstate2.m_posHorz, 0, 4, 0);
-//   }
   sub-=2;
 #define ATTR(row,col) ((sub==row && subHor==col) ? (mstate2.m_valEdit?BLINK:BLINKF) : 0)
   for(uint8_t i=0; i<6; i++){
@@ -409,14 +406,7 @@ void menuProcLimits(uint8_t event)
     putsChn(0,y,k+1, 0);
     for(uint8_t j=1; j<=5;j++){
       uint8_t attr = ATTR(k,j);
-      bool    edit = attr == BLINKF;
-//       if(sub==k && subHor==j){ //line and col
-//         attr = BLINKF;
-//         if(mstate2.m_valEdit){
-//           attr = BLINK;
-//           edit = true;
-//         }
-//       }
+      bool    edit = attr == BLINK;
       switch(j)
       {
         case 1:
@@ -510,15 +500,8 @@ void menuProcTrim(uint8_t event)
     uint8_t y=iLog*FH+FH*3;
     putsChnRaw(0,y,iLog,0);//attr);
     for(uint8_t j=0; j<2;j++){
-      uint8_t attr = 0;
-      bool    edit = 0;
-      if(sub==iLog && subHor==j){ //line and col
-        attr = BLINKF;
-        if(mstate2.m_valEdit){
-          attr = BLINK;
-          edit = true;
-        }
-      }
+      uint8_t attr = ATTR(iLog,j);
+      bool    edit = attr == BLINK;
       switch(j)
       {
         case 0:
@@ -1727,15 +1710,8 @@ void menuProcTrainer(uint8_t event)
     putsChnRaw( 0, y,iLog,0);
 
     for(uint8_t j=1; j<=4;j++){
-      uint8_t attr = 0;
-      bool    edit = 0;
-      if(sub==iLog && subHor==j){ //line and col
-        attr = BLINKF;
-        if(mstate2.m_valEdit){
-          attr = BLINK;
-          edit = true;
-        }
-      }
+      uint8_t attr = ATTR(iLog,j);
+      bool    edit = attr == BLINK;
 
       switch(j)
       {
