@@ -253,13 +253,18 @@ void per10ms()
     g_tmr1s++;
     s_hlp1s=99;
   }
-  uint8_t enuk = KEY_MENU;
-  uint8_t    in = ~PINB;
-  for(int i=1; i<7; i++)
-  {
-    //INP_B_KEY_MEN 1  .. INP_B_KEY_LFT 6
-    keys[enuk].input(in & (1<<i),(EnumKeys)enuk);
-    ++enuk;
+  static int8_t skipCnt;
+  skipCnt-=2;
+  if(skipCnt < 0){
+    skipCnt  += 2 + g_eeGeneral.keySpeed;
+    uint8_t enuk  = KEY_MENU;
+    uint8_t    in = ~PINB;
+    for(int i=1; i<7; i++)
+    {
+      //INP_B_KEY_MEN 1  .. INP_B_KEY_LFT 6
+      keys[enuk].input(in & (1<<i),(EnumKeys)enuk);
+      ++enuk;
+    }
   }
   static  prog_uchar  APM crossTrim[]={
     1<<INP_D_TRM_LH_DWN,
@@ -271,7 +276,8 @@ void per10ms()
     1<<INP_D_TRM_RH_DWN,
     1<<INP_D_TRM_RH_UP
   };
-  in = ~PIND;
+  uint8_t enuk  = TRM_LH_DWN;
+  uint8_t in    = ~PIND;
   for(int i=0; i<8; i++)
   {
     // INP_D_TRM_RH_UP   0 .. INP_D_TRM_LH_UP   7
@@ -284,11 +290,11 @@ void per10ms()
   if(s_beepCnt) s_beepCnt--;
   static prog_uint8_t APM beepTab[]= {
     /* volumes: 
-    Key        Tmr     Trim0,   Err 
-    Store      Bat     TmrLong
-         Max   Trim    WarnNoDup
-                       WarnInact
-    1    2     3        4       5  */
+       Key        Tmr     Trim0,   Err 
+       Store      Bat     TmrLong
+       Max   Trim    WarnNoDup
+       WarnInact
+       1    2     3        4       5  */
 
     0,   0,    0,       0,      0, //quiet
     0,   0,    1,      30,    100, //silent

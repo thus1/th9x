@@ -3,6 +3,9 @@ require "pp"
 
 
 
+# avrdude -c usbtiny -p m64 -U hfuse:w:0x81:m
+# avrdude -c usbtiny -p m64 -U lfuse:w:0x0e:m
+# avrdude -c usbtiny -p m64 -U efuse:w:0xff:m
 
 
 PARDEF={}
