@@ -55,6 +55,7 @@ MenuFuncP_PROGMEM APM menuTabModel[] = {
 MenuFuncP_PROGMEM APM menuTabDiag[] = {
   menuProcSetup0,
   menuProcSetup1,
+  menuProcSetup2,
   menuProcTrainer,
   menuProcDiagVers,
   menuProcDiagKeys, 
@@ -1494,7 +1495,7 @@ void menuProcDisplayTest(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("CALIB");
-  MSTATE_CHECK_V(8,menuTabDiag,4);
+  MSTATE_CHECK_V(9,menuTabDiag,4);
   static int x0,y0;
   switch(event)
   {
@@ -1527,7 +1528,7 @@ void menuProcDiagCalib(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("CALIB");
-  MSTATE_CHECK_V(7,menuTabDiag,4);
+  MSTATE_CHECK_V(8,menuTabDiag,4);
   int8_t  sub    = mstate2.m_posVert ;
   static int16_t midVals[7];
   static int16_t loVals[7];
@@ -1591,7 +1592,7 @@ void menuProcDiagAna(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("ANA");  
-  MSTATE_CHECK_V(6,menuTabDiag,9);
+  MSTATE_CHECK_V(7,menuTabDiag,9);
   int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<8; i++)
   {
@@ -1631,7 +1632,7 @@ void menuProcDiagKeys(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("DIAG");  
-  MSTATE_CHECK_V(5,menuTabDiag,1);
+  MSTATE_CHECK_V(6,menuTabDiag,1);
 
   uint8_t x;
 
@@ -1671,7 +1672,7 @@ void menuProcDiagVers(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("VERSION");
-  MSTATE_CHECK_V(4,menuTabDiag,1);
+  MSTATE_CHECK_V(5,menuTabDiag,1);
 
   lcd_puts_P(0, 2*FH,stamp4 ); 
   lcd_puts_P(0, 3*FH,stamp1 ); 
@@ -1684,7 +1685,7 @@ void menuProcTrainer(uint8_t event)
   static MState2 mstate2;
   TITLE("TRAINER");  
   MSTATE_TAB = { 4,4};
-  MSTATE_CHECK_VxH(3,menuTabDiag,1+1+4+1);
+  MSTATE_CHECK_VxH(4,menuTabDiag,1+1+4+1);
   int8_t  sub    = mstate2.m_posVert;//-1 ;
   uint8_t subHor = mstate2.m_posHorz+1;
   if(sub<=1)       mstate2.m_valEdit=0;
@@ -1767,11 +1768,11 @@ void menuProcTrainer(uint8_t event)
   }
   
 }
-void menuProcSetup1(uint8_t event)
+void menuProcSetup2(uint8_t event)
 {
   static MState2 mstate2;
   TITLE("WARNINGS");  
-  MSTATE_CHECK_V(2,menuTabDiag,1+5);
+  MSTATE_CHECK_V(3,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<5; i++){
     uint8_t y=i*FH+1*FH;
@@ -1818,22 +1819,65 @@ void menuProcSetup1(uint8_t event)
 }
 static prog_uint8_t APM s_istTmrVals1[]={ 0,10,20,40}; 
 static prog_uint8_t APM s_istTmrVals2[]={ 5,10,20,40}; 
+void menuProcSetup1(uint8_t event)
+{
+  static MState2 mstate2;
+  TITLE("SETUP BASIC2");  
+  MSTATE_CHECK_V(2,menuTabDiag,1+4);
+  int8_t  sub    = mstate2.m_posVert-1 ;
+
+  uint8_t y=2*FH;
+  for(uint8_t i=0; i<4; i++,y += FH){
+    uint8_t attr = sub==i ? BLINK : 0; 
+    lcd_putsmAtt( FW*4,y,PSTR(
+			      "  InstTrim\t"
+                              "s  setup dly\t"
+                              "s  lease dly\t"
+			      "s KeyLong\t"
+			      ),i,0);
+    switch(i){
+      case 0:// "instant trim switch"
+#define TrimSwitch (MAX_DRSWITCH_R-g_eeGeneral.iTrimSwitch)
+	putsDrSwitches(0*FW,y,TrimSwitch,attr);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimSwitch, 0, MAX_DRSWITCH_R-1);
+        }
+        break;
+      case 1:// "instant trim switch"
+        lcd_outdezAtt( FW*4, y, pgm_read_byte(&s_istTmrVals1[g_eeGeneral.iTrimTme1]),attr+PREC1);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme1, 0, 3);
+        }
+        break;
+      case 2:// "instant trim switch"
+        lcd_outdezAtt( FW*4, y, pgm_read_byte(&s_istTmrVals2[g_eeGeneral.iTrimTme2]),attr+PREC1);
+        if(attr){
+          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme2, 0, 3);
+        }
+        break;
+      case 3:// Keyspeed
+        lcd_outdezAtt( FW*4, y, (g_eeGeneral.keySpeed+2)*13,attr|PREC2);
+        if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.keySpeed,0,3);
+        break;
+    }
+  }
+}
 void menuProcSetup0(uint8_t event)
 {
   static MState2 mstate2;
-  TITLE("SETUP BASIC");  
-  MSTATE_CHECK_V(1,menuTabDiag,1+8);
+  TITLE("SETUP BASIC1");  
+  MSTATE_CHECK_V(1,menuTabDiag,1+5);
   int8_t  sub    = mstate2.m_posVert-1 ;
 
   uint8_t y=1*FH;
-  for(uint8_t i=0; i<8; i++,y += FH){
+  for(uint8_t i=0; i<5; i++,y += FH){
     
     uint8_t attr = sub==i ? BLINK : 0; 
     lcd_putsmAtt( FW*6,y,PSTR("Contrast\t"
 			      "AdcFilt.\t"
 			      "Light\t"
 			      "BeepMod\t"
-			      "InstTrim  s   s\t\t\t"
+			      //"InstTrim  s   s\t\t\t"
 			      ),i,0);
     switch(i){
       case 0: //Contrast
@@ -1863,27 +1907,8 @@ void menuProcSetup0(uint8_t event)
         lcd_outdezAtt( FW*4, y, g_eeGeneral.beepVol,attr);
         if(attr)  CHECK_INCDEC_H_GENVAR_BF(event,g_eeGeneral.beepVol,0,3);
         break;
-      case 4:// "instant trim switch"
-#define TrimSwitch (MAX_DRSWITCH_R-g_eeGeneral.iTrimSwitch)
-	putsDrSwitches(0*FW,y,TrimSwitch,attr);
-        if(attr){
-          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimSwitch, 0, MAX_DRSWITCH_R-1);
-        }
-        break;
-      case 5:// "instant trim switch"
-        lcd_outdezAtt( FW*16, y-FH, pgm_read_byte(&s_istTmrVals1[g_eeGeneral.iTrimTme1]),attr+PREC1);
-        if(attr){
-          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme1, 0, 3);
-        }
-        break;
-      case 6:// "instant trim switch"
-        lcd_outdezAtt( FW*20, y-2*FH, pgm_read_byte(&s_istTmrVals2[g_eeGeneral.iTrimTme2]),attr+PREC1);
-        if(attr){
-          CHECK_INCDEC_H_GENVAR_BF(event, g_eeGeneral.iTrimTme2, 0, 3);
-        }
-        break;
-      case 7://stick Mode
-        y -= 2*FH;
+      case 4://stick Mode
+        y += FH;
         lcd_putsAtt( 1*FW, y, PSTR("Mode"),0);//sub==3?INVERS:0);
         lcd_putcAtt( 3*FW, y+FH, '1'+g_eeGeneral.stickMode,attr);
         for(uint8_t i=0; i<4; i++)

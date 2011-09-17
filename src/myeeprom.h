@@ -130,7 +130,7 @@ typedef struct t_EEGeneral_r192 {
   int8_t    lightSw;
   TrainerData_r192 trainer;
   uint8_t   adcFilt:2;     // was view in earlier versions
-  uint8_t   reserve2:2;     // was view in earlier versions
+  uint8_t   keySpeed:2;     // was view in earlier versions
   uint8_t   thr0pos:4;     // was view in earlier versions
 #define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
 #define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
