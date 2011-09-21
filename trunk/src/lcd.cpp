@@ -95,7 +95,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
   
-  prog_uchar    *q = &font_5x8_x20_x7f[ + (c-0x20)*5];
+  prog_uchar    *q = &font_5x8_x20_x7f[ + ((uint8_t)c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
   if(mode&DBLSIZE)
   {
@@ -139,7 +139,7 @@ uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
   //while(char c=pgm_read_byte(s++)) {
   while(1) {
     char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
-    if(c<0x20) break;
+    if((uint8_t)c<0x20) break;
     lcd_putcAtt(x,y,c,mode);
     x+=FW;    if(mode&DBLSIZE) x+=FW-2;
   }
@@ -172,7 +172,7 @@ void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t m
   while(skip){
     while(1){
       char c = (mode & BSS_NO_INV) ? *s++ : pgm_read_byte(s++);
-      if(c<0x20) break;
+      if((uint8_t)c<0x20) break;
     }
     skip--;
   }
