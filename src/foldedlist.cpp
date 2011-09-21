@@ -42,7 +42,7 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
       if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
         printf("resort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
         memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
-        inst.m_editMode=false;
+        inst.m_listEdit=false;
         failed = true;
         eeDirty(EE_MODEL);
         break; //data ist resorted, try once more
@@ -161,36 +161,43 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
     case EVT_ENTRY:
       FoldedList::inst.m_iterOfsIFL=0;
     case EVT_ENTRY_UP:
-      inst.m_editMode=false;
+      inst.m_listEdit=false;
       break;
-    case  EVT_KEY_FIRST(KEY_EXIT):
-      if(inst.m_editMode){
-        inst.m_editMode = false;
-        beepKey();
-        killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
-      }
-      break;
-    case EVT_KEY_LONG(KEY_MENU):
-      if(inst.m_currInsMode) break;
-      killEvents(event); //cut off 
-      if(inst.m_editMode)
+//     case  EVT_KEY_FIRST(KEY_EXIT):
+//       if(inst.m_listEdit){
+//         inst.m_listEdit = false;
+//         beepKey();
+//         killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
+//       }
+//       break;
+//     case EVT_KEY_LONG(KEY_MENU):  // h-pos
+//       if(inst.m_currInsMode) break; //zwischen den Zeilen machts keinen sinn
+//       killEvents(event); //cut off 
+//       if(inst.m_listEdit)
+//       {
+//         beepKey();
+//         ret = FoldedListDup;
+//         goto ret_dup;
+//       }
+//       inst.m_listEdit=true;
+//       break;
+      //case EVT_KEY_BREAK(KEY_MENU):  // _LONG
+    case EVT_KEY_LONG(KEY_MENU):  // _LONG
+      if(inst.m_listEdit)
       {
         beepKey();
         ret = FoldedListDup;
         goto ret_dup;
       }
-      inst.m_editMode=true;
-      break;
-    case EVT_KEY_BREAK(KEY_MENU):
       if(inst.m_subISL<1) break;
-      if(inst.m_currInsMode){
+      if(inst.m_currInsMode){  //neue Zeile einfuegen
         ret=FoldedListNew;
         goto ret_dup;
       }
-      return FoldedListEdit;
+      return FoldedListEdit; //Zeile edit
   }
 
-  if(inst.m_editMode && subChanged) // && inst.m_currIDTOld != inst.m_currMixIdx)
+  if(inst.m_listEdit && subChanged) // && inst.m_currIDTOld != inst.m_currMixIdx)
   {
     STORE_MODELVARS;
     if(inst.m_currInsMode){
@@ -199,10 +206,10 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
 //         if(ed->chn < 3) ed->chn++; 
 //         else FL_INST.editModeOff();
         if(chn < inst.m_numChn) chn++;
-        else inst.editModeOff();
+        else inst.listEditMode(false);
       }else{ //: FoldedListCntDown;
         if(chn > 1) chn--;
-        else inst.editModeOff();
+        else inst.listEditMode(false);
       }
       inst.m_chProc(arrayElt(currIDTOld()),chn);
       return 0;
@@ -216,7 +223,7 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
                 inst.m_prepSzeElt);
         return FoldedListSwap;
       }else{
-        inst.m_editMode=false;
+        inst.m_listEdit=false;
       }
     }
   }

@@ -42,6 +42,12 @@
 #define PREC(n)       (((n)>>5)&3)
 #define DBLSIZE       0x80
 
+#define ARR_W         "\x7f"
+#define ARR_E         "\x7e"
+#define ARR_NE        "\x7d"
+#define ARR_SW        "\x7b"
+#define ARR_N_S       "\x24"
+
 
 //extern unsigned char font_5x8_x20_x7f[];
 extern void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode);

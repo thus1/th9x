@@ -22,6 +22,23 @@ def main(xbm)
 
   out=Array.new(w*hb,0)
   #pp out
+
+  #
+  #   87654321 87654321 87654321 87654321     .. w
+  # 1
+  # 2
+  # 3     <----
+  # 4
+  # 5
+  # 6
+  # 7
+  # 8
+  #
+  # .
+  # .
+  # h
+  #
+
   h.times{|yp| yb=yp/8; msk= 1 << (yp%8)
     w.times{|xp| xb=xp/8; msk2=1 << (xp%8)
       out[yb*w+xp]|=msk if bits[wb*yp+xb]&msk2 != 0
