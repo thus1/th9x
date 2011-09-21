@@ -159,7 +159,6 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
     uint8_t maxcol  = horzCsr ? -NUMCOL(m_posVert) : NUMCOL(m_posVert)-1;
     switch(event) {
       case EVT_KEY_BREAK(KEY_DOWN): //inc vert
-        //m_valEdit = 0;
         if(!horzCsr || m_posHorz==0){
           INC(m_posVert,maxrow);
           if(NUMCOL(m_posVert)<0){
@@ -171,7 +170,6 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
         BLINK_SYNC; 
         break;
       case EVT_KEY_BREAK(KEY_UP):   //dec vert
-        //m_valEdit = 0;
         if(!horzCsr || m_posHorz==0){
           DEC(m_posVert,maxrow);
           if(NUMCOL(m_posVert)<0){
@@ -186,29 +184,26 @@ void MState2::check(uint8_t event,  uint8_t curr,MenuFuncP *menuTab, uint8_t men
         if(horzCsr) break;
         killEvents(event);
         INC(m_posHorz,maxcol);
-        //m_valEdit = 0;     //stop edit
         BLINK_SYNC; 
         break;
       case EVT_KEY_LONG(KEY_UP):   //dec horz
         if(horzCsr) break;
         killEvents(event);
         DEC(m_posHorz,maxcol);
-        //m_valEdit = 0;     //stop edit
         BLINK_SYNC;
         break;
+      case EVT_KEY_BREAK(KEY_MENU):
       case EVT_KEY_LONG(KEY_LEFT):   //
       case EVT_KEY_LONG(KEY_RIGHT):  //start edit
         BLINK_SYNC; 
         m_valEdit = 1;
         break;
       case EVT_KEY_BREAK(KEY_RIGHT):  //inc horz
-        //if(!horzCsr) break;
         if(m_valEdit) break;
         INC(m_posHorz,maxcol);
         BLINK_SYNC; 
         break;
       case EVT_KEY_BREAK(KEY_LEFT):   //dec horz
-        //if(!horzCsr) break;
         if(m_valEdit) break;
         DEC(m_posHorz,maxcol);
         BLINK_SYNC;
@@ -347,7 +342,8 @@ void menuProcCurve(uint8_t event) {
   int8_t  sub    = mstate2.m_posVert - 1;
 
   switch (event) {
-  case EVT_KEY_FIRST(KEY_MENU):
+    //case EVT_KEY_FIRST(KEY_MENU):  //!! _LONG
+    case EVT_KEY_LONG(KEY_MENU):  //!! _LONG
     if (sub >= 0) {
       s_curveChan = sub;
       pushMenu(menuProcCurveOne);
@@ -607,7 +603,8 @@ void editSwitchVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, sd.opRes, 1,7);
       break; 
     case 4:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),editAtt);
-      if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
+      //if(edit && event==EVT_KEY_FIRST(KEY_MENU)){ //loeschen ok
+      if(edit && event==EVT_KEY_LONG(KEY_MENU)){ //loeschen ok
         FL_INST.rmCurrLine();
 	killEvents(event);
 	popMenu();  
@@ -660,7 +657,7 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
   uint8_t x=TITLE("SWITCHES  ");  
   int8_t  sub;//    = mstate2.m_posVert;
   int8_t  subOld  = mstate2.m_posVert;
-  MSTATE_TAB = {4,4};
+  MSTATE_TAB = {5};
   if(nested){
     MSTATE_CHECK0_VxH(1+FL_INST.numSeqs()-1);
     sub= mstate2.m_posVert+1;//nested has no line 0
@@ -674,6 +671,9 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
   if(sub<=1)       mstate2.m_valEdit=0;
 
   FL_INST.init(g_model.switchTab,DIM(g_model.switchTab),sizeof(g_model.switchTab[0]),chProcSwitches,8);
+
+  if(FL_INST.listEditMode(subHor==4)) mstate2.m_valEdit=0;
+
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -701,7 +701,7 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
       bool lineEdit = 0;
-      if(sel && FL_INST.editMode()) {sel=0; lineEdit=true;}
+      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
       if(sel && !mstate2.m_valEdit)  sel=2;
 
       for(uint8_t j=0; j<4; j++){
@@ -709,7 +709,10 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
                        subHor==j ? sel : 0, 
                        pgm_read_byte(&colPos[j]),   y,line->idt);
       }
-      if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+      if(lineEdit) {
+        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
+      }
     }
     if(FL_INST.isSelectedCh()) {
       if(BLINK_ON_PHASE) {
@@ -788,7 +791,8 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
 	md2.curveNeg = cv<0;
       }
 	
-      if( mEdit &&  md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
+      //if( mEdit &&  md2.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){ //_LONG
+      if( mEdit &&  md2.curve>=1 && event==EVT_KEY_LONG(KEY_MENU)){ //_LONG
         s_curveChan = md2.curve-1;
         pushMenu(menuProcCurveOne);
         return;
@@ -803,7 +807,8 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
 	  md2.swtch=sw; 
 	  CHECK_LAST_SWITCH(md2.swtch,EE_MODEL|_FL_POSNEG);
 	}
-	if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_FIRST(KEY_MENU)){
+	//if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_FIRST(KEY_MENU)){ //LONG
+	if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_LONG(KEY_MENU)){ //LONG
           s_swNested = abs(sw)-MAX_DRSWITCH_R;
 	  killEvents(event);
 	  pushMenu(menuProcSwitchesNested);
@@ -825,7 +830,7 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
       break;
     case 6:   
       {
-	lcd_puts_P(x-FW*4, y, PSTR("{  s"));
+	lcd_puts_P(x-FW*4, y, PSTR(ARR_SW"  s"));
 	uint16_t slope = slopeFull100ms(md2.speedDown);
 	if(slope<100)  lcd_outdezAtt(x-FW*1,y,slope,   editAtt|PREC1);
 	else           lcd_outdezAtt(x-FW*1,y,slope/10,editAtt);
@@ -834,7 +839,7 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
       }
     case 7:
       {
-	lcd_puts_P(x-FW*4, y, PSTR("  s}"));
+	lcd_puts_P(x-FW*4, y, PSTR("  s"ARR_NE));
 	uint16_t slope = slopeFull100ms(md2.speedUp);
 	if(slope<100)  lcd_outdezAtt(x-FW*2,y,slope,   editAtt|PREC1);
 	else           lcd_outdezAtt(x-FW*2,y,slope/10,editAtt);
@@ -842,7 +847,8 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
 	break;
       }
     case 8:   lcd_putsAtt(x-FW*6,y,PSTR("[MENU]"),editAtt);
-      if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
+      //if(edit && event==EVT_KEY_FIRST(KEY_MENU)){ //_LONG
+      if(edit && event==EVT_KEY_LONG(KEY_MENU)){ //_LONG
         FL_INST.rmCurrLine();
 	killEvents(event);
 	popMenu();  
@@ -891,7 +897,7 @@ void menuProcMix(uint8_t event)
   static MState2 mstate2;
   uint8_t x=TITLE("MIXER  ");  
   int8_t subOld  = mstate2.m_posVert;
-  MSTATE_TAB = {6}; //6 columns
+  MSTATE_TAB = {7}; //6 columns
   MSTATE_CHECK_VxH(4,menuTabModel,FL_INST.numSeqs());
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
@@ -899,6 +905,7 @@ void menuProcMix(uint8_t event)
 
   MixData_r192  *md= g_model.mixData;
   FL_INST.init(g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0]),chProcMixes,NUM_XCHNOUT);
+  if(FL_INST.listEditMode(subHor==6)) mstate2.m_valEdit=0;
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -916,7 +923,7 @@ void menuProcMix(uint8_t event)
       MixData_r192 &md2=md[line->idt];
       uint8_t  sel = FL_INST.isSelectedDat(); 
       bool lineEdit = 0;
-      if(sel && FL_INST.editMode()) {sel=0; lineEdit=true;}
+      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
       if(sel && !mstate2.m_valEdit)     sel=2;
 
       if(sel) { //show diag values
@@ -935,7 +942,12 @@ void menuProcMix(uint8_t event)
         
       }
       if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '}',0);
-      if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+      //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+      if(lineEdit) {
+        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
+      }
+
     }
     if(FL_INST.isSelectedCh()) {
       if(BLINK_ON_PHASE) 
@@ -1044,7 +1056,8 @@ void editExpoVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y
       x-=2*FW;
       lcd_putsmAtt( x, y,PSTR(CURV_STR),ed.curve,editAtt);
       if(edit) CHECK_INCDEC_H_MODELVAR_BF( event, ed.curve, 0,7); //!! bitfield
-      if(mEdit && ed.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){
+      //if(mEdit && ed.curve>=1 && event==EVT_KEY_FIRST(KEY_MENU)){//_LONG
+      if(mEdit && ed.curve>=1 && event==EVT_KEY_LONG(KEY_MENU)){//_LONG
 	s_curveChan = ed.curve-1;
 	pushMenu(menuProcCurveOne);
         return;
@@ -1066,7 +1079,8 @@ void editExpoVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y
 	  ed.drSw=sw; 
 	  CHECK_LAST_SWITCH(ed.drSw,EE_MODEL);
 	}
-	if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_FIRST(KEY_MENU)){
+	//if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_FIRST(KEY_MENU)){//_LONG
+	if( mEdit && abs(sw)>MAX_DRSWITCH_R && event==EVT_KEY_LONG(KEY_MENU)){//_LONG
           s_swNested = abs(sw)-MAX_DRSWITCH_R;
 	  killEvents(event);
 	  pushMenu(menuProcSwitchesNested);
@@ -1084,7 +1098,8 @@ void editExpoVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y
       //x-=2*FW;
       x-=6*FW;
       lcd_putsAtt( x, y,PSTR("[MENU]"),editAtt);
-      if(edit && event==EVT_KEY_FIRST(KEY_MENU)){
+      //if(edit && event==EVT_KEY_FIRST(KEY_MENU)){ //remove ok
+      if(edit && event==EVT_KEY_LONG(KEY_MENU)){ //remove ok
         FL_INST.rmCurrLine();
 	killEvents(event);
 	popMenu();  
@@ -1160,13 +1175,14 @@ void menuProcExpoAll(uint8_t event)
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR  ");  
   int8_t subOld  = mstate2.m_posVert;
-  MSTATE_TAB = {5,5};
+  MSTATE_TAB = {6};
   MSTATE_CHECK_VxH(3,menuTabModel,2+FL_INST.numSeqs()-1);
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
   if(sub<=1)       mstate2.m_valEdit=0;
 
   FL_INST.init(g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0]),chProcExpos,4);
+  if(FL_INST.listEditMode(subHor==5)) mstate2.m_valEdit=0;
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -1193,14 +1209,18 @@ void menuProcExpoAll(uint8_t event)
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
       bool lineEdit = 0;
-      if(sel && FL_INST.editMode()) {sel=0; lineEdit=true;}
+      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
       if(sel && !mstate2.m_valEdit)     sel=2;
       for(uint8_t j=0; j<5; j++){
         editExpoVals(event,j,
                      subHor==j ? sel : 0,
                      pgm_read_byte(&colPos[j]),  y,line->idt);
       }
-      if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+      //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
+      if(lineEdit) {
+        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
+      }
     }
     if(FL_INST.isSelectedCh()) {
       if(BLINK_ON_PHASE) //lcd_hline(0,y+7,FW*4);
@@ -1402,7 +1422,7 @@ void menuProcModel(uint8_t event)
         //lcd_putsAtt(    0, (7)*FH, PSTR("RM"),attr);
         lcd_putsAtt(  FW*6, y, PSTR("[MENU LONG]"),attr);
         if(attr){
-          if(event==EVT_KEY_LONG(KEY_MENU)){
+          if(event==EVT_KEY_LONG(KEY_MENU)){ //rm mit LONG??
             killEvents(event);
             EFile::rm(FILE_MODEL(g_eeGeneral.currModel)); //delete file
             eeLoadModel(g_eeGeneral.currModel); //load default values
@@ -1414,7 +1434,7 @@ void menuProcModel(uint8_t event)
 }
 void menuProcModelSelect(uint8_t event)
 {
-  static uint8_t s_editMode;
+  static uint8_t s_listEditMode;
   static MState2 mstate2;
   TITLE("MODELSEL");  
   lcd_puts_P(     10*FW, 0, PSTR("free"));
@@ -1428,14 +1448,14 @@ void menuProcModelSelect(uint8_t event)
   {
     //case  EVT_KEY_FIRST(KEY_MENU):
     case  EVT_KEY_FIRST(KEY_EXIT):
-      if(s_editMode){
-        s_editMode = false;
+      if(s_listEditMode){
+        s_listEditMode = false;
         beepKey();
         killEvents(event);
         break;
       }
       //fallthrough
-    case  EVT_KEY_BREAK(KEY_MENU):
+    case  EVT_KEY_BREAK(KEY_MENU): //shortcut
     case  EVT_KEY_FIRST(KEY_RIGHT):
       if(g_eeGeneral.currModel != mstate2.m_posVert)
       {
@@ -1448,17 +1468,17 @@ void menuProcModelSelect(uint8_t event)
       if(event!=EVT_KEY_FIRST(KEY_EXIT))  chainMenu(menuProcModel);
       break;
 //     case  EVT_KEY_FIRST(KEY_MENU):
-//       s_editMode = true;
+//       s_listEditMode = true;
 //       beepKey();
 //       break;
-    case  EVT_KEY_LONG(KEY_MENU):
-      if(!s_editMode){
-        s_editMode = true;
+    case  EVT_KEY_LONG(KEY_MENU): // edit line mit pos??
+      if(!s_listEditMode){
+        s_listEditMode = true;
         beepKey();
       }else{
         if(eeDuplicateModel(sub)) {
           beepKey();
-          s_editMode = false;
+          s_listEditMode = false;
         }
         else beepWarnNoDup(); //model duplicate not possible
       }
@@ -1466,13 +1486,13 @@ void menuProcModelSelect(uint8_t event)
       break;
 
     case EVT_ENTRY:
-      s_editMode = false;
+      s_listEditMode = false;
       
       mstate2.m_posVert = g_eeGeneral.currModel;
       eeCheck(true); //force writing of current model data before this is changed
       break;
   }
-  if(s_editMode && subOld!=sub){
+  if(s_listEditMode && subOld!=sub){
     EFile::swap(FILE_MODEL(subOld),FILE_MODEL(sub));
   }
 
@@ -1481,10 +1501,10 @@ void menuProcModelSelect(uint8_t event)
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
-    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_editMode ? INVERS : BLINK ) : 0) + LEADING0,2);
+    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_listEditMode ? INVERS : BLINK ) : 0) + LEADING0,2);
     static char buf[sizeof(g_model.name)+8];
     eeLoadModelName(k,buf,sizeof(buf));
-    lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_editMode ? BLINK : 0 ) : 0));
+    lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_listEditMode ? BLINK : 0 ) : 0));
   }
 
 }
@@ -1617,7 +1637,7 @@ void menuProcDiagAna(uint8_t event)
 #ifdef WITH_ADC_STAT
   switch(event)
     {
-    case EVT_KEY_FIRST(KEY_MENU):
+      case EVT_KEY_FIRST(KEY_MENU): //ok
       g_rawPos=0;
       break;
     }
@@ -1650,7 +1670,7 @@ void menuProcDiagKeys(uint8_t event)
   for(uint8_t i=0; i<6; i++)
   {
     uint8_t y=(5-i)*FH+2*FH;
-    bool t=keyState((EnumKeys)(KEY_MENU+i));
+    bool t=keyState((EnumKeys)(KEY_MENU+i)); //ok
     lcd_putsm_P(x, y,PSTR(" Menu\t Exit\t Down\t   Up\tRight\t Left"),i);  
     lcd_putcAtt(x+FW*5+2,  y,t+'0',t);
   }
@@ -1759,7 +1779,7 @@ void menuProcTrainer(uint8_t event)
     }
     if(edit)
     {
-      if(event==EVT_KEY_FIRST(KEY_MENU)){
+      if(event==EVT_KEY_FIRST(KEY_MENU)){ //edit=docalib ok
         memcpy(g_eeGeneral.trainer.calib,g_ppmIns,sizeof(g_eeGeneral.trainer.calib));
         eeDirty(EE_GENERAL);
         beepKey();
@@ -2041,7 +2061,7 @@ void menuProcStatistic2(uint8_t event)
   TITLE("STAT2");  
   switch(event)
   {
-    case EVT_KEY_FIRST(KEY_MENU):
+    case EVT_KEY_FIRST(KEY_MENU): //reset vals
       g_tmr1Latency_min = 0xff;
       g_tmr1Latency_max = 0;
       g_timeMain    = 0;
@@ -2150,7 +2170,7 @@ void menuProc0(uint8_t event)
       BLINK_SYNC;
       event=0;
       break;
-    case  EVT_KEY_BREAK(KEY_MENU):
+    case  EVT_KEY_BREAK(KEY_MENU): //switch release
       if(!s_autoBack) break;
       //fallthrough
       event=0;
@@ -2158,13 +2178,13 @@ void menuProc0(uint8_t event)
       g_virtSw[subSw]=0;
       BLINK_SYNC;
       break;
-    case  EVT_KEY_FIRST(KEY_MENU):
+      case  EVT_KEY_FIRST(KEY_MENU): //switch press
       s_autoBack=false;
       g_virtSw[subSw]=1;
       BLINK_SYNC;
       event=0;
       break;
-    case  EVT_KEY_LONG(KEY_MENU):
+      case  EVT_KEY_LONG(KEY_MENU):    //swith press as button
       s_autoBack=true;
       event=0;
       break;

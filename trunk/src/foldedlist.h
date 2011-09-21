@@ -72,7 +72,7 @@ public:
   bool    m_isSelectedCh; // * user info after nextline
   bool    m_isSelectedDat;// *
 
-  bool    m_editMode;     // * user info after doEvent
+  bool    m_listEdit;     // * user info after doEvent
   uint8_t m_currIDTOld;   // * user info for move ops
   uint8_t m_currIDT;      // * user info for move ops, curr user line
   uint8_t m_currDestCh;   // * for init new lines
@@ -80,9 +80,11 @@ public:
 
 private:
   static uint8_t*   arrayElt(uint8_t idx){return (uint8_t*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
-  static void    editModeOff()  { inst.m_editMode=false;}
+  //static void    editModeOff()  { inst.m_listEdit=false;}
   
 public:  
+  static bool    listEditMode(bool val) {return inst.m_listEdit=val;}
+  static bool    listEditMode() {return inst.m_listEdit;}
   static uint8_t fillLevel()    {return inst.m_prepCurrIDT;}
   static uint8_t currIDT()      {return inst.m_currIDT;}
   static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
@@ -90,7 +92,6 @@ public:
   static bool    currInsMode()  {return inst.m_currInsMode;}
   static bool    isSelectedCh() {return inst.m_isSelectedCh;}
   static bool    isSelectedDat(){return inst.m_isSelectedDat;}
-  static bool    editMode()     {return inst.m_editMode;}
   /// iterate one time to fill the list (init loop)
   /// init(); addDat addDat addDat ..
   static void init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,uint8_t numChn);
