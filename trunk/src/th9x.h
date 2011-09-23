@@ -289,15 +289,18 @@ enum EnumKeys {
 
 
 
-typedef void (*MenuFuncP)(uint8_t event);
+typedef void (*MenuFuncP)();
 
+
+extern uint8_t g_event;
 void slowEvents(uint8_t event);
 /// stoppt alle events von dieser taste bis eine kurze Zeit abgelaufen ist
 void pauseEvents(uint8_t enuk);
 /// liefert die Zahl der schnellen Wiederholungen dieser Taste
 uint8_t getEventDbl(uint8_t event);
 /// stoppt alle events von dieser taste bis diese wieder losgelassen wird
-void    killEvents(uint8_t enuk);
+void    killEvents();
+void    killEventsRaw(uint8_t event);
 /// liefert den Wert einer beliebigen Taste KEY_MENU..SW_Trainer
 bool    keyState(EnumKeys enuk);
 /// Liefert das naechste Tasten-Event, auch trim-Tasten.
@@ -371,24 +374,24 @@ uint8_t checkLastSwitch(uint8_t sw,uint8_t flg);
 /// falls EE_GENERAL oder EE_MODEL in i_flags gesetzt ist wird bei Aenderung
 /// der Variablen zusaetzlich eeDirty() aufgerufen.
 /// Als Bestaetigung wird beep() aufgerufen bzw. beepWarn() wenn die Stellgrenze erreicht wird.
-bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, uint8_t i_flags);
+bool checkIncDecGen2( void *i_pval, int16_t i_min, int16_t i_max, uint8_t i_flags);
 
 ///Hilfs-template zum Speichersparenden Aufruf von checkIncDecGen2
 template<int16_t min,int16_t max>
-bool checkIncDecModVar(uint8_t event, void*p, uint8_t flags)
+bool checkIncDecModVar( void*p, uint8_t flags)
 {
-  return checkIncDecGen2(event, p, min, max, flags);
+  return checkIncDecGen2( p, min, max, flags);
 }
 
 
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
+int8_t checkIncDec_hm( int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
+int8_t checkIncDec_vm( int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
+int8_t checkIncDec_hg( int8_t i_val, int8_t i_min, int8_t i_max);
 ///Hilfs-funktion zum Aufruf von checkIncDecGen2 fuer bitfield Variablen
-int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max);
+int8_t checkIncDec_vg( int8_t i_val, int8_t i_min, int8_t i_max);
 
 extern bool    checkIncDec_Ret;//global helper vars
 
@@ -396,27 +399,27 @@ extern bool    checkIncDec_Ret;//global helper vars
 #define _FL_VERT      8
 #define _FL_POSNEG 0X10
 
-#define CHECK_INCDEC_H_GENVAR( event, var, min, max)     \
-  checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_GENERAL) \
+#define CHECK_INCDEC_H_GENVAR( var, min, max)     \
+  checkIncDecModVar<min,max>(&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_GENERAL) \
 
-#define CHECK_INCDEC_H_MODELVAR( event, var, min, max)     \
-  checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_MODEL) \
+#define CHECK_INCDEC_H_MODELVAR( var, min, max)     \
+  checkIncDecModVar<min,max>(&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|EE_MODEL) \
 
 
 //#define CHECK_INCDEC_V_MODELVAR( event, var, min, max)                
 //  checkIncDecModVar<min,max>(event,&var,(sizeof(var)==2 ? _FL_SIZE2 : 0)|_FL_VERT|EE_MODEL) 
 
 //for bitfields
-#define CHECK_INCDEC_H_GENVAR_BF( event, var, min, max)               \
-  ( var=checkIncDec_hg(event,var,min,max),                              \
+#define CHECK_INCDEC_H_GENVAR_BF( var, min, max)               \
+  ( var=checkIncDec_hg(var,min,max),                              \
     checkIncDec_Ret                                                     \
   )
-#define CHECK_INCDEC_H_MODELVAR_BF( event, var, min, max)               \
-  ( var=checkIncDec_hm(event,var,min,max),                              \
+#define CHECK_INCDEC_H_MODELVAR_BF( var, min, max)               \
+  ( var=checkIncDec_hm(var,min,max),                              \
     checkIncDec_Ret                                                     \
   )
-#define CHECK_INCDEC_V_MODELVAR_BF( event, var, min, max)               \
-  ( var=checkIncDec_vm(event,var,min,max),                              \
+#define CHECK_INCDEC_V_MODELVAR_BF( var, min, max)               \
+  ( var=checkIncDec_vm(var,min,max),                              \
     checkIncDec_Ret                                                     \
   )
 //#define CHECK_INCDEC_V_MODELVAR_BF( event, var, min, max)             
@@ -480,29 +483,29 @@ void putsVBat(uint8_t x,uint8_t y,uint8_t att);
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2);
 
 
-void menuProcLimits(uint8_t event);
-void menuProcMixOne(uint8_t event);
-void menuProcMix(uint8_t event);
-void menuProcCurve(uint8_t event);
-void menuProcTrim(uint8_t event);
-void menuProcExpoOne(uint8_t event);
-void menuProcExpoAll(uint8_t event);
-void menuProcModel(uint8_t event);
-void menuProcDiagCalib(uint8_t event);
-void menuProcDiagAna(uint8_t event);
-void menuProcDiagKeys(uint8_t event);
-void menuProcDiagVers(uint8_t event);
-void menuProcTrainer(uint8_t event);
-void menuProcSetup0(uint8_t event);
-void menuProcSetup1(uint8_t event);
-void menuProcSetup2(uint8_t event);
-void menuProcMain(uint8_t event);
-void menuProcModelSelect(uint8_t event);
+void menuProcLimits();
+void menuProcMixOne();
+void menuProcMix();
+void menuProcCurve();
+void menuProcTrim();
+void menuProcExpoOne();
+void menuProcExpoAll();
+void menuProcModel();
+void menuProcDiagCalib();
+void menuProcDiagAna();
+void menuProcDiagKeys();
+void menuProcDiagVers();
+void menuProcTrainer();
+void menuProcSetup0();
+void menuProcSetup1();
+void menuProcSetup2();
+void menuProcMain();
+void menuProcModelSelect();
 
-void menuProcStatistic2(uint8_t event);
-void menuProcStatistic(uint8_t event);
-void menuProc0(uint8_t event);
-void menuProcDisplayTest(uint8_t event);
+void menuProcStatistic2();
+void menuProcStatistic();
+void menuProc0();
+void menuProcDisplayTest();
 
 extern "C" uint8_t* setupPulses();
 //void setupPulsesPPM();

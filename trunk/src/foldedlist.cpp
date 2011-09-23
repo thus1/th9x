@@ -152,11 +152,11 @@ FoldedList::Line* FoldedList::nextLine(uint8_t lines){
   return l;
 }
 
-uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
+uint8_t FoldedList::doEvent( bool subChanged)
 //, void*array,uint8_t dimArr, uint8_t szeElt)
 {
   uint8_t ret=0;
-  switch(event)
+  switch(g_event)
   {
     case EVT_ENTRY:
       FoldedList::inst.m_iterOfsIFL=0;
@@ -183,7 +183,7 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
 //       break;
       //case EVT_KEY_BREAK(KEY_MENU):  // _LONG
     case EVT_KEY_LONG(KEY_MENU):  // _LONG
-      killEvents(event); //cut off 
+      killEvents(); //cut off 
       if(inst.m_listEdit)
       {
         beepKey();

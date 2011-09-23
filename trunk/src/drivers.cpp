@@ -223,10 +223,15 @@ void pauseEvents(uint8_t event)
   event=event & EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].pauseEvents();
 }
-void killEvents(uint8_t event)
+void killEventsRaw(uint8_t event)
 {
-  event=event & EVT_KEY_MASK;
+  event &= EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].killEvents();
+}
+void killEvents()
+{
+  killEventsRaw(g_event);
+  g_event=0;
 }
 
 uint8_t getEventDbl(uint8_t event)
