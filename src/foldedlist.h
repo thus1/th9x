@@ -111,7 +111,7 @@ public:
 #define FoldedListEdit     2
 #define FoldedListNew      3
 #define FoldedListSwap     4
-  static uint8_t doEvent(uint8_t event, bool subChanged);
+  static uint8_t doEvent(bool subChanged);
   static void    rmCurrLine();
 
 };

@@ -508,10 +508,10 @@ void doFxEvents();
   } while(mode==0);
   return true;
 }
-uint8_t checkTrim(uint8_t event)
+uint8_t checkTrim()
 {
-  int8_t k = (event & EVT_KEY_MASK) - TRM_BASE;
-  if((k>=0) && (k<8) && IS_KEY_REPT(event))
+  int8_t k = (g_event & EVT_KEY_MASK) - TRM_BASE;
+  if((k>=0) && (k<8) && IS_KEY_REPT(g_event))
   {
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
@@ -520,7 +520,7 @@ uint8_t checkTrim(uint8_t event)
     int8_t itrim=ptrim.itrim;
     if(up){
       if(itrim >= 0){
-        slowEvents(event);
+        slowEvents(g_event);
       }
       if(itrim < 31){
         (itrim)++;
@@ -529,7 +529,7 @@ uint8_t checkTrim(uint8_t event)
       }
     }else{
       if(itrim <= 0){
-        slowEvents(event);
+        slowEvents(g_event);
       }
       if(itrim > -31){
         (itrim)--;
@@ -539,19 +539,19 @@ uint8_t checkTrim(uint8_t event)
     }
     ptrim.itrim = itrim;
     if(itrim==0) {
-      //killEvents(event);
-      pauseEvents(event);
+      //killEvents();
+      pauseEvents(g_event);
       beepTrim0(); //mid trim value reached
     }
     return 0;
   }
-  return event;
+  return g_event;
 }
 
 //global helper vars
 bool    checkIncDec_Ret;
 
-bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, uint8_t i_flags)
+bool checkIncDecGen2(void *i_pval, int16_t i_min, int16_t i_max, uint8_t i_flags)
 {
   int16_t val = i_flags & _FL_SIZE2 ? *(int16_t*)i_pval : *(int8_t*)i_pval ;
   int16_t newval = val;
@@ -561,7 +561,7 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
     kpl=KEY_UP; kmi=KEY_DOWN;
   }
   //  kurz-lang-kombi plus
-  if(event==EVT_KEY_LONG(kpl) && getEventDbl(event)==2){
+  if(g_event==EVT_KEY_LONG(kpl) && getEventDbl(g_event)==2){
     int niceVal=-150;
     while(1){
       if(newval < niceVal){
@@ -571,9 +571,9 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       if(niceVal>=i_max) break;
       niceVal += 50;
     }
-    killEvents(event);
+    killEvents();
     //  kurz-lang-kombi minus
-  }else if(event==EVT_KEY_LONG(kmi) && getEventDbl(event)==2){
+  }else if(g_event==EVT_KEY_LONG(kmi) && getEventDbl(g_event)==2){
     int niceVal=150;
     while(1){
       if(newval > niceVal){
@@ -583,21 +583,21 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
       if(niceVal<=i_min) break;
       niceVal -= 50;
     }
-    killEvents(event);
+    killEvents();
     //normal plus
-  }else if(event==EVT_KEY_FIRST(kpl) || event== EVT_KEY_REPT(kpl)) {
+  }else if(g_event==EVT_KEY_FIRST(kpl) || g_event== EVT_KEY_REPT(kpl)) {
     newval++; 
     kother=kmi;
     //normal minus
-  }else if(event==EVT_KEY_FIRST(kmi) || event== EVT_KEY_REPT(kmi)) {
+  }else if(g_event==EVT_KEY_FIRST(kmi) || g_event== EVT_KEY_REPT(kmi)) {
     newval--; 
     kother=kpl;
   }
   //gleichzeitig plus und minus
   if((kother != (uint8_t)-1) && keyState((EnumKeys)kother)){
     newval=-val;
-    killEvents(kmi);
-    killEvents(kpl);
+    killEventsRaw(kmi);
+    killEventsRaw(kpl);
   }
 
   if(newval != val) beepKey();     
@@ -605,18 +605,18 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   if(newval > i_max)
   {
     newval = i_max;
-    killEvents(event);
+    killEvents();
     beepWarnMax(); //incdec max limit reached 
   }
   if(newval < i_min)
   {
     newval = i_min;
-    killEvents(event);
+    killEvents();
     beepWarnMax(); //incdec min limit reached 
   }
   if(newval != val){
     if((newval%20)==0) {
-      pauseEvents(event);
+      pauseEvents(g_event);
       beepKey(); //beepWarn();
     }
     if(i_flags & _FL_SIZE2 ) *(int16_t*)i_pval = newval;
@@ -627,24 +627,24 @@ bool checkIncDecGen2(uint8_t event, void *i_pval, int16_t i_min, int16_t i_max, 
   return checkIncDec_Ret=false;
 }
 
-int8_t checkIncDec_hm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+int8_t checkIncDec_hm(int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,EE_MODEL);
+  checkIncDecGen2(&i_val,i_min,i_max,EE_MODEL);
   return i_val;
 }
-int8_t checkIncDec_vm(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+int8_t checkIncDec_vm(int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
+  checkIncDecGen2(&i_val,i_min,i_max,_FL_VERT|EE_MODEL);
   return i_val;
 }
-int8_t checkIncDec_hg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+int8_t checkIncDec_hg(int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,EE_GENERAL);
+  checkIncDecGen2(&i_val,i_min,i_max,EE_GENERAL);
   return i_val;
 }
-int8_t checkIncDec_vg(uint8_t event, int8_t i_val, int8_t i_min, int8_t i_max)
+int8_t checkIncDec_vg(int8_t i_val, int8_t i_min, int8_t i_max)
 {
-  checkIncDecGen2(event,&i_val,i_min,i_max,_FL_VERT|EE_GENERAL);
+  checkIncDecGen2(&i_val,i_min,i_max,_FL_VERT|EE_GENERAL);
   return i_val;
 }
 
@@ -656,24 +656,42 @@ MenuFuncP lastPopMenu()
 void popMenu(bool uppermost)
 {
   if(g_menuStackPtr>0){
-    if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
+    uint8_t oldev=g_event;
+    if(g_menuStack[g_menuStackPtr]) {
+      g_event=EVT_EXIT;
+      g_menuStack[g_menuStackPtr]();//EVT_EXIT);
+    }
     g_menuStackPtr = uppermost ? 0 : g_menuStackPtr-1;
     beepKey();  
-    (*g_menuStack[g_menuStackPtr])(EVT_ENTRY_UP);
+
+    g_event=EVT_ENTRY_UP;
+    (*g_menuStack[g_menuStackPtr])();
+    g_event = oldev;
   }else{
     alert(PSTR("menuStack underflow"));
   }
 }
 void chainMenu(MenuFuncP newMenu)
 {
-  if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
+  uint8_t oldev=g_event;
+  if(g_menuStack[g_menuStackPtr]) {
+    g_event=EVT_EXIT;
+    g_menuStack[g_menuStackPtr]();//EVT_EXIT);
+  }
   g_menuStack[g_menuStackPtr] = newMenu;
-  (*newMenu)(EVT_ENTRY);
+
+  g_event=EVT_ENTRY;
+  (*newMenu)();
+  g_event = oldev;
   beepKey();
 }
 void pushMenu(MenuFuncP newMenu)
 {
-  if(g_menuStack[g_menuStackPtr]) g_menuStack[g_menuStackPtr](EVT_EXIT);
+  uint8_t oldev=g_event;
+  if(g_menuStack[g_menuStackPtr]){
+    g_event=EVT_EXIT;
+    g_menuStack[g_menuStackPtr]();
+  }
   g_menuStackPtr++;
   if(g_menuStackPtr >= DIM(g_menuStack))
   {
@@ -683,7 +701,9 @@ void pushMenu(MenuFuncP newMenu)
   }
   beepKey();
   g_menuStack[g_menuStackPtr] = newMenu;
-  (*newMenu)(EVT_ENTRY);
+  g_event=EVT_ENTRY;
+  (*newMenu)();//EVT_ENTRY);
+  g_event = oldev;
 }
 
 
@@ -709,9 +729,9 @@ void perMain()
   eeCheck();
 
   lcd_clear();
-  uint8_t evt=getEvent();
-  evt = checkTrim(evt);
-  g_menuStack[g_menuStackPtr](evt);
+  g_event=getEvent();
+  checkTrim();
+  g_menuStack[g_menuStackPtr]();
   refreshDiplay();
   if(PING & (1<<INP_G_RF_POW)) { //no power -> only phone jack = slave mode
     PORTG &= ~(1<<OUT_G_SIM_CTL); // 0=ppm out
