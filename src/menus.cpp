@@ -659,16 +659,17 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
   int8_t  subOld  = mstate2.m_posVert;
   MSTATE_TAB = {5};
   if(nested){
-    MSTATE_CHECK0_VxH(1+FL_INST.numSeqs()-1);
+    MSTATE_CHECK0_VxH(FL_INST.numSeqs()-1);
     sub= mstate2.m_posVert+1;//nested has no line 0
     subOld++;
   }else{
-    MSTATE_CHECK_VxH(5,menuTabModel,2+FL_INST.numSeqs()-1);
+    MSTATE_CHECK_VxH(5,menuTabModel,1+FL_INST.numSeqs()-1);
     sub= mstate2.m_posVert;
   }
 
   int8_t  subHor = mstate2.m_posHorz;
-  if(sub<=1)       mstate2.m_valEdit=0;
+  if(sub<1)       mstate2.m_valEdit=0;
+  //if(sub<=1)       mstate2.m_valEdit=0;
 
   FL_INST.init(g_model.switchTab,DIM(g_model.switchTab),sizeof(g_model.switchTab[0]),chProcSwitches,8);
 
@@ -679,21 +680,27 @@ void menuProcSwitchesCom(uint8_t event,bool nested)
 
 
   static prog_uint8_t APM colPos[]={8*FW,11*FW+3,16*FW,20*FW};
-  for(uint8_t i=0; i<4; i++){
+//   for(uint8_t i=0; i<4; i++){
   
-    lcd_putsmAtt( pgm_read_byte(&colPos[i])-FW*3, 1*FH,PSTR("Val\t Op\tVal\tOp2"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
-  }
+//     lcd_putsmAtt( pgm_read_byte(&colPos[i])-FW*3, 1*FH,PSTR("Val\t Op\tVal\tOp2"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
+//   }
 
   if(s_swNested ){
     mstate2.m_posVert = FL_INST.findChn(s_swNested); //+1 in init seq
     s_swNested=0;
   }
-  uint8_t y = 2*FH;
-  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
+  //uint8_t y = 2*FH;
+  uint8_t y = 1*FH;
+  //  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
+  for(FoldedList::Line* line=FL_INST.firstLine(sub);
       line;
-      line=FL_INST.nextLine(6), y+=FH
+      //line=FL_INST.nextLine(6), y+=FH
+      line=FL_INST.nextLine(7), y+=FH
       )
   {
+    if(line->showHeader){
+      lcd_puts_P( 5*FW, y,PSTR("Val  Op Val Op2"));
+    }  
     if(line->showCh){  
       lcd_puts_P( 0, y,PSTR("SW"));
       lcd_putc( 0+2*FW, y,line->chId+'0');
@@ -818,7 +825,10 @@ void editMixVals(uint8_t event,uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y,
       }
     case 15:
     case 5:   
-      if(!md2.swtch)break;
+      if(!md2.swtch){
+	lcd_putsAtt(x-FW*2+2, y, PSTR("  "),editAtt);
+	break;
+      }
       if(which==15)
 	lcd_putsmAtt(x-FW*2+2, y, PSTR("  \ti-\ti0\ti+"),md2.switchMode,editAtt);
       else
@@ -916,6 +926,9 @@ void menuProcMix(uint8_t event)
       )
   {
     static prog_uint8_t APM colPos[]={3*FW,7*FW-2,11*FW-3,14*FW-4,18*FW-4,20*FW-3};
+    if(line->showHeader){
+      lcd_puts_P(     4*FW, y, PSTR("inp % crv sw,mode"));
+    }  
     if(line->showCh){  
       putsChn(0,y,line->chId,0); // show CHx
     }
@@ -927,6 +940,7 @@ void menuProcMix(uint8_t event)
       if(sel && !mstate2.m_valEdit)     sel=2;
 
       if(sel) { //show diag values
+	if(subHor==0 && line->showCh) subHor=1;
         currMixerLine = line->idt;
         lcd_outdez(  11*FW, 0, currMixerVal>>9);
         lcd_putc  (  11*FW, 0, '/');
@@ -1176,10 +1190,10 @@ void menuProcExpoAll(uint8_t event)
   uint8_t x=TITLE("EXPO/DR  ");  
   int8_t subOld  = mstate2.m_posVert;
   MSTATE_TAB = {6};
-  MSTATE_CHECK_VxH(3,menuTabModel,2+FL_INST.numSeqs()-1);
+  MSTATE_CHECK_VxH(3,menuTabModel,1+FL_INST.numSeqs()-1);
   int8_t  sub    = mstate2.m_posVert;
   int8_t  subHor = mstate2.m_posHorz;
-  if(sub<=1)       mstate2.m_valEdit=0;
+  if(sub<1)       mstate2.m_valEdit=0;
 
   FL_INST.init(g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0]),chProcExpos,4);
   if(FL_INST.listEditMode(subHor==5)) mstate2.m_valEdit=0;
@@ -1187,22 +1201,26 @@ void menuProcExpoAll(uint8_t event)
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
 
-  for(uint8_t i=0; i<5; i++)
-  {
-    lcd_putsmAtt( 3*FW+i*(3*FW+3), 1*FH,PSTR("exp\tcrv\t %\t sw\tmod"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
-  }
+//   for(uint8_t i=0; i<5; i++)
+//   {
+//     lcd_putsmAtt( 3*FW+i*(3*FW+3), 1*FH,PSTR("exp\tcrv\t %\t sw\tmod"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
+//   }
 //   if(sub==1){
 //     checkIncDecGen2(event, &mstate2.m_posHorz, 0, 4, 0);
 //   }
 
-  uint8_t y = 2*FH;
-  for(FoldedList::Line* line=FL_INST.firstLine(sub>=2?sub-1:0);
+  uint8_t y = 1*FH;
+  for(FoldedList::Line* line=FL_INST.firstLine(sub);
       line;
-      line=FL_INST.nextLine(6), y+=FH
+      line=FL_INST.nextLine(7), y+=FH
       )
   {
     //static prog_uint8_t APM colPos[]={2*FW,6*FW-3,9*FW-3,13*FW,16*FW};
     static prog_uint8_t APM colPos[]={6*FW,10*FW-3,13*FW-3,17*FW,20*FW};
+    if(line->showHeader){
+      lcd_puts_P( 3*FW, y, PSTR("exp crv %  sw mode"));
+
+    }  
     if(line->showCh){  
       putsChnRaw( 0, y,line->chId-1,0);
     }

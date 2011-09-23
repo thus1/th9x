@@ -32,10 +32,11 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
   do{
     failed=false;
     inst.m_prepCurrCh  = 0;
-    inst.m_prepCurrIFL = 0;
+    inst.m_prepCurrIFL = 1;
     inst.m_prepCurrISL = 1;
     //inst.m_prepCurrIDT = -1;
     memset(inst.m_lines,0,sizeof(inst.m_lines));
+    inst.m_lines[0].showHeader=true;
     for( idt=0; idt < dimArr && *arrayElt(idt); idt++)
     {
       uint8_t ch=chProc(arrayElt(idt),0);
@@ -107,7 +108,8 @@ void FoldedList::show(){
 }
 FoldedList::Line* FoldedList::firstLine(int8_t sub){
   inst.m_currIDTOld = inst.m_currIDT;
-  inst.m_subISL     = sub;
+  inst.m_subISL     = sub?sub+1:0;//+1 weg header 0=not active 
+  //printf("sub=%d\n",sub);
   inst.m_iterPosIFL = inst.m_iterOfsIFL;
   Line *l=&inst.m_lines[inst.m_iterPosIFL];
   inst.m_iterMinISL = l->islDat ? l->islDat : l->islCh;
@@ -117,12 +119,10 @@ FoldedList::Line* FoldedList::firstLine(int8_t sub){
 FoldedList::Line* FoldedList::nextLine(uint8_t lines){
   int8_t i = inst.m_iterPosIFL-inst.m_iterOfsIFL;
   Line  *l = &inst.m_lines[inst.m_iterPosIFL];
-  if(i>=lines  || !(l->showCh || l->showDat) ) {
-    //Line *l=&inst.m_lines[inst.m_iterPosIFL-1];
+  if(i>=lines  || !(l->showCh || l->showDat || l->showHeader) ) {
     l--;
     uint8_t iterMaxISL = l->islCh ? l->islCh : l->islDat;
 
-    //printf("inst.m_subISL%d,inst.m_iterOfsIFL%d,inst.m_iterHitIFL%d,inst.m_iterMinISL%d,iterMax%d\n",inst.m_subISL,inst.m_iterOfsIFL,inst.m_iterHitIFL,inst.m_iterMinISL,iterMax);
     if( inst.m_subISL!=0 &&  inst.m_iterHitIFL==0) { //versuche die Marke zu finden
       if(inst.m_subISL < inst.m_iterMinISL)      inst.m_iterOfsIFL = max(0,inst.m_iterOfsIFL-1);
       if(inst.m_subISL > iterMaxISL)      inst.m_iterOfsIFL++;
@@ -183,6 +183,7 @@ uint8_t FoldedList::doEvent(uint8_t event, bool subChanged)
 //       break;
       //case EVT_KEY_BREAK(KEY_MENU):  // _LONG
     case EVT_KEY_LONG(KEY_MENU):  // _LONG
+      killEvents(event); //cut off 
       if(inst.m_listEdit)
       {
         beepKey();
