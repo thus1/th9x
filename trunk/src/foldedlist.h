@@ -39,6 +39,7 @@ public:
   struct Line{
     bool   showCh:1;// show the dest chn
     bool   showDat:1;// show the data info
+    bool   showHeader:1;// show the header
     uint8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
     int8_t islCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
@@ -105,7 +106,7 @@ public:
   static Line* firstLine(int8_t sub);
   static Line* nextLine(uint8_t lines);
 
-  static int8_t numSeqs(){return inst.m_prepCurrISL;};
+  static int8_t numSeqs(){return inst.m_prepCurrISL-1;};//-1 wegen header
 #define FoldedListDup      1
 #define FoldedListEdit     2
 #define FoldedListNew      3
