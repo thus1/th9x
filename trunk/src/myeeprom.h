@@ -139,7 +139,10 @@ typedef struct t_EEGeneral_r192 {
   uint8_t   warnOpts:3; //bitset for several warnings
   uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
-  uint8_t   stickMode;   // 1
+
+  uint8_t   stickMode:2;// 
+  uint8_t   naviMode:2; //
+#define NAVI_ADVANCED (g_eeGeneral.naviMode&1)
 } __attribute__((packed)) EEGeneral_r192;
 #define EEGeneral_TOP EEGeneral_r192
 #define GENVERS_TOP GENVERS192
@@ -341,8 +344,8 @@ typedef struct t_ModelData_r204 {
   int8_t    curves3[3][3];        // 9  new143
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
-  TrimData_r143  trimData[4];    // 3*4 -> 1*4
   SwitchData_r204 switchTab[MAX_SWITCHES];//
+  TrimData_r143   trimData[4];    // 3*4 -> 1*4
 } __attribute__((packed)) ModelData_r204; //253
 #define MDVERS_TOP    MDVERS204
 #define ModelData_TOP ModelData_r204

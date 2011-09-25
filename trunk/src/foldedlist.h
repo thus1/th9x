@@ -41,8 +41,8 @@ public:
     bool   showDat:1;// show the data info
     bool   showHeader:1;// show the header
     uint8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
-    int8_t islCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
-    int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+    //int8_t islCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
+    //int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t idt;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
   };
  private:
@@ -55,7 +55,7 @@ public:
 // IFLr rel. foldedlist
   uint8_t m_prepCurrCh;   //for construction init,fill,addDat
   uint8_t m_prepCurrIFL;
-  uint8_t m_prepCurrISL;
+  //  uint8_t m_prepCurrISL;
   uint8_t m_prepCurrIDT;  // *
   ChProc* m_chProc;
   uint8_t m_numChn;
@@ -67,8 +67,12 @@ public:
   uint8_t m_iterOfsIFL;   //= 0 in EVT_ENTRY 
   uint8_t m_iterPosIFL;
   uint8_t m_iterHitIFL;
-  uint8_t m_subISL;       // save the menus sub-var firstline..nextline
-  uint8_t m_iterMinISL;
+ public:
+  uint8_t m_subIFL;       // save the menus sub-var firstline..nextline
+  bool    m_chnNav;
+ private:
+  int8_t  m_subChanged;
+  //  uint8_t m_iterMinISL;
 
   bool    m_isSelectedCh; // * user info after nextline
   bool    m_isSelectedDat;// *
@@ -77,7 +81,7 @@ public:
   uint8_t m_currIDTOld;   // * user info for move ops
   uint8_t m_currIDT;      // * user info for move ops, curr user line
   uint8_t m_currDestCh;   // * for init new lines
-  bool    m_currInsMode;  // * is edit one called by insert or by edit
+  //bool    m_currInsMode;  // * is edit one called by insert or by edit
 
 private:
   static uint8_t*   arrayElt(uint8_t idx){return (uint8_t*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
@@ -88,9 +92,10 @@ public:
   static bool    listEditMode() {return inst.m_listEdit;}
   static uint8_t fillLevel()    {return inst.m_prepCurrIDT;}
   static uint8_t currIDT()      {return inst.m_currIDT;}
-  static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
+  //  static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
   static uint8_t currDestCh()   {return inst.m_currDestCh;}
-  static bool    currInsMode()  {return inst.m_currInsMode;}
+  //static bool    currInsMode()  {return inst.m_currInsMode;}
+  static bool    currInsMode()  {return inst.m_chnNav;}
   static bool    isSelectedCh() {return inst.m_isSelectedCh;}
   static bool    isSelectedDat(){return inst.m_isSelectedDat;}
   /// iterate one time to fill the list (init loop)
@@ -103,15 +108,16 @@ public:
 
   /// iterate one time through the filled list (show loop)
   /// with firstLine,nextLine nextLine ..
-  static Line* firstLine(int8_t sub);
+  static Line* firstLine();//int8_t sub,bool chnNav,int8_t subChanged);
   static Line* nextLine(uint8_t lines);
 
-  static int8_t numSeqs(){return inst.m_prepCurrISL-1;};//-1 wegen header
+  static int8_t numWithHdr(){return inst.m_prepCurrIFL;};//-1 wegen header
 #define FoldedListDup      1
 #define FoldedListEdit     2
 #define FoldedListNew      3
-#define FoldedListSwap     4
-  static uint8_t doEvent(bool subChanged);
+#define FoldedListNewEdit  4
+#define FoldedListSwap     5
+  static uint8_t doEvent(int8_t sub,int8_t subChanged,bool chnNav);
   static void    rmCurrLine();
 
 };

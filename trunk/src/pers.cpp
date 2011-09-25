@@ -390,7 +390,9 @@ void eeLoadModel(uint8_t id)
   }
   if( sz == sizeof(ModelData_r192) && g_model.mdVers == MDVERS192) {
     printf("converting model data from r192 to r204\n");
+    ModelData_r192 *model192 = (ModelData_r192*)&g_model;
     ModelData_r204 *model204 = (ModelData_r204*)&g_model;
+    memmove(&model204->trimData,&model192->trimData,sizeof(model192->trimData));
     memset(model204->switchTab,0,sizeof(model204->switchTab));
 
     sz = sizeof(ModelData_r204);
