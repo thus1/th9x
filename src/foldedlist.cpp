@@ -33,15 +33,14 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
     failed=false;
     inst.m_prepCurrCh  = 0;
     inst.m_prepCurrIFL = 1;
-    inst.m_prepCurrISL = 1;
-    //inst.m_prepCurrIDT = -1;
+    inst.m_prepCurrIDT = -1;
     memset(inst.m_lines,0,sizeof(inst.m_lines));
     inst.m_lines[0].showHeader=true;
     for( idt=0; idt < dimArr && *arrayElt(idt); idt++)
     {
       uint8_t ch=chProc(arrayElt(idt),0);
       if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
-        printf("resort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
+        printf("\nERROR re-sort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
         memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
         inst.m_listEdit=false;
         failed = true;
@@ -54,27 +53,23 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
       l.chId     = inst.m_prepCurrCh;
       l.idt      = idt;//inst.m_prepCurrIDT = idt;
       l.showDat  = true;
-      l.islDat   = inst.m_prepCurrISL++;
     }
     inst.m_prepCurrIDT = idt;
   }while(failed);
 
   inst.fill(numChn+1,idt);
-  //inst.m_prepCurrIDT++;
 }
 
 bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
 {
   if(ch > inst.m_prepCurrCh) {
     while(1){
-      if(inst.m_prepCurrIFL>0) inst.m_lines[inst.m_prepCurrIFL-1].islCh=inst.m_prepCurrISL++;
       inst.m_prepCurrCh++;
       if(inst.m_prepCurrCh>=ch) break;
       Line &l=inst.m_lines[inst.m_prepCurrIFL++];
       l.showCh = true;
       l.chId   = inst.m_prepCurrCh;
-      l.idt    = idt-1;//inst.m_prepCurrIDT; //insert behind
-      //inst.m_prepCurrIFL++;
+      l.idt    = idt;//inst.m_prepCurrIDT; //insert behind
       assert(inst.m_prepCurrIFL<=DIM(inst.m_lines));
     }
     return true;
@@ -84,77 +79,92 @@ bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
 }
 uint8_t FoldedList::findChn(uint8_t chn)
 {
-  for(uint8_t i=0; i<DIM(inst.m_lines); i++){
+  for(uint8_t i=1; i<DIM(inst.m_lines); i++){
     if(inst.m_lines[i].chId==chn) {
-      if(inst.m_lines[i].islDat) return inst.m_lines[i].islDat;
-      else                       return inst.m_lines[i].islCh;
+      return i;
     }
   }
   return 0;
 }
 void FoldedList::show(){
-#ifdef SIM
-  //for(uint8_t i=0; i<DIM(inst.m_mixTab); i++){
+#ifdef xSIM
   for(uint8_t i=0; i<14; i++){
-    //MixTab *mt=inst.m_mixTab+i;
     FoldedList::Line* line=&inst.m_lines[i];
-    printf( "chId %2d islCh%c%2d islDat%c%2d idt %d\n",
-            line->chId,
-            line->showCh?'*':' ', line->islCh,
-            line->showDat?'*':' ', line->islDat,
-            line->idt);
+//     printf( "chId %2d islCh%c%2d islDat%c%2d idt %d\n",
+//             line->chId,
+//             line->showCh?'*':' ', line->islCh,
+//             line->showDat?'*':' ', line->islDat,
+//             line->idt);
   }
 #endif
 }
-FoldedList::Line* FoldedList::firstLine(int8_t sub){
-  inst.m_currIDTOld = inst.m_currIDT;
-  inst.m_subISL     = sub?sub+1:0;//+1 weg header 0=not active 
-  //printf("sub=%d\n",sub);
-  inst.m_iterPosIFL = inst.m_iterOfsIFL;
-  Line *l=&inst.m_lines[inst.m_iterPosIFL];
-  inst.m_iterMinISL = l->islDat ? l->islDat : l->islCh;
-  inst.m_iterHitIFL = 0;
-  return nextLine(6);
-}
-FoldedList::Line* FoldedList::nextLine(uint8_t lines){
-  int8_t i = inst.m_iterPosIFL-inst.m_iterOfsIFL;
-  Line  *l = &inst.m_lines[inst.m_iterPosIFL];
-  if(i>=lines  || !(l->showCh || l->showDat || l->showHeader) ) {
-    l--;
-    uint8_t iterMaxISL = l->islCh ? l->islCh : l->islDat;
 
-    if( inst.m_subISL!=0 &&  inst.m_iterHitIFL==0) { //versuche die Marke zu finden
-      if(inst.m_subISL < inst.m_iterMinISL)      inst.m_iterOfsIFL = max(0,inst.m_iterOfsIFL-1);
-      if(inst.m_subISL > iterMaxISL)      inst.m_iterOfsIFL++;
-    }
-    else if(inst.m_iterHitIFL<=2)          inst.m_iterOfsIFL = max(0,inst.m_iterOfsIFL-1);
-    else if(inst.m_iterHitIFL>=(lines-1) && i>=lines)  inst.m_iterOfsIFL++;
-    return 0;
-  }
-  inst.m_isSelectedCh  = inst.m_subISL > 0 && inst.m_subISL == l->islCh; 
-  inst.m_isSelectedDat = inst.m_subISL > 0 && inst.m_subISL == l->islDat; 
 
-  if(inst.m_isSelectedCh){ //handle CHx is selected 
-    inst.m_currIDT     = l->idt+1;
-    inst.m_currInsMode = true;
-    inst.m_currDestCh  = l->chId;
-    inst.m_iterHitIFL  = i+1;
-    // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
-  }
-  if(inst.m_isSelectedDat){ //handle dat is selected 
-    inst.m_currIDT     = l->idt;
-    inst.m_currInsMode = false;
-    inst.m_currDestCh  = l->chId;
-    inst.m_iterHitIFL  = i+1;
-    // printf("inst.m_currMixIdx=%d\n",inst.m_currMixIdx);
-  }
-  inst.m_iterPosIFL++;
-  return l;
-}
-
-uint8_t FoldedList::doEvent( bool subChanged)
-//, void*array,uint8_t dimArr, uint8_t szeElt)
+uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
 {
+  inst.m_subIFL     = sub;        //atueller vert index 0=auf header
+  inst.m_subChanged = subChanged; //sub wurde gerade veraendert +x oder -x
+  inst.m_chnNav     = chnNav;     //wir sind im chn navi bereich
+
+  if(inst.m_listEdit && subChanged 
+     && sub && (sub-subChanged)
+     && (sub-subChanged)!=inst.m_prepCurrIFL
+  ) //
+  {
+    int8_t idt2 = inst.m_currIDT+subChanged;
+    uint8_t chn1 = inst.m_chProc(arrayElt(inst.m_currIDT),0);
+    assert(idt2>=0);
+    uint8_t chn2 = idt2>=0 ? inst.m_chProc(arrayElt(idt2),0) : 0;
+    if(chn1==chn2){
+      memswap(inst.arrayElt(inst.m_currIDT),
+              inst.arrayElt(idt2),
+              inst.m_prepSzeElt);
+    }else{      inst.m_chProc(arrayElt(inst.m_currIDT),chn1+subChanged);
+      if(subChanged>0){ //Spezialfall multidat ->
+        if(inst.m_currIDT>=1){
+          uint8_t chn0 = inst.m_chProc(arrayElt(inst.m_currIDT-1),0);
+          if(chn0 == chn1) inst.m_subIFL -= 1;
+        }
+      }else{            //Spezialfall multidat <-
+        if(inst.m_currIDT!=0 && chn2 == (chn1-1)) inst.m_subIFL += 1;
+      }
+    }
+    return 0;
+
+  }
+
+  //ensure selection is at showed ch or dat
+  while(inst.m_subIFL>0 && inst.m_subIFL<inst.m_prepCurrIFL) {
+    if(chnNav){ //kurz zuvor move left?
+      if(inst.m_lines[inst.m_subIFL].showCh) break;
+      printf("m_subIFL %d korr1 %d\n",inst.m_subIFL,subChanged>0 ? +1:-1 );
+      inst.m_subIFL += subChanged>0 ? +1:-1;
+    }else{
+      if(inst.m_lines[inst.m_subIFL].showDat) break;
+      //nach remove wechsel zu folgezeile
+      printf("m_subIFL %d korr2 %d\n",inst.m_subIFL,subChanged>=0 ? +1:-1 );
+      inst.m_subIFL += subChanged>=0 ? +1:-1;
+    }
+  }
+  //Notbremse falls nichts selektierbar
+  if(chnNav){ 
+    //ganz hinten
+    if(!inst.m_lines[inst.m_subIFL].showCh) inst.m_subIFL = 0;
+  }else{
+    if(!inst.m_lines[inst.m_subIFL].showDat) inst.m_chnNav = true;
+  }
+  inst.m_currIDT     = inst.m_lines[inst.m_subIFL].idt;
+  inst.m_currDestCh  = inst.m_lines[inst.m_subIFL].chId;
+#define LINES 7
+  // make visible current line
+  if(inst.m_subIFL){
+    int8_t i = inst.m_subIFL - inst.m_iterOfsIFL; 
+    if(i<2) 
+      inst.m_iterOfsIFL = max(0,inst.m_subIFL-2);
+    else if(i>=(LINES-2))
+      inst.m_iterOfsIFL = inst.m_subIFL-LINES+2;
+  }
+
   uint8_t ret=0;
   switch(g_event)
   {
@@ -163,25 +173,14 @@ uint8_t FoldedList::doEvent( bool subChanged)
     case EVT_ENTRY_UP:
       inst.m_listEdit=false;
       break;
-//     case  EVT_KEY_FIRST(KEY_EXIT):
-//       if(inst.m_listEdit){
-//         inst.m_listEdit = false;
-//         beepKey();
-//         killEvents(event); //cut off MSTATE_CHECK (KEY_BREAK)
-//       }
-//       break;
-//     case EVT_KEY_LONG(KEY_MENU):  // h-pos
-//       if(inst.m_currInsMode) break; //zwischen den Zeilen machts keinen sinn
-//       killEvents(event); //cut off 
-//       if(inst.m_listEdit)
-//       {
-//         beepKey();
-//         ret = FoldedListDup;
-//         goto ret_dup;
-//       }
-//       inst.m_listEdit=true;
-//       break;
-      //case EVT_KEY_BREAK(KEY_MENU):  // _LONG
+    case EVT_KEY_BREAK(KEY_MENU):
+      if(inst.m_listEdit) break;
+      if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
+      if(inst.m_chnNav){  //neue Zeile einfuegen
+        ret=FoldedListNew;
+        goto ret_dup;
+      }
+      break;
     case EVT_KEY_LONG(KEY_MENU):  // _LONG
       killEvents(); //cut off 
       if(inst.m_listEdit)
@@ -190,44 +189,16 @@ uint8_t FoldedList::doEvent( bool subChanged)
         ret = FoldedListDup;
         goto ret_dup;
       }
-      if(inst.m_subISL<1) break;
-      if(inst.m_currInsMode){  //neue Zeile einfuegen
-        ret=FoldedListNew;
+      if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
+      //if(inst.m_currInsMode){  //neue Zeile einfuegen
+      if(inst.m_chnNav){  //neue Zeile einfuegen
+        if(! NAVI_ADVANCED) break;
+        ret=FoldedListNewEdit;//FoldedListNew;
         goto ret_dup;
       }
       return FoldedListEdit; //Zeile edit
   }
 
-  if(inst.m_listEdit && subChanged) // && inst.m_currIDTOld != inst.m_currMixIdx)
-  {
-    STORE_MODELVARS;
-    if(inst.m_currInsMode){
-      uint8_t chn = inst.m_chProc(arrayElt(currIDTOld()),0);
-      if( inst.m_currIDTOld <  inst.m_currIDT){ //? FoldedListCntUp//         ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDTOld()];
-//         if(ed->chn < 3) ed->chn++; 
-//         else FL_INST.editModeOff();
-        if(chn < inst.m_numChn) chn++;
-        else inst.listEditMode(false);
-      }else{ //: FoldedListCntDown;
-        if(chn > 1) chn--;
-        else inst.listEditMode(false);
-      }
-      inst.m_chProc(arrayElt(currIDTOld()),chn);
-      return 0;
-      //      return inst.m_currIDTOld <  inst.m_currIDT ? FoldedListCntUp : FoldedListCntDown;
-    }else{
-      //swap
-      if( (inst.m_currIDTOld<inst.fillLevel()) && (inst.m_currIDT<inst.fillLevel())){
-        printf("swap %d %d %d\n",inst.m_currIDTOld,inst.m_currIDT,inst.m_prepCurrIDT);
-        memswap(inst.arrayElt(inst.m_currIDT),
-                inst.arrayElt(inst.m_currIDTOld),
-                inst.m_prepSzeElt);
-        return FoldedListSwap;
-      }else{
-        inst.m_listEdit=false;
-      }
-    }
-  }
   return 0; 
   
   ret_dup:
@@ -237,20 +208,43 @@ uint8_t FoldedList::doEvent( bool subChanged)
     return 0;
   }
 
-  //memmove(
-  //  (char*)array + (uint8_t)(szeElt * (uint8_t)(inst.m_currIDT+1)),
-  //  (char*)array + (uint8_t)(szeElt *  inst.m_currIDT),
-  //  (uint8_t)(szeElt * (uint8_t)(dimArr-inst.m_currIDT-1))
   memmove(
     inst.arrayElt(inst.m_currIDT+1),
     inst.arrayElt(inst.m_currIDT),
     (uint8_t)(inst.m_prepSzeElt * (uint8_t)(inst.m_prepDimArr-inst.m_currIDT-1))
   );
-  if(ret==FoldedListNew)
+  if(ret==FoldedListNew || ret==FoldedListNewEdit)
     memset(inst.arrayElt(inst.m_currIDT),0,inst.m_prepSzeElt);
   STORE_MODELVARS;
   return ret;
 }
+
+
+
+
+
+
+FoldedList::Line* FoldedList::firstLine()//int8_t sub,bool chnNav,int8_t subChanged){
+{
+  inst.m_iterPosIFL = inst.m_iterOfsIFL; //iterator
+  return nextLine(6);
+}
+FoldedList::Line* FoldedList::nextLine(uint8_t lines){
+  int8_t i = inst.m_iterPosIFL-inst.m_iterOfsIFL;
+  Line  *l = &inst.m_lines[inst.m_iterPosIFL];
+
+  //ist schon fertig?
+  if(i>=lines  || !(l->showCh || l->showDat || l->showHeader) ) {
+    return 0;
+  }
+
+  inst.m_isSelectedCh  = inst.m_subIFL > 0 && inst.m_chnNav && inst.m_subIFL==inst.m_iterPosIFL; 
+  inst.m_isSelectedDat = inst.m_subIFL > 0 && !inst.m_chnNav && inst.m_subIFL==inst.m_iterPosIFL; 
+
+  inst.m_iterPosIFL++;
+  return l;
+}
+
 void FoldedList::rmCurrLine()
 {
   memmove(

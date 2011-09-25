@@ -482,8 +482,6 @@ void checkTHR()
 
 
 
-MenuFuncP g_menuStack[5];
-uint8_t  g_menuStackPtr = 0;
 //uint8_t  g_beepCnt;
 //uint8_t  g_beepVal[4];
 
@@ -648,6 +646,16 @@ int8_t checkIncDec_vg(int8_t i_val, int8_t i_min, int8_t i_max)
   return i_val;
 }
 
+MenuFuncP g_menuStack[5];
+uint8_t   g_menuStackPtr = 0;
+enum MenuAction{
+  MenuActionNo=0,
+  MenuActionPush,
+  MenuActionChain,
+  MenuActionPop,
+  MenuActionPopFull
+}s_menuAction;
+MenuFuncP s_menuNext;
 
 MenuFuncP lastPopMenu()
 {
@@ -655,58 +663,69 @@ MenuFuncP lastPopMenu()
 }
 void popMenu(bool uppermost)
 {
-  if(g_menuStackPtr>0){
-    uint8_t oldev=g_event;
-    if(g_menuStack[g_menuStackPtr]) {
-      g_event=EVT_EXIT;
-      g_menuStack[g_menuStackPtr]();//EVT_EXIT);
-    }
-    g_menuStackPtr = uppermost ? 0 : g_menuStackPtr-1;
-    beepKey();  
-
-    g_event=EVT_ENTRY_UP;
-    (*g_menuStack[g_menuStackPtr])();
-    g_event = oldev;
-  }else{
-    alert(PSTR("menuStack underflow"));
-  }
+  assert(!s_menuAction);
+  s_menuAction=uppermost?MenuActionPopFull:MenuActionPop;
+  beepKey();  
 }
 void chainMenu(MenuFuncP newMenu)
 {
-  uint8_t oldev=g_event;
-  if(g_menuStack[g_menuStackPtr]) {
-    g_event=EVT_EXIT;
-    g_menuStack[g_menuStackPtr]();//EVT_EXIT);
-  }
-  g_menuStack[g_menuStackPtr] = newMenu;
-
-  g_event=EVT_ENTRY;
-  (*newMenu)();
-  g_event = oldev;
-  beepKey();
+  assert(!s_menuAction);
+  s_menuAction = MenuActionChain;
+  s_menuNext   = newMenu;
+  beepKey();  
 }
 void pushMenu(MenuFuncP newMenu)
 {
-  uint8_t oldev=g_event;
-  if(g_menuStack[g_menuStackPtr]){
-    g_event=EVT_EXIT;
-    g_menuStack[g_menuStackPtr]();
-  }
-  g_menuStackPtr++;
-  if(g_menuStackPtr >= DIM(g_menuStack))
-  {
-    g_menuStackPtr--;
-    alert(PSTR("menuStack overflow"));
-    return;
-  }
-  beepKey();
-  g_menuStack[g_menuStackPtr] = newMenu;
-  g_event=EVT_ENTRY;
-  (*newMenu)();//EVT_ENTRY);
-  g_event = oldev;
+  assert(!s_menuAction);
+  s_menuAction = MenuActionPush;
+  s_menuNext   = newMenu;
+  beepKey();  
 }
 
+void perMenu()
+{
+  MenuAction ma = s_menuAction;
+  s_menuAction  = MenuActionNo;
+  if(ma!=MenuActionNo){
+    if(g_menuStack[g_menuStackPtr]){
+      g_event=EVT_EXIT;
+      g_menuStack[g_menuStackPtr]();
+    }
+  }
 
+  g_event=0;
+  switch(ma){
+  case MenuActionNo:      break;
+  case MenuActionPush:    
+    if(g_menuStackPtr < (DIM(g_menuStack)-1)) {
+      g_menuStackPtr++;
+    }else{
+      alert(PSTR("menuStack overflow"));
+    }
+    //fallthrough
+  case MenuActionChain:   
+    g_menuStack[g_menuStackPtr] = s_menuNext;
+    g_event=EVT_ENTRY;
+    break;
+  case MenuActionPop:
+  case MenuActionPopFull: 
+    if(g_menuStackPtr>0){
+      g_menuStackPtr = ma==MenuActionPopFull ? 0 : g_menuStackPtr-1;
+      g_event=EVT_ENTRY_UP;
+    }else{
+      alert(PSTR("menuStack underflow"));
+    }
+    break;
+  }
+
+  lcd_clear();
+  if(!g_event) {
+    g_event=getEvent();
+    checkTrim();
+  }
+  g_menuStack[g_menuStackPtr]();
+  refreshDiplay();
+}
 
 
 
@@ -727,12 +746,7 @@ void perMain()
   g_timePerOut = max(g_timePerOut,t0);
 #endif
   eeCheck();
-
-  lcd_clear();
-  g_event=getEvent();
-  checkTrim();
-  g_menuStack[g_menuStackPtr]();
-  refreshDiplay();
+  perMenu();
   if(PING & (1<<INP_G_RF_POW)) { //no power -> only phone jack = slave mode
     PORTG &= ~(1<<OUT_G_SIM_CTL); // 0=ppm out
   }else{
