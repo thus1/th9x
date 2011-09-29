@@ -35,11 +35,12 @@ todo
 - Beschleunigungssensor BMA020 oder BMA180 http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5lbHYuZGUvMy1BY2hzZW4tQmVzY2hsZXVuaWd1bmdzc2Vuc29yLTNELUJTLC1Lb21wbGV0dGJhdXNhdHoveC5hc3B4L2NpZF83NC9kZXRhaWxfMTAvZGV0YWlsMl8yODUxNQ==
 
 - bitwerte im ppm-signal fuer schalter
+- use receiver instead of trainer-cable
 + timer mit thr-switch, 
 + timer2
 + switches toggle+but
 + switches-menu as submenu
-- trim versch. scales
++ trim versch. scales
 - ensure load-save combi
 - fast slopes after load
 - show curves ref count, curve type

@@ -105,8 +105,18 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
       static uint8_t dbl[]={0x00,0x03,0x0c,0x0f, 0x30,0x33,0x3c,0x3f,
                             0xc0,0xc3,0xcc,0xcf, 0xf0,0xf3,0xfc,0xff};
       if(&p[DISPLAY_W+1] < DISPLAY_END){
-        p[0] = p[1] = dbl[b&0xf];
-        p[DISPLAY_W]=p[DISPLAY_W+1] = dbl[b>>4];
+        uint8_t b1=dbl[b&0xf];
+        uint8_t b2=dbl[b>>4];
+        if(i==4){
+          p-=1;
+          p[0]        |= b1; //overlap col 1 with col0(mostly empty)
+          p[DISPLAY_W]|= b2;
+        }else{
+          p[0]         = b1;
+          p[DISPLAY_W] = b2;
+        }
+        p[1]           = b1;
+        p[DISPLAY_W+1] = b2;
         p+=2;
       }
     }
