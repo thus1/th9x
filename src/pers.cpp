@@ -394,7 +394,10 @@ void eeLoadModel(uint8_t id)
     ModelData_r204 *model204 = (ModelData_r204*)&g_model;
     memmove(&model204->trimData,&model192->trimData,sizeof(model192->trimData));
     memset(model204->switchTab,0,sizeof(model204->switchTab));
-
+    model204->trimData[0].tmode=0;
+    model204->trimData[1].tmode=0;
+    model204->trimData[2].tmode=0;
+    model204->trimData[3].tmode=0;
     sz = sizeof(ModelData_r204);
     model204->mdVers = MDVERS204;
   }
