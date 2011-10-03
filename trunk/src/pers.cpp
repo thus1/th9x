@@ -126,7 +126,7 @@ bool eeLoadGeneral()
 }
 
 
-uint8_t modelMixerDefaults=6;
+uint8_t modelMixerDefaults=7;
 prog_char* modelMixerDefaultName(uint8_t typ)
 {
   switch(typ)
@@ -137,6 +137,7 @@ prog_char* modelMixerDefaultName(uint8_t typ)
     case 3: return PSTR("Elevon/Delta");
     case 4: return PSTR("eCCPM");
     case 5: return PSTR("Sim Calib");
+    case 6: return PSTR("Servotest");
   }
   return 0;
 }
@@ -187,13 +188,33 @@ void modelMixerDefault(uint8_t typ)
       // Sim Calib
     case 5:
       for(uint8_t i= 0; i<8; i++){
-        md->destCh = i+1;     md->srcRaw = 7;/*MAX*/       md->weight = 100; 
+        md->destCh = i+1;     md->srcRaw = 10;/*MAX*/       md->weight = 100; 
         md->swtch  = 1+SW_ID0-SW_BASE;
         md++;
-        md->destCh = i+1;     md->srcRaw = 7;/*MAX*/       md->weight =-100; 
+        md->destCh = i+1;     md->srcRaw = 10;/*MAX*/       md->weight =-100; 
         md->swtch  = 1+SW_ID2-SW_BASE;
         md++;
       }
+      break;
+    case 6:
+        md->destCh = 1;     md->srcRaw = 10;/*MAX*/       md->weight = 100; 
+        md->swtch  = 1+9;   //SW1
+        md->switchMode = 1; // iNeg
+        md->speedUp    = md->speedDown = 5;
+        md++;
+        md->destCh = 2;     md->srcRaw = 12;/*CH1*/      md->weight = 100; 
+        g_model.switchTab[0].sw    = 0;
+        g_model.switchTab[0].opCmp = 0; // <
+        g_model.switchTab[0].opRes = 3; //Set Off
+        //g_model.switchTab[0].val1  = 40;
+        g_model.switchTab[0].val1  = 51+ 7; //p1
+        g_model.switchTab[0].val2  = 51+12; //CH1
+        g_model.switchTab[1].sw    = 0;
+        g_model.switchTab[1].opCmp = 0; // <
+        g_model.switchTab[1].opRes = 2; //Set On
+        g_model.switchTab[1].val1  = 51+12; //CH1
+        g_model.switchTab[1].val2  =-(51+ 7); //p1
+        //g_model.switchTab[1].val2  =-40;
       break;
   
   }
