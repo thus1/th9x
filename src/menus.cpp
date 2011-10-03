@@ -907,7 +907,7 @@ void menuProcMix()
   int8_t  subHor = mstate2.m_posHorz;
   if(sub<1 || subHor==0)       mstate2.m_valEdit=0;
 
-  printf("menuProcMix.mstate2.m_posVert=%d\n",mstate2.m_posVert);
+  //printf("menuProcMix.mstate2.m_posVert=%d\n",mstate2.m_posVert);
 
   MixData_r192  *md= g_model.mixData;
   FL_INST.init(g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0]),chProcMixes,NUM_XCHNOUT);
@@ -993,7 +993,7 @@ void menuProcMix()
   if(FL_INST.m_chnNav && mstate2.m_posVert) mstate2.m_posHorz=subHor=0;
 
 
-  printf("menuProcMixE.mstate2.m_posVert=%d\n",mstate2.m_posVert);
+  //printf("menuProcMixE.mstate2.m_posVert=%d\n",mstate2.m_posVert);
 
 }
 
@@ -1789,7 +1789,12 @@ void menuProcTrainer()
     }
     if(edit)
     {
-      if(g_event==EVT_KEY_FIRST(KEY_MENU)){ //edit=docalib ok
+      if(g_event==EVT_KEY_LONG(KEY_MENU)){ //edit = do uncalib
+        killEvents();
+        memset(g_eeGeneral.trainer.calib,0,sizeof(g_eeGeneral.trainer.calib));
+        beepKey();
+      }
+      if(g_event==EVT_KEY_BREAK(KEY_MENU)){ //edit = docalib
         memcpy(g_eeGeneral.trainer.calib,g_ppmIns,sizeof(g_eeGeneral.trainer.calib));
         eeDirty(EE_GENERAL);
         beepKey();
@@ -2671,7 +2676,7 @@ void perOut(int16_t *chanOut)
     int16_t val2 = getSrcValSw(sd.val2,sd.opCmp);
     bool    res  = false;
     switch(sd.opCmp){ //"<\t&\t|\t^"
-      case 0: res = val1 <  val2; break;
+      case 0: res = val1 <= val2; break;
       case 1: res = val1 && val2; break;
       case 2: res = val1 || val2; break;
       case 3: res = val1 ^  val2; break;

@@ -230,7 +230,7 @@ typedef struct t_MixData_r192 {
   uint8_t dmy1:2;   //
 
   uint8_t srcRaw:5;    // S1-4,P1-3,max,cur,X1-X4,p1-3,T1-8  24
-  uint8_t switchMode:2; // sw-mode 0,-1,disable
+  uint8_t switchMode:2; //switchMode oOff\tiNeg\tiNul\tiPos
   uint8_t curveNeg:1;  // Cv cV
 
   int8_t  weight;

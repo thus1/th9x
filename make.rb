@@ -9,8 +9,8 @@ require "pp"
 
 
 PARDEF={}
-#PARDEF[:PROG]     = "USBPROG"
-PARDEF[:PROG]     = "AVRDUDE"
+PARDEF[:PROG]     = "USBPROG"
+#PARDEF[:PROG]     = "AVRDUDE"
 PARDEF[:TC]       = "TC_PAR1"
 
 

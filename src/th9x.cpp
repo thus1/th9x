@@ -12,6 +12,7 @@
  //hfuse 0x89 -> usbprog.rb  wrFuseHigh 0x81 eeprom save
 
 bugs:
++ call entry in menu0
 + contrast in alarm?
 + thr error wenn invert
 + trim entschaerfen i35,39
@@ -36,6 +37,7 @@ todo
 
 - bitwerte im ppm-signal fuer schalter
 - use receiver instead of trainer-cable
+- convert old models
 + timer mit thr-switch, 
 + timer2
 + switches toggle+but
@@ -439,15 +441,24 @@ uint8_t checkLastSwitch(uint8_t sw,uint8_t flg) //recognize switch changes
 void checkSwitches() //initial check
 {
   if(! WARN_SW) return;
-  uint8_t i;
-  for(i=SW_BASE_DIAG; i< SW_Trainer; i++)
-  {
-    if(i==SW_ID0) continue;
-    if(keyState((EnumKeys)i)) break;
+  uint8_t last=0;
+  while(1){
+    uint8_t i;
+    for(i=SW_BASE_DIAG; i< SW_Trainer; i++)
+    {
+      if(i==SW_ID0) continue;
+      if(keyState((EnumKeys)i)) break;
+    }
+    if(i==SW_Trainer) return;  
+    if(last!=i) beepErr();
+    last=i;
+    lcd_clear();
+    putsDrSwitches(0*FW,3*FH,i-SW_BASE_DIAG+1,0);
+    lcd_puts_P(4*FW,3*FH,PSTR(" - Switch is on"));  
+    if(! alert(PSTR(""),1+2+4) ) break;
   }
-  if(i==SW_Trainer) return;
-  beepErr();
-  pushMenu(menuProcDiagKeys);
+  //beepErr();
+  //_pushMenu(menuProcDiagKeys);
 }
 
 
@@ -473,29 +484,29 @@ void checkTHR()
 #else
   while(g_tmr10ms<20){} //wait for some ana in
 #endif
-  uint8_t mode=1;
+  uint8_t mode=1; //no loop
   while(abs( (int8_t) ((anaIn(THRCHN)>>6)-g_eeGeneral.thr0pos) ) > 1)  
   {
     if(! alert(PSTR("THR not idle"),mode) ) break;
-    mode=2;
+    mode=1+2;//no loop, no beep
   }
 }
 
 
 
-//uint8_t  g_beepCnt;
-//uint8_t  g_beepVal[4];
+// mode = 0 : print text, endless-loop bis key press
+// mode = 1 : no loop
+// mode = 2 : no beep
+// mode = 4 : no clear
 
 bool alert(const prog_char * s, uint8_t mode )
 {
-  if(mode<=1){
-    lcd_clear();
-    lcd_putsAtt(64-5*FW,0*FH,PSTR("ALERT"),DBLSIZE);  
-    lcd_puts_P(0,4*FW,s);  
-    lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
-    refreshDiplay();
-    beepErr();
-  }
+  if(! (mode&2)) beepErr();
+  if(! (mode&4)) lcd_clear();
+  lcd_putsAtt(64-5*FW,0*FH,PSTR("ALERT"),DBLSIZE);  
+  lcd_puts_P(0,3*FH,s);  
+  lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
+  refreshDiplay();
   do {
     perChecks(); //check light switch in timerint, issue 51
 
@@ -504,7 +515,7 @@ bool alert(const prog_char * s, uint8_t mode )
 void doFxEvents();
     doFxEvents();
 #endif    
-  } while(mode==0);
+  } while(! (mode&1));
   return true;
 }
 uint8_t checkTrim()
@@ -1004,7 +1015,7 @@ void evalCaptures()
     captureRd = (captureRd + 1)  % DIM(captureRing); //next read
     if(ppmInState && ppmInState<=8){
       if(val>800 && val <2200){
-        g_ppmIns[ppmInState - 1] = val - 1500; //+-500 != 512, Fehler ignoriert
+        g_ppmIns[ppmInState - 1] = (val - 1500); //+-500 != 512, Fehler ignoriert
         if(ppmInState>=3){
           s_trainerLast10ms = g_tmr10ms;
           if(g_trainerSlaveActiveChns < ppmInState)
