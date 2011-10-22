@@ -75,6 +75,7 @@ struct MState2
   uint8_t m_posHorz;
   bool    m_valEdit:1;
   int8_t  m_posVertChg:2;
+  int8_t  m_posHorzChg:2;
   //void init(){m_posVert=m_posHorz=0;};
   void init(){m_posVert=0;m_valEdit=0;};
   prog_uint8_t *m_tab;
@@ -105,6 +106,7 @@ void MState2::check_v( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, uin
 void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_int8_t*horTab,uint8_t horTabMax,uint8_t maxrow)
 {
   m_posVertChg=0;
+  m_posHorzChg=0;
   if(menuTab) {
     uint8_t attr = INVERS; 
     curr--; //calc from 0, user counts from 1
@@ -192,6 +194,7 @@ void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_
         if(horzCsr) break;
         killEvents();
         INC(m_posHorz,maxcol);
+        m_posHorzChg=+1;
         BLINK_SYNC; 
         break;
       case EVT_KEY_LONG(KEY_UP):   //dec horz
@@ -199,6 +202,7 @@ void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_
         if(horzCsr) break;
         killEvents();
         DEC(m_posHorz,maxcol);
+        m_posHorzChg=-1;
         BLINK_SYNC;
         break;
       case EVT_KEY_LONG(KEY_LEFT):   //
@@ -211,11 +215,13 @@ void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_
       case EVT_KEY_BREAK(KEY_RIGHT):  //inc horz
         if(m_valEdit) break;
         INC(m_posHorz,maxcol);
+        m_posHorzChg=+1;
         BLINK_SYNC; 
         break;
       case EVT_KEY_BREAK(KEY_LEFT):   //dec horz
         if(m_valEdit) break;
         DEC(m_posHorz,maxcol);
+        m_posHorzChg=-1;
         BLINK_SYNC;
         break;
     }
@@ -796,6 +802,7 @@ void editMixVals( uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
 	
       if( mEdit &&  md2.curve>=1 && g_event==EVT_KEY_LONG(KEY_MENU)){ //_LONG
         s_curveChan = md2.curve-1;
+	killEvents();
         pushMenu(menuProcCurveOne);
         return;
       }
@@ -939,7 +946,11 @@ void menuProcMix()
       if(sel && !mstate2.m_valEdit)     sel=2;
 
       if(sel) { //show diag values
-	if(subHor==1 && line->showCh) subHor=2;
+        if(line->showCh) {
+          if(subHor==2 && mstate2.m_posHorzChg==+1 ) mstate2.m_posHorz=subHor=3;
+          if(subHor==1 && mstate2.m_posHorzChg==-1 ) mstate2.m_posHorz=subHor=0;
+          if(subHor==1) subHor=2; //fake horiz-pos
+        }
         currMixerLine = line->idt;
         lcd_outdez(  11*FW, 0, currMixerVal>>9);
         lcd_putc  (  11*FW, 0, '/');
@@ -954,7 +965,7 @@ void menuProcMix()
                     pgm_read_byte(&colPos[j]),   y,line->idt); //2op
         
       }
-      if(md2.speedDown || md2.speedUp)lcd_putcAtt(20*FW+1, y, '}',0);
+      if(md2.speedDown || md2.speedUp)lcd_putsAtt(20*FW+1, y, PSTR(ARR_NE),0);
       //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
       if(lineEdit) {
         lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
@@ -1239,7 +1250,8 @@ void menuProcExpoAll()
     }
   }
   uint8_t what;
-  switch(what=FL_INST.doEvent(sub,mstate2.m_posVertChg,subHor==0))
+  switch(what=FL_INST.doEvent
+(sub,mstate2.m_posVertChg,subHor==0))
   {
     case FoldedListNew:
     case FoldedListNewEdit:
@@ -1346,7 +1358,7 @@ void menuProcModel()
         putsTime(       5*FW-2, y, g_model.tmrVal,
                         ( subHor==1 ? attr:0),
                         ( subHor==2 ? attr:0) );
-        lcd_putsmAtt(  11*FW, y, PSTR("OFF\tABS\tTHR\tTHR%"),g_model.tmrMode,
+        lcd_putsmAtt(  12*FW, y, PSTR("OFF\tABS\tTHR\tTHR%"),g_model.tmrMode,
                        ( subHor==3 ? attr:0));
         putsDrSwitches(15*FW, y, g_model.tmrSw , ( subHor==4 ? attr:0));
 
@@ -1402,14 +1414,14 @@ void menuProcModel()
           static const prog_char APM p1[]="\x02""A\tB\tC\t";
           static const prog_char APM p2[]="\x00""-";
           static const prog_char APM p3[]="\x02""A\tB\tC\t";
-          static const prog_char APM p4[]="\x02""A\tB\tC\t";
+          static const prog_char APM p4[]="\x05""A\tB\tC\tA=\tB=\tC=\t";
           static const prog_char APM p5[]="\x00""-";
           //static const prog_char* protTab[]  ={p0,p1,p2,p3,p4,p5};
           static prog_charp APM protTab[]  ={p0,p1,p2,p3,p4,p5};
 	  const prog_char* p = (const prog_char*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
 
 	  lcd_putsmAtt(   6*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
-	  lcd_putsmAtt(   11*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
+	  lcd_putsmAtt(   12*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
 	  if(attr==BLINK) switch(subHor)    {
 #ifdef UNIFIED
 	  case 1: CHECK_INCDEC_H_MODELVAR_BF(g_model.protocol,0,PROT_MAX);	    break;

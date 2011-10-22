@@ -560,9 +560,15 @@ static void setupPulsesHeliSwift(uint8_t chan)
 { 
   static uint8_t state = 0;
   static uint8_t values[4];
+  bool mod38=true;
+  if(chan>=3){mod38=false;chan-=3;}
   if(state==0){
-    _send_rep1(13*2-1,200);
-    _send_rep1(13*2-1,75); //276*13us=3.6 ms
+    if(mod38){
+      _send_rep1(13*2-1,200);
+      _send_rep1(13*2-1,75); //276*13us=3.6 ms
+    }else{
+      _send_1(13*275*2-1);   //3.6 ms
+    }
     _send_1(1013*2-1);   //1 ms
     uint8_t heli_throttle  = getChan7u(2,7);
     values[3] = heli_throttle;// & 0x7F;
@@ -581,18 +587,21 @@ static void setupPulsesHeliSwift(uint8_t chan)
     if(values[idx/8] & (1<<(idx%8))){
       //       //0.3ms ~ 22.8 halfs 23 13us=26-1
       //       //0.7ms ~ 53.2 halfs 53 13us=26-1
-      _send_rep1(LEN_38KHZ-1,HALFS_1);
+      if(mod38) _send_rep1(LEN_38KHZ-1,HALFS_1);
+      else      _send_1(LEN_38KHZ*HALFS_1-1);
       _send_1   (LEN_38KHZ*(HALFS_FULL-HALFS_1)-1);
     }else{
       //       //0.7ms ~ 53.2 halfs 53 13us=26-1
       //       //0.3ms ~ 22.8 halfs 23 13us=26-1
-      _send_rep1(LEN_38KHZ-1,HALFS_0);
+      if(mod38) _send_rep1(LEN_38KHZ-1,HALFS_0);
+      else      _send_1(LEN_38KHZ*HALFS_0-1);
       _send_1   (LEN_38KHZ*(HALFS_FULL-HALFS_0)-1);
     }
     state++;
     // 
   }else if(state==33){
-    _send_rep1(LEN_38KHZ-1,HALFS_1); //stop 1
+    if(mod38) _send_rep1(LEN_38KHZ-1,HALFS_1); //stop 1
+    else      _send_1(LEN_38KHZ*HALFS_1-1); //stop 1
     _send_1   (27500u*2-1);  //27.5ms //+2400us
     state=0;
   }
