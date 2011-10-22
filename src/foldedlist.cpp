@@ -33,7 +33,7 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
     failed=false;
     inst.m_prepCurrCh  = 0;
     inst.m_prepCurrIFL = 1;
-    inst.m_prepCurrIDT = -1;
+    //inst.m_prepCurrIDT = -1;
     memset(inst.m_lines,0,sizeof(inst.m_lines));
     inst.m_lines[0].showHeader=true;
     for( idt=0; idt < dimArr && *arrayElt(idt); idt++)
@@ -51,10 +51,10 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
       Line &l=inst.m_lines[inst.m_prepCurrIFL++];
       l.showCh   = ret;//true;
       l.chId     = inst.m_prepCurrCh;
-      l.idt      = idt;//inst.m_prepCurrIDT = idt;
+      l.idt      = idt;
       l.showDat  = true;
     }
-    inst.m_prepCurrIDT = idt;
+    inst.m_prepCurrIDT = idt; //dimArr oder index hinter letztem element
   }while(failed);
 
   inst.fill(numChn+1,idt);
@@ -69,7 +69,7 @@ bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
       Line &l=inst.m_lines[inst.m_prepCurrIFL++];
       l.showCh = true;
       l.chId   = inst.m_prepCurrCh;
-      l.idt    = idt;//inst.m_prepCurrIDT; //insert behind
+      l.idt    = idt; //insert behind
       assert(inst.m_prepCurrIFL<=DIM(inst.m_lines));
     }
     return true;
@@ -107,23 +107,29 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
   inst.m_chnNav     = chnNav;     //wir sind im chn navi bereich
 
   if(inst.m_listEdit && subChanged 
-     && sub && (sub-subChanged)
-     && (sub-subChanged)!=inst.m_prepCurrIFL
+     && sub //jetz nicht im header
+     && (sub-subChanged) //vorher nicht im header
+     && (sub-subChanged)!=inst.m_prepCurrIFL //vorher nicht am ende
   ) //
   {
-    int8_t idt2 = inst.m_currIDT+subChanged;
+    int8_t idt2  = inst.m_currIDT+subChanged;
     uint8_t chn1 = inst.m_chProc(arrayElt(inst.m_currIDT),0);
-    assert(idt2>=0);
-    uint8_t chn2 = idt2>=0 ? inst.m_chProc(arrayElt(idt2),0) : 0;
+    //    assert(idt2>=0);
+    uint8_t chn2 = 0; //ungueltig
+    if((idt2>=0) && (idt2<inst.m_prepCurrIDT))
+      chn2=inst.m_chProc(arrayElt(idt2),0);
+    
+    printf("subChanged=%d currIDT=%d idt2=%d chn1=%d,chn2=%d prepCurrIDT=%d\n",subChanged,inst.m_currIDT,idt2,chn1,chn2,inst.m_prepCurrIDT);
     if(chn1==chn2){
       memswap(inst.arrayElt(inst.m_currIDT),
               inst.arrayElt(idt2),
               inst.m_prepSzeElt);
-    }else{      inst.m_chProc(arrayElt(inst.m_currIDT),chn1+subChanged);
+    }else{      
+      inst.m_chProc(arrayElt(inst.m_currIDT),chn1+subChanged);
       if(subChanged>0){ //Spezialfall multidat ->
-        if(inst.m_currIDT>=1){
+        if(inst.m_currIDT>=1){ //es gibt einen Vorgaenger
           uint8_t chn0 = inst.m_chProc(arrayElt(inst.m_currIDT-1),0);
-          if(chn0 == chn1) inst.m_subIFL -= 1;
+          if(chn0 == chn1) inst.m_subIFL -= 1;//zeile steht, ch springt um
         }
       }else{            //Spezialfall multidat <-
         if(inst.m_currIDT!=0 && chn2 == (chn1-1)) inst.m_subIFL += 1;
@@ -174,34 +180,40 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
       inst.m_listEdit=false;
       break;
     case EVT_KEY_BREAK(KEY_MENU):
-      if(inst.m_listEdit) break;
       if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
+      if(inst.m_listEdit)
+      {
+        ret = FoldedListDup;
+        goto ret_dup;
+      }
       if(inst.m_chnNav){  //neue Zeile einfuegen
         ret=FoldedListNew;
         goto ret_dup;
       }
       break;
     case EVT_KEY_LONG(KEY_MENU):  // _LONG
-      killEvents(); //cut off 
-      if(inst.m_listEdit)
-      {
-        beepKey();
-        ret = FoldedListDup;
-        goto ret_dup;
-      }
       if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
+      if(inst.m_listEdit) break;
+//       {
+//         ret = FoldedListDup;
+//         goto ret_dup;
+//       }
       //if(inst.m_currInsMode){  //neue Zeile einfuegen
       if(inst.m_chnNav){  //neue Zeile einfuegen
         if(! NAVI_ADVANCED) break;
         ret=FoldedListNewEdit;//FoldedListNew;
         goto ret_dup;
       }
+      beepKey();
+      killEvents(); //cut off 
       return FoldedListEdit; //Zeile edit
   }
 
   return 0; 
   
   ret_dup:
+  beepKey();
+  killEvents(); //cut off 
   if((uint8_t)(inst.fillLevel())>=inst.m_prepDimArr){
     //printf("currIDT %d dimArr %d\n",inst.m_prepCurrIDT,dimArr);
     beepErr();

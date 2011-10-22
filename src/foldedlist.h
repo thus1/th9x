@@ -56,7 +56,7 @@ public:
   uint8_t m_prepCurrCh;   //for construction init,fill,addDat
   uint8_t m_prepCurrIFL;
   //  uint8_t m_prepCurrISL;
-  uint8_t m_prepCurrIDT;  // *
+  uint8_t m_prepCurrIDT;  // number of lines in data tab
   ChProc* m_chProc;
   uint8_t m_numChn;
 
