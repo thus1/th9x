@@ -48,8 +48,8 @@ struct EeFs{
   uint8_t  mySize;
   uint8_t  freeList;
   uint8_t  bs;
-  DirEnt   files[MAXFILES];
-}__attribute__((packed)) eeFs;
+  DirEnt   files[MAXFILES]; //20*3
+}__attribute__((packed)) eeFs; //64
 
 
 static uint8_t EeFsRead(uint8_t blk,uint8_t ofs){
@@ -57,21 +57,21 @@ static uint8_t EeFsRead(uint8_t blk,uint8_t ofs){
   eeprom_read_block(&ret,(const void*)(blk*BS+ofs),1);
   return ret;
 }
-static void EeFsWrite(uint8_t blk,uint8_t ofs,uint8_t val){
-  eeWriteBlockCmp(&val, (void*)(blk*BS+ofs), 1);
-}
+// static void EeFsWrite(uint8_t blk,uint8_t ofs,uint8_t val){
+//   eeWriteBlockCmp(&val, (void*)(blk*BS+ofs), 1);
+// }
 
 static uint8_t EeFsGetLink(uint8_t blk){
   return EeFsRead( blk,0);
 }
 static void EeFsSetLink(uint8_t blk,uint8_t val){
-  EeFsWrite( blk,0,val);
+  //  EeFsWrite( blk,0,val);
+  eeWriteBlockCmp(&val, (void*)(blk*BS+0), 1);
 }
 static uint8_t EeFsGetDat(uint8_t blk,uint8_t ofs){
   return EeFsRead( blk,ofs+1);
 }
 static void EeFsSetDat(uint8_t blk,uint8_t ofs,uint8_t*buf,uint8_t len){
-  //EeFsWrite( blk,ofs+1,val);
   eeWriteBlockCmp(buf, (void*)(blk*BS+ofs+1), len);
 }
 static void EeFsFlushFreelist()
@@ -229,28 +229,6 @@ uint8_t EFile::read(uint8_t*buf,uint8_t i_len){
   m_pos += i_len - len;
   return i_len - len;
 }
-#if 0
-uint16_t EFile::readRlc1(uint8_t*buf,uint16_t i_len){
-  uint16_t i;
-  for( i=0; i<i_len; ){
-    if((m_bRlc&0x7f) == 0) {
-      if(read(&m_bRlc,1)!=1) break;
-    }
-    assert(m_bRlc & 0x7f);
-    uint8_t l=m_bRlc&0x7f;
-    if((uint16_t)l>(i_len-i)) l = (uint8_t)(i_len-i);
-    if(m_bRlc&0x80){
-      memset(&buf[i],0,l);
-    }else{
-      uint8_t lr = read(&buf[i],l);
-      if(lr!=l) return i+lr;
-    }
-    i    += l;
-    m_bRlc -= l;
-  }
-  return i;
-}
-#endif
 
 uint16_t EFile::readRlc12(uint8_t*buf,uint16_t i_len, bool rlc2){
   uint16_t i=0;
