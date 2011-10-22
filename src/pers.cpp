@@ -185,6 +185,7 @@ void modelMixerDefault(uint8_t typ)
       md->destCh = 6;         md->srcRaw = SRC_ELE;  md->weight = 36; md++;
       md->destCh = 6;         md->srcRaw = SRC_AIL;  md->weight = 62; md++;
       md->destCh = 6;         md->srcRaw = SRC_THR;  md->weight = 55; md++;
+      break;
       // Sim Calib
     case 5:
       for(uint8_t i= 0; i<8; i++){
@@ -489,11 +490,10 @@ void eeDirty(uint8_t msk)
 #define WRITE_DELAY_10MS 100
 void eeCheck(bool immediately)
 {
-  uint8_t msk  = s_eeDirtyMsk;
-  if(!msk) return;
+  if(!s_eeDirtyMsk) return;
   if( !immediately && ((g_tmr10ms - s_eeDirtyTime10ms) < WRITE_DELAY_10MS)) return;
-  s_eeDirtyMsk = 0;
-  if(msk & EE_GENERAL){
+  if(s_eeDirtyMsk & EE_GENERAL){
+    s_eeDirtyMsk &= ~EE_GENERAL; //not int safe
     if(theFile.writeRlc2(FILE_TMP, FILE_TYP_GENERAL, (uint8_t*)&g_eeGeneral, 
                         sizeof(g_eeGeneral),20) == sizeof(g_eeGeneral))
     {   
@@ -509,7 +509,8 @@ void eeCheck(bool immediately)
     }
     //first finish GENERAL, then MODEL !!avoid Toggle effect
   }
-  else if(msk & EE_MODEL){
+  else if(s_eeDirtyMsk & EE_MODEL){
+    s_eeDirtyMsk &= ~EE_MODEL;//not int safe
     g_model.mdVers = MDVERS_TOP;
     if(theFile.writeRlc2(FILE_TMP, FILE_TYP_MODEL, (uint8_t*)&g_model, 
                         sizeof(g_model),20) == sizeof(g_model))
