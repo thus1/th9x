@@ -30,7 +30,7 @@ USB ISP’s versorgen sich aus der USB Schnittstelle und können das Target (i.e
 gleich mit Strom mitversorgen, es muss aber darauf geachtet werden das für Windows
 notwendige Treiber bereitgestellt sind.
 
-Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html hier]. Diese können von eBay oder den gängigen Elektronikversandhäusern zwischen 5 und 30Euro erworben werden.
+Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html hier]. Diese können von eBay oder den gängigen Elektronikversandhäusern zwischen 4 und 30Euro erworben werden.
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 == USB erfolgreich ==
