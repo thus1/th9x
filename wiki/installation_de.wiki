@@ -43,10 +43,11 @@ Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
  * [http://and-tech.pl/Stk500/AVRProgUSB-v1.3-ang.pdf AVRProgUSB]
 
 == USB problematisch ==
- * [http://www.ebay.de/itm/USBASP-USBISP-AVR-Programmer-USB-ATMEGA8-ATMEGA128-New-/370532286436?pt=LH_DefaultDomain_0&hash=item564571ffe4 USBASP 4Euro]  Schutzwiderstand 4x100 Ohm (101) ersetzen durch 4x33 Ohm oder Drahtbrücken. 
+ * [http://www.ebay.de/itm/USBASP-USBISP-AVR-Programmer-USB-ATMEGA8-ATMEGA128-New-/370532286436?pt=LH_DefaultDomain_0&hash=item564571ffe4 USBASP 4Euro]  Schutzwiderstand 4x100 Ohm (101) ersetzen durch 4x33 Ohm oder Drahtbrücken! 
+ * [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] Schutzwiderstände verkleinern!
  * [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab]
  * AVR-Dragon
- * [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP]
+
 
 == LPT erfolgreich ==
  * [http://home.arcor.de/dh2iw/shop.html AVR-ISP-Parallelport-Programmer]
