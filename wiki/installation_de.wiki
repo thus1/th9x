@@ -31,6 +31,8 @@ gleich mit Strom mitversorgen, es muss aber darauf geachtet werden das für Wind
 notwendige Treiber bereitgestellt sind.
 
 Eine Liste der von AVRdude unterstützen Programmer findet sich [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html hier]. Diese können von eBay oder den gängigen Elektronikversandhäusern zwischen 4 und 30Euro erworben werden.
+Achtung!! Die TH9X hat an den Programmiereingängen eine Störschutzbeschaltung bestehend aus einem Kondensator und einem 200 Ohm Widerstand. Dies bedeutet, dass die Ausgänge des Programmers deutlich niederohmiger als 200 Ohm sein sollten. z.B. 33-56 Ohm. Alle Programmer die grössere Schutzwiderstände in ihren Ausgangsleitungen (SCK,MOSI,RES) haben machen daher Probleme (z.B. USBTinyISP oder USBASP). Wenn man diese Schutzwiderstände verkleinert, dann funktionieren auch diese Programmer.
+
 Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 == USB erfolgreich ==
