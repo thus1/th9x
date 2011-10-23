@@ -44,7 +44,7 @@ Von Forenmitgliedern benutzte programmer sind nachfolgend aufgelistet.
 
 == USB problematisch ==
  * [http://www.ebay.de/itm/USBASP-USBISP-AVR-Programmer-USB-ATMEGA8-ATMEGA128-New-/370532286436?pt=LH_DefaultDomain_0&hash=item564571ffe4 USBASP 4Euro]  Schutzwiderstand 4x100 Ohm (101) ersetzen durch 4x33 Ohm oder Drahtbrücken! 
- * [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] Schutzwiderstände verkleinern!
+ * [http://www.mikrocontroller.net/articles/AVR-ISP-Stick USBTinyISP] Schutzwiderstände R6,R7 von 1.5K auf 33 Ohm verkleinern!
  * [http://wiki.ullihome.de/index.php/USBAVR-ISP/de#USB_AVR_Lab_als_Programmier.2FDebugadapter USB-AVRlab]
  * AVR-Dragon
 
