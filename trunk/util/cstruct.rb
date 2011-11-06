@@ -125,7 +125,9 @@ module CStruct
   def CStruct.alignment()@@alignment                                      end
   class CStructBase
     attr_reader :offset
-    def initialize(offset)   @offset=offset; @membn=[]; @membv={};           end
+    attr_reader :hidden
+    def initialize(offset)   @offset=offset; @membn=[]; @membv={}; @hidden=false; end
+    def hide() @hidden=true; end
     def each() @membn.each{|n| yield n,@membv[n].get,@membv[n].obj} end
     def child(n)      @membv[n]; end
     def obj()            self;                                            end
@@ -140,9 +142,11 @@ module CStruct
       s=nest>0 ? "\n" : ""; 
       @membn.each { |n|;
         #ofs==@membv[n].offset or raise " bad offset #{ofs} != #{@membv[n].offset}"
-        s+=sprintf("%3d ",@membv[n].offset)
+        #s+=sprintf("%3d ",@membv[n].offset)
         x,ofs = @membv[n].to_sInternal(ofs,nest+1)
-        s+="    "*nest + "#{n}\t= "+x
+        unless @membv[n].hidden
+          s+=sprintf("%3d ",@membv[n].offset)+("    "*nest) + "#{n}\t= "+x
+        end
       }; 
       [s+"\n",ofs]
     end
@@ -150,6 +154,28 @@ module CStruct
   class BaseT < CStructBase
   end
 
+  class BitFld < CStructBase
+    def initialize(refobj,bits,pos,typ)
+      super(refobj.offset)
+      @refobj,@bits,@pos = refobj,bits,pos
+      @signed =  typ !~ /^u/
+    end
+    def each()                                   end
+    def to_sInternal(ofs,nest=0) 
+      [sprintf("0x%x %d (%s.%d:%d)\n",get(),get(),@refobj.class.to_s[9..-1],@pos,@bits),ofs]         
+    end
+    def set(v)   raise "todo";                   end
+    def get()    
+      ret  = (@refobj.get()>>@pos) & ((1<<@bits)-1)
+      ret -= (1<<@bits)  if @signed and (ret & ((1<<@bits-1)) != 0)
+      ret
+    end
+    def toBin()                 ""               end
+    def inspect()               get().inspect()  end
+    def to_s()                  get().to_s();    end
+    def to_i()                  get();           end
+    def fromBin(bin,pos)        pos;             end
+  end
   class CArray < CStructBase
     def initialize(offset,n,typ) 
       super(offset);  
@@ -159,8 +185,8 @@ module CStruct
         offset     += @membv[i].sizeof()
       }
     end
-    def []=(i,v) @membv[i.to_s].set(v)                                         end
-    def [](i)    @membv[i.to_s].get()                                         end
+    def []=(i,v) @membv[i.to_s].set(v)                                   end
+    def [](i)    @membv[i.to_s].get()                                    end
   end
   class CString < BaseT
     def initialize(offset,n) @offset=offset; @strlen=n                      end
@@ -209,6 +235,7 @@ module CStruct
       @defs="\n"
       @pos=0
       @granu=0
+      @bitFld=nil; @bitFldCnt=0
       cdef.each { |l|
         l.sub! /(\#|\/\/).*$/,""   #remove comments
         l.sub! /;\s*$/,""          #remove ';' at the end
@@ -217,8 +244,9 @@ module CStruct
         l.gsub! /\s+/," "          #subst group of spaces into single spaces
         case l
         when /^[{}]?\s*$/
-        when /^(.+)\s(\w+)\[\s*(\d+)\s*\]/
+        when /^(.+)\s(\w+)\[\s*(\d+)\s*\]/  #char name[10]
           typ,name,cnt = $1,$2,$3.to_i
+          finBitFld
           if(typ=="char")
             addStringMember(name,cnt)
           else
@@ -226,11 +254,21 @@ module CStruct
           end
         when /^(.+)\s(\S+)/
           typ,names = $1,$2
-          names.split(/,/).each{|n| addMember(typ,n)}
+          #names.split(/,/).each{|n| addMember(typ,n)}
+          names.split(/,/).each{|n| 
+            if n=~/(\w+):(\d+)/
+              n,bits = $1,$2.to_i
+              addBitFld(typ,n,bits)
+            else
+              finBitFld
+              addMember(typ,n)
+            end
+          }
         else
           raise "line not recognized '#{l}'"
         end
       }
+      finBitFld
       CStruct.cT2rbT(tname)
       d=<<-"END"    
       class #{tname} < CStructBase
@@ -247,8 +285,9 @@ module CStruct
       END
       #puts d
       CStruct.module_eval d
-      puts "#{tname}.sizeof() = #{@pos}"
+      #puts "#{tname}.sizeof() = #{@pos}"
     end
+
     def doAlign(typ)
       g=[CStruct.module_eval("#{typ}.granu"),CStruct.alignment].min
       @granu=[@granu,g].max
@@ -288,6 +327,7 @@ module CStruct
       @pos+=CStruct.module_eval("#{typ}.sizeof")*cnt
     end
     def addMember(typ,name)
+      #puts "addMember(#{typ},#{name})"
       CStruct.cT2rbT(typ)
       doAlign(typ)
       @init += <<-"END"
@@ -299,6 +339,38 @@ module CStruct
       def #{name} ()    @membv["#{name}"].get()     end
       END
       @pos+=CStruct.module_eval("#{typ}.sizeof")
+    end
+    def finBitFld
+      return unless @bitFld
+      # pp @bitFld
+      pos,typ=@bitFld.shift
+      @bitFldCnt+=1
+      refname="__bf#{@bitFldCnt}"
+      addMember(typ,refname)
+      @init += <<-"END"
+        @membv["#{refname}"].hide()
+      END
+      @bitFld.each{|name,bits,pos,typ|
+        @init += <<-"END"
+          @membn.push "#{name}"
+          @membv["#{name}"]=BitFld.new(@membv["#{refname}"],#{bits},#{pos},"#{typ}")
+        END
+        @defs += <<-"END"
+         def #{name}= (v)  @membv["#{name}"].set(v)    end
+         def #{name} ()    @membv["#{name}"].get()     end
+        END
+      }
+
+      @bitFld=nil
+    end
+    def addBitFld(typ,n,bits)
+      #puts "def addBitFld(#{typ},#{n},#{bits})"
+
+      #fehlt: byte-überlappende felder, signed,unsigned
+      finBitFld if @bitFld and (pos=@bitFld[0][0])+bits > 8
+      @bitFld=[[pos=0,typ]] if !@bitFld
+      @bitFld.push( [n,bits,pos,typ ])
+      @bitFld[0][0] = pos + bits
     end
   end
   defBaseT("uint32_t",4,false)
