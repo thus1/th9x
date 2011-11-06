@@ -17,6 +17,17 @@ class Integer
     self<0 ? -1 : self==0 ? 0 : 1
   end
 end
+module CStruct; class CStructBase
+  def omitIfWellknown(val)
+    if (bin=toBin) == val
+      hide()
+      return ""
+    else
+      return bin.inspect + "\n"
+    end
+  end
+end;end
+
 CStruct.alignment=1
 
 
@@ -45,13 +56,27 @@ end
 def chnIn192To_s(idx)
   %w(RUD ELE THR AIL P1 P2 P3 p1 p2 p3 MAX CUR CH1 CH2 CH3 CH4 CH5 CH6 CH7 CH8 X1 X2 X3 X4 T1 T2 T3 T4 T5 T6 T7 T8)[idx]
 end
-def crvTo_s(idx) 
-  idx==0?"    " : "Crv#{idx}" 
+
+def crvTo_s(idx,neg=false) 
+  idx==0 ? "    " : "f#{idx}" 
 end
 def swtchTo_s(idx) 
   return "    " if idx==0 
   sprintf("%s%-3s",idx<0 ? "!":" ",%w(0 THR RUD ELE ID0 ID1 ID2 AIL GEA TRN ON)[idx])
 end
+def swtch204To_s(idx) 
+  return "    " if idx==0 
+  sprintf("%s%-3s",idx<0 ? "!":" ",%w(0 THR RUD ELE ID0 ID1 ID2 AIL GEA TRN 
+                                      SW1 SW2 SW3 SW4 SW5 SW6 SW7 SW8)[idx])
+end
+def swVal(v)
+  neg = v<0
+  s   = ""
+  v,s=-v,"-" if neg
+  return s+idx2val50_150(v).to_s if v<=50
+  return s+chnIn192To_s(v-51)
+end
+
 def int5(i5)
   i5&=0x1f
   i5-=0x20 if i5 & 0x10 != 0
@@ -69,8 +94,8 @@ def int7(i7)
 end
 
 CStruct.defStruct "TrainerData1_r0",<<-"END_TYP"
-  uint8_t srcChn3_swtch5; //0-7 = ch1-8
-  uint8_t weight6_mode2;  //off,add-mode,subst-mode
+  uint8_t srcChn:3,swtch:5; //0-7 = ch1-8
+  uint8_t weight:6,mode:2;  //off,add-mode,subst-mode
   END_TYP
 
 CStruct.defStruct "TrainerData_r0",<<-"END_TYP"
@@ -182,21 +207,27 @@ CStruct.defStruct "ExpoData_r84",<<-"END_TYP"
   int8_t  expSwWeight;
   END_TYP
 CStruct.defStruct "ExpoData_r171",<<-"END_TYP"
-  int8_t  exp5_mode3; //0=end 1=pos 2=neg 3=both 4=trimNeg
-  int8_t  weight6_chn2;  //
-  int8_t  drSw5_curve3; //
+  int8_t  exp:5,mode:3; //0=end 1=pos 2=neg 3=both 4=trimNeg
+  int8_t  weight:6,chn:2;  //
+  int8_t  drSw:5,curve:3; //
   END_TYP
 
 module CStruct; class ExpoData_r171
   def to_sInternal(ofs,nest=0)
-    s=sprintf("%3s %s %4de %3d%% %4s %3s\n",
-              %w(EOF >0 <0 1 T-)[exp5_mode3>>5], 
-              %w(RUD ELE THR AIL)[weight6_chn2>>6],
-              idx2val15_100(int5(exp5_mode3)),
-              idx2val30_100(int6(weight6_chn2)),
-              swtchTo_s(drSw5_curve3&0x1f),
-              crvTo_s(drSw5_curve3>>5)
+    bin=toBin()
+    if bin[0,1] == "\0"
+      s=omitIfWellknown("\0\0\0")
+      #s= (bin=="\0\0\0" ? "" : bin.inspect) + "\n"
+    else
+      s=sprintf("%3s %s exp_%-4d %3d%% %4s %3s\n",
+              %w(EOF >0 <0 1 T-)[mode], 
+              %w(RUD ELE THR AIL)[chn],
+              idx2val15_100(int5(exp)),
+              idx2val30_100(int6(weight)),
+              swtch204To_s(drSw), #evtl falsch
+              crvTo_s(curve)
             )
+    end
     [s,ofs+sizeof()]
   end
 end;end
@@ -223,76 +254,81 @@ CStruct.defStruct "LimitData_r0",<<-"END_TYP"
 CStruct.defStruct "LimitData_r84",<<-"END_TYP"
   int8_t  min;
   int8_t  max; 
-  int8_t  rev_offset;
+  int8_t  rev:1,offset:7;
   END_TYP
 CStruct.defStruct "LimitData_r167",<<-"END_TYP"
-  int8_t  min7_scale1;
+  int8_t  min:7,scale:1;
   int8_t  max7; 
-  int8_t  revert1_offset7;
+  int8_t  revert:1,offset:7;
   END_TYP
 module CStruct; class LimitData_r167
   def lim(idx,ofs)
-    #puts "#{idx} #{ofs}"
     idx = (idx+ofs) & 0x7f
     idx -= 128    if idx>=64 
-    #puts "#{idx} #{ofs}"
     idx2val50_150(idx)
   end
   def to_sInternal(ofs,nest=0)
     s=sprintf("%4d < x < %4d  %s %s ofs %4d\n",
-              lim(min7_scale1,-40),
+              lim(min,-40),
               lim(max7       ,+40),
-              (min7_scale1>>7) != 0 ? "scl" : "   ",
-              (revert1_offset7&1) != 0 ? "rev" : "   ",
-              (revert1_offset7/2)
+              (scale) != 0 ? "scl" : "   ",
+              (revert) != 0 ? "rev" : "   ",
+              (offset)
             )
     [s,ofs+sizeof()]
   end
 end;end
 
 CStruct.defStruct "MixData_r0",<<-"END_TYP"
-  uint8_t destCh4_srcRaw4; //
+  uint8_t destCh:4,srcRaw:4; //
   int8_t  weight;
-  uint8_t  swtch5_curve3;
-  uint8_t  speedUp4_speedDwn4;
+  uint8_t swtch:5,curve:3;
+  uint8_t speedUp:4,speedDwn:4;
   END_TYP
-
-
 
 module CStruct; class MixData_r0
   def to_sInternal(ofs,nest=0)
+    if destCh == 0
+      s=omitIfWellknown("\0\0\0\0")
+    else
     s=sprintf("%3s %3s %4d%% %s %s dwn%d up%d\n",
-            chnOutTo_s((destCh4_srcRaw4&0xf)),
-            chnInTo_s((destCh4_srcRaw4>>4)),
+            chnOutTo_s(destCh),
+            chnInTo_s(srcRaw),
             weight,
-            crvTo_s(swtch5_curve3>>5),
-            swtchTo_s(swtch5_curve3&0x1f),
-            speedUp4_speedDwn4>>4,
-            speedUp4_speedDwn4&0xf
+            crvTo_s(curve),
+            swtchTo_s(swtch),
+            speedDwn,
+            speedUp
             )
+    end
     [s,ofs+sizeof()]
   end
 end;end
 
 CStruct.defStruct "MixData_r192",<<-"END_TYP"
-  uint8_t destCh4_mixMode2; //
-  uint8_t srcRaw5_switchMode2_curveNeg1; //
+  uint8_t destCh:4,mixMode:2; //
+  uint8_t srcRaw:5,switchMode:2,curveNeg:1; //
   int8_t  weight;
-  uint8_t swtch5_curve3;
-  uint8_t speedUp4_speedDwn4;
+  uint8_t swtch:5,curve:3;
+  uint8_t speedUp:4,speedDwn:4;
 
   END_TYP
 module CStruct; class MixData_r192
   def to_sInternal(ofs,nest=0)
+    bin=toBin()
+    if bin[0,1] == "\0"
+      s=omitIfWellknown("\0\0\0\0\0")
+    else
     s=sprintf("%3s %3s %4d%% %s %s dwn%d up%d\n",
-            chnOutTo_s((destCh4_mixMode2&0xf)),
-            chnIn192To_s((srcRaw5_switchMode2_curveNeg1&0x1f)),
+            chnOutTo_s(destCh),
+            chnIn192To_s(srcRaw),
             weight,
-            crvTo_s(swtch5_curve3>>5),
-            swtchTo_s(swtch5_curve3&0x1f),
-            speedUp4_speedDwn4>>4,
-            speedUp4_speedDwn4&0xf
+            crvTo_s(curve,curveNeg),
+            swtch204To_s(swtch), #evtl falsch
+            speedDwn,
+            speedUp
             )
+    end
     [s,ofs+sizeof()]
   end
 end;end
@@ -326,6 +362,39 @@ module CStruct; class Crv9_V4
     [(0...9).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
   end
 end;end
+
+
+
+
+CStruct.defStruct "SwitchData_r204",<<-"END_TYP"
+  uint8_t sw:3     //0..7 
+  uint8_t opCmp:2  //< & | ^ 
+  uint8_t opRes:3; //0 => 1=> 0=> !=> & | ^
+  int8_t val1; //
+  int8_t val2; //
+  END_TYP
+
+
+
+module CStruct; class SwitchData_r204
+  def to_sInternal(ofs,nest=0)
+    if opRes==0
+      s=omitIfWellknown("\0\0\0")
+    else
+    s=sprintf("SW%d  %4s %3s %4s   %5s\n",
+              sw+1,
+              swVal(val1),
+              %w(< & | ^)[opCmp],
+              swVal(val2),
+              %w(0 Set On Off Inv & | ^)[opRes]
+            )
+    end
+    [s,ofs+sizeof()]
+  end
+end;end
+
+
+
 CStruct.defStruct "ModelData_r0",<<-"END_TYP"
   char      name[10];    // 10
   uint8_t   stickMode;   // 1
@@ -427,6 +496,22 @@ CStruct.defStruct "ModelData_r192",<<-"END_TYP"
   Crv9_V4   curves9[2];   // 18
   TrimData_r143  trimData;    // 3*4 -> 1*4
  END_TYP
+CStruct.defStruct "ModelData_r204",<<-"END_TYP"
+  char      name[10];             // 10 must be first for eeLoadModelName
+  uint8_t   mdVers;               // 1
+  uint8_t   tmrMode:3,tmrSw:5;              // 1
+  uint16_t  tmrVal;               // 2
+  uint8_t   protocol:5,protPar:3;             // 1
+  char      res[3];               // 3
+  LimitData_r167 limitData[8];// 4*8
+  ExpoData_r171  expoTab[15];      // 5*4 -> 4*15
+  MixData_r192   mixData[25];  //0 4*25
+  Crv3_V4   curves3[3];   // 9
+  Crv5_V4   curves5[2];   // 10
+  Crv9_V4   curves9[2];   // 18
+  SwitchData_r204 switchTab[16];//
+  TrimData_r143  trimData;    // 3*4 -> 1*4
+ END_TYP
   
 
 
@@ -444,6 +529,11 @@ CStruct.defStruct "EeFs_V4",<<-"END_TYP"
   uint8_t  bs;
   DirEnt_V4   files[#{MAXFILES_V4}];
   END_TYP
+
+
+
+
+
 
 #x=CStruct::ModelData_r84.new
 #x.fromBin("\0"*500)
@@ -485,6 +575,18 @@ class Reader_V4
     #puts modv4
   end
   attr_reader :fbuf, :fbufdec
+  def Reader_V4.mbuf2name(rawbuf)
+    mbuf=Reader_V4.decode1(rawbuf,11)
+    hlp=CStruct::ModelData_helper.new()
+    hlp.fromBin(mbuf)
+    hlp.name
+  end
+  def eachFile()
+    @fbuf.each_with_index{|fb,i|
+      next if fb == ""
+      yield i,Reader_V4.mbuf2name(fb),fb
+    }
+  end
   def read(f)
     @eefs=CStruct::EeFs_V4.new()
     @eefs.read(f)
@@ -553,7 +655,7 @@ class Reader_V4
       sum+=0x200+0x180
     }
     general.chkSum = sum & 0xffff;
-    write(0,1,encode(general.toBin))
+    write(0,1,Reader_V4.encode(general.toBin))
   end
   def alloc()
     ret=@eefs.freeList
@@ -603,7 +705,7 @@ class Reader_V4
     infoMap(arg)
   end
 
-  def encode(buf)
+  def Reader_V4.encode(buf)
     buf=buf.dup
     obuf   = ""
     cnt    = 0
@@ -630,7 +732,7 @@ class Reader_V4
     }
     obuf
   end
-  def encode2(buf)
+  def Reader_V4.encode2(buf)
     buf=buf.dup
     obuf   = ""
     cnt2   = 0
@@ -666,7 +768,7 @@ class Reader_V4
     }
     obuf
   end
-  def decode1(inbuf,len=10000)
+  def Reader_V4.decode1(inbuf,len=10000)
     inbuf=inbuf.dup
     outbuf=""
     while inbuf.length != 0 and len!=0
@@ -683,7 +785,7 @@ class Reader_V4
     end
     outbuf
   end
-  def decode2(inbuf,len=10000)
+  def Reader_V4.decode2(inbuf,len=10000)
     inbuf=inbuf.dup
     outbuf=""
     zeros=0
@@ -729,7 +831,7 @@ class Reader_V4
     end
   end
   def infoFileTyp(fi)
-    buf=decode1(@fbuf[fi],11)
+    buf=Reader_V4.decode1(@fbuf[fi],11)
     return nil,nil if buf == ""
     hlp=CStruct::EEGeneral_helper.new()
     hlp.fromBin(buf)
@@ -745,7 +847,7 @@ class Reader_V4
       hlp.fromBin(buf)
       #p hlp
       if hlp.mdVers<=3
-        buf=decode1(@fbuf[fi])
+        buf=Reader_V4.decode1(@fbuf[fi])
         if buf.length==CStruct::ModelData_r0.new().sizeof
           return 	"ModelData_r0  '#{hlp.name}'",1,CStruct::ModelData_r0
         end
@@ -757,6 +859,7 @@ class Reader_V4
       when 3; return 	"ModelData_r167'#{hlp.name}'",1,CStruct::ModelData_r167
       when 4; return 	"ModelData_r171'#{hlp.name}'",1,CStruct::ModelData_r171
       when 5; return 	"ModelData_r192'#{hlp.name}'",2,CStruct::ModelData_r192
+      when 6; return 	"ModelData_r204'#{hlp.name}'",2,CStruct::ModelData_r204
       else;   return 	"ModelData??   '#{hlp.name}'",0,nil
       end
     end
@@ -767,7 +870,7 @@ class Reader_V4
     return if !cls
     obj=cls.new
     #obj.fromBin(@fbufdec[fi])
-    fbufdec = (dec==1 ? decode1(@fbuf[fi]) : decode2(@fbuf[fi]))
+    fbufdec = (dec==1 ? Reader_V4.decode1(@fbuf[fi]) : Reader_V4.decode2(@fbuf[fi]))
     puts "szRaw=#{@fbuf[fi].length} szDec=#{fbufdec.length}"
     obj.fromBin(fbufdec)
     puts obj
@@ -777,7 +880,7 @@ class Reader_V4
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
     cmt,dec,cls = infoFileTyp(fi)
-    fbufdec = (dec==1 ? decode1(@fbuf[fi]) : decode2(@fbuf[fi]))
+    fbufdec = (dec==1 ? Reader_V4.decode1(@fbuf[fi]) : Reader_V4.decode2(@fbuf[fi]))
     printf("%s  %4d %2d  %3d %s D#{dec}",(fi+?a).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
@@ -800,7 +903,7 @@ class Main
     opts.banner = "
 Synopsis
     #{prg} [options] cmd
-    #{prg}  info   file
+    #{prg}  ls     file [fnum]
     #{prg}  export file [dir=export]
 Description
 Options
@@ -834,8 +937,8 @@ Options
     (0..19).each{|i|
       code1=r.fbuf[i] 
       full=r.fbufdec[i]
-      code2=r.encode2(full) 
-      full2=r.decode2(code2) 
+      code2=Reader_V4.encode2(full) 
+      full2=Reader_V4.decode2(code2) 
       full==full2 or raise "#{full} != #{full2}"
       puts "#{code1[0,10].inspect} #{code2[0,10].inspect}"
 
@@ -874,8 +977,8 @@ Options
       dv4 = rv4.mod_fromV1(dv1.modelData[m])
       buf = dv4.toBin
       pp buf
-      buf2 = rv4.encode(buf)
-      buf == rv4.decode1(buf2) or raise
+      buf2 = Reader_V4.encode(buf)
+      buf == Reader_V4.decode1(buf2) or raise
       pp buf2
       #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
       rv4.write(m+1,2,buf2)
@@ -896,5 +999,4 @@ Options
   end
 end
 
-
-Main.new
+Main.new if $0==__FILE__
