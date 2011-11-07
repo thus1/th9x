@@ -407,6 +407,7 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
       @releaseAction = proc{  #in case of not Dragging only select
         selectAll(false)
         selectRange(index,index,true)
+      #puts "selectRange"
       }
     when :SEL, :SEL_ZRANGE
       @mode          = :SEL_RANGE
@@ -419,6 +420,7 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
         @lastSel ||= index
         selectRange(@lastSel,index)
       else
+        #puts "selectRange(#{index},index,:TOG)"
         selectRange(index,index,:TOG)
         #updateItem(i) if @items[i].select(:TOG)
       end
@@ -450,6 +452,7 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
       # @canvas.handleDrag(event.root_x, event.root_y)#invoke SEl_DND_reMOTION? at target 
       @canvas.handleDrag(x,y)#invoke SEl_DND_MOTION? at target 
       acc=@canvas.didAccept
+      #puts "didAccept = #{acc}"
       csr=case acc
           when DRAG_COPY;   DEF_DNDCOPY_CURSOR
           when DRAG_MOVE;   DEF_DNDMOVE_CURSOR
@@ -474,7 +477,10 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
   def onLeftbuttonrelease(sender,sel,event)
     #puts "onLeftbuttonrelease"
     autoScrollStop()
-    @releaseAction.call if @releaseAction
+    if @releaseAction
+      #puts "releaseAction"
+      @releaseAction.call 
+    end
     if @mode == :DRAGING #@canvas.dragging?
       #puts "canvas.endDrag win_x=#{event.win_x}win_y=#{event.win_y}"
       case @canvas.endDrag

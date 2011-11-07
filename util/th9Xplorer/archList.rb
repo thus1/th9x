@@ -136,7 +136,7 @@ class OrgaList < FXList2
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          rmFile(item.path())
+          @fileSys.rmFile(item.path())
         end
       }
       @list.killSelection()
@@ -159,14 +159,17 @@ class OrgaList < FXList2
 
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
-      mode,sidx,*idxRest = data
-      #i    = arri.shift
-      ret=[@list.items[sidx].name,@fileSys.readFile(idx2Path(sidx))]
-      @list.selectItem(sidx,false)
-      if mode == DRAG_MOVE
-        rmFile(idx2Path(sidx))
-        puts "move deletes orig"
-      end
+      mode,*idxRest = data
+      ret=[]
+      idxRest.each{|sidx|
+        ret << [@list.items[sidx].name,@fileSys.readFile(idx2Path(sidx))]
+        @list.selectItem(sidx,false)
+        if mode == DRAG_MOVE
+          @fileSys.rmFile(idx2Path(sidx))
+          #puts "move deletes orig"
+          break #move only the first of selection
+        end
+      }
       #puts "#{@myId} SEL_DND_REQUEST #{ret}"
       ret
     }
@@ -191,19 +194,16 @@ class OrgaList < FXList2
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
       #pp data
-      dsti,name_contents = data
-      name,contents=name_contents
-      # @rcFiles[dsti+1]=name_contents
-      p=""
-      if dsti and item=@list.items[dsti]
-        if item.kind==:dir
-          p+=item.dir+"/"+item.name+"/" 
-        else
-          p+=item.dir+"/" 
-        end
+      dsti,list = data
+      if dsti and item=@list.items[dsti] #only if item exists
+        # @rcFiles[dsti+1]=name_contents
+        p=item.dir+"/"
+        p+=item.name+"/" if item.kind==:dir
+        list.each{|name,contents| #=name_contents
+          @fileSys.addFile(p+name,contents)
+        }
       end
-      p+=name
-      @fileSys.addFile(p,contents)
+      #p+=name
       # @list.selectItem(dsti,true)
       #pp @rcFiles
       refresh()
