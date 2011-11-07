@@ -19,9 +19,10 @@ class FXListRcItem < FXListGenericItem
   LPAD=4
 
   def empty?
-    not @txt
+    not @name
   end
   def select(what=true)
+    #puts "select #{what} #{empty?}"
     super if ! empty?
   end
 
@@ -30,9 +31,9 @@ class FXListRcItem < FXListGenericItem
     @selected=false
     set(nil,nil,nil)
   end
-  def set(icon,txt,size)#,lev)#,isDir)
-    # @txt,@icon,@lev,@isDir=txt,icon,lev,isDir
-    @icon,@txt,@size=icon,txt,size
+  def set(icon,name,size)#,lev)#,isDir)
+    # @name,@icon,@lev,@isDir=name,icon,lev,isDir
+    @icon,@name,@size=icon,name,size
   end
 
   # D      Dir
@@ -74,8 +75,8 @@ class FXListRcItem < FXListGenericItem
     when :Nr
       dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr) if @nr
     when :Name
-      if @txt
-        dc.drawText(x,y+(h-th)/2+asc,@txt)
+      if @name
+        dc.drawText(x,y+(h-th)/2+asc,@name)
       else
         dc.setForeground(i%2==0 ? white2  : white)
         dc.drawText(x,y+(h-th)/2+asc,"e m p t y")
@@ -149,6 +150,21 @@ class RcList < FXGroupBox
     @mpop = FXPopup.new(self)
     #FXMenuCaption.new(@mpop,"Caption")
     #FXMenuSeparator.new(@mpop)
+    FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
+      @list.items.each_with_index{|item,i|
+        if item.selected?
+          name,ctent = @rcFiles[i+1]
+          s = name
+          s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
+          if s and s != name
+            @rcFiles[i+1][0] = s
+            # @fileSys.mv item.path(),item.path(s)
+          end
+        end
+      }
+      @list.killSelection()
+      refresh()
+    }
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
@@ -177,14 +193,20 @@ class RcList < FXGroupBox
   #drag vvvvvvvvvvvvvvvvv
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
-      mode,sidx,*idxRest = data
-      ret  = @rcFiles[sidx+1]
-      @list.selectItem(sidx,false)
-      if mode == DRAG_MOVE
-        puts "move deletes orig"
-        @rcFiles[sidx+1]=[nil,""] 
-        refresh()
-      end
+      #mode,sidx,*idxRest = data
+      #ret  = @rcFiles[sidx+1]
+      mode,*idxRest = data
+      ret=[]
+      idxRest.each{|sidx|
+        ret << @rcFiles[sidx+1]
+        @list.selectItem(sidx,false)
+        if mode == DRAG_MOVE
+          @rcFiles[sidx+1]=[nil,""] 
+          # puts "move deletes orig"
+          break #move only the first of selection
+        end
+      }
+      refresh()
       ret
     }
   #drag ^^^^^^^^^^^^^^^^^^
@@ -209,10 +231,17 @@ class RcList < FXGroupBox
     @list.connect(SEL_DND_DROP){|sender,sel,data|
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
-      dsti,name_contents = data
+      # dsti,name_contents = data
       #puts "dsti=#{dsti}"
-      @rcFiles[dsti+1]=name_contents
-      @list.selectItem(dsti,true)
+      # @rcFiles[dsti+1]=name_contents
+      # @list.selectItem(dsti,true)
+      dsti,list = data
+      list.each{|name_contents| #=name_contents
+        @list.selectItem(dsti,true)
+        @rcFiles[dsti+1]=name_contents
+        dsti+=1
+      }
+
       #pp @rcFiles
       refresh()
     }
@@ -264,11 +293,11 @@ class RcList < FXGroupBox
     cmd += @prefDialog.getVal(:AVRDUDEPATH)
     cmd += " -C " + @prefDialog.getVal(:AVRDUDECONF)
     cmd += " " + @prefDialog.getVal(:AVRDUDEPROGARGS)
-    #cmd += " -p m64 -Ueeprom:r:eeTmp:r"
-    cmd += " -p 2343 -Ueeprom:r:eeTmp:r"
+    cmd += " -p m64 -Ueeprom:r:eeTmp:r"
+    #cmd += " -p 2343 -Ueeprom:r:eeTmp:r"
     sys cmd
 
-    cp "../eeprom.bin","eeTmp"
+    #cp "../eeprom.bin","eeTmp"
     #eeReader=readEEFile("../eeprom.bin")
     eeReader=readEEFile("eeTmp")
     
