@@ -10,6 +10,12 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+
+EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 wine "c:\SFRUBY_185\i486-windowsNT\bin\ruby" "c:\SFRUBY_185\i486-windowsNT\bin\rubyscript2exe.rb" th9Xplorer -h
+
+EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 rubyscript2exe.rb th9Xplorer -h
+
+
 =end
 
 $opt_v=2
@@ -20,7 +26,7 @@ require 'pp'
 require "rubyscript2exe"
 
 $: << RUBYSCRIPT2EXE.appdir
-#pp $:
+puts "RUBYSCRIPT2EXE.appdir=#{RUBYSCRIPT2EXE.appdir}"
 require "foxAdd"  # sets $FOX_VER
 #require "fxList2"
 require "rcList"
@@ -50,8 +56,8 @@ FR0=FRAME_RAISED|FRAME_THICK
 FR1=FRAME_SUNKEN|FRAME_THICK
 class Th9x < FXMainWindowPersSize
   def initialize(app)
-    super(app, "th9Xplorer", nil, nil, DECOR_ALL,
-          20, 20, 700, 500,*[0]*6)
+    #super(app, "th9Xplorer", nil, nil, DECOR_ALL, 20, 20, 700, 500,*[0]*6)
+    super(app, "th9Xplorer", nil, nil, DECOR_ALL, 0, 0, 0, 0,*[0]*6)
 
     $log=TxtReader.new(self)
     $log.title="Log View"
@@ -99,8 +105,8 @@ class Th9x < FXMainWindowPersSize
     hf=FXHorizontalFrame.new(self, LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 15,15,5,10, 40,20)
 
     @prefDialog = PrefDialog.new(self)
-    @archList = ArchList.new(hf)
-    @rcList   = RcList.new(hf)
+    @archList   = ArchList.new(hf)
+    @rcList     = RcList.new(hf,@prefDialog)
     @rcList.connect(SELUSER_RCLOADED){|sender,sel,data|
       puts "SELUSER_RCLOADED"
       save

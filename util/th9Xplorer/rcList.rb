@@ -1,5 +1,7 @@
 require "fxList2"
 require "eeprom"
+require "fileutils"
+include FileUtils
 
 def readEEFile(fn)
   File.open(fn){|f|
@@ -104,7 +106,8 @@ end
 
 
 class RcList < FXGroupBox
-  def initialize(parent)
+  def initialize(parent,prefDialog)
+    @prefDialog=prefDialog
     #gbr=FXGroupBox.new(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 0,0,0,0, 0,0) # x y w h  l r t b  h v
     gbr=self
     @myId = "rcList#{rand(10000)}"
@@ -254,10 +257,18 @@ class RcList < FXGroupBox
 ##    }
 #  end
   def rcLoad()
-    
-    sys("echo hello2;sleep 1; echo hello3; sleep 1")
-    sys("th9Xplorer/avrdude -c usbasp -p m64 -C th9Xplorer/avrdude.conf -Ueeprom:r:eeTmp:r")
+    #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
+    #sys("echo hello2;sleep 1; echo hello3; sleep 1")
+    rm_f "eeTmp"
+    cmd  = ""
+    cmd += @prefDialog.getVal(:AVRDUDEPATH)
+    cmd += " -C " + @prefDialog.getVal(:AVRDUDECONF)
+    cmd += " " + @prefDialog.getVal(:AVRDUDEPROGARGS)
+    #cmd += " -p m64 -Ueeprom:r:eeTmp:r"
+    cmd += " -p 2343 -Ueeprom:r:eeTmp:r"
+    sys cmd
 
+    cp "../eeprom.bin","eeTmp"
     #eeReader=readEEFile("../eeprom.bin")
     eeReader=readEEFile("eeTmp")
     
