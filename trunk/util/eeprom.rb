@@ -1,7 +1,8 @@
 #! /usr/bin/env ruby
 
 
-require File.dirname(__FILE__)+"/cstruct.rb"
+$: << File.dirname(__FILE__)
+require "cstruct.rb"
 require 'pp'
 require 'optparse'
 

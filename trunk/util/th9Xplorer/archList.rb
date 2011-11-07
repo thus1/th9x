@@ -2,7 +2,7 @@ require "fxList2"
 #require 'rexml/parsers/sax2parser'
 #require "parsedate"
 require "fileutils"
-include FileUtils
+#include FileUtils
 
 
 class FXListArchItem < FXListGenericItem
@@ -12,8 +12,8 @@ class FXListArchItem < FXListGenericItem
     @alist,@kind,@icon,@dir,@name,@size,@date=alist,kind,icon,dir,name,size,date
     @selected=false
   end
-  def path
-    @dir+"/"+@name
+  def path(name=@name)
+    @dir+"/"+name
   end
 
   # D      Dir
@@ -115,6 +115,24 @@ class OrgaList < FXList2
     @mpop = FXPopup.new(self)
     #FXMenuCaption.new(@mpop,"Caption")
     #FXMenuSeparator.new(@mpop)
+    
+
+    FXMenuCommand.new(@mpop,"New Folder").connect(SEL_COMMAND){|sender,sel,event|
+    }
+    FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
+      @list.items.each_with_index{|item,i|
+        if item.selected?
+          s = item.name
+          k=item.kind == :file ? "File" : "Folder"
+          s = FXInputDialog.getString(s, self, "Rename #{k}","from: #{s} to:",nil) 
+          if s and s != item.name
+            @fileSys.mv item.path(),item.path(s)
+          end
+        end
+      }
+      @list.killSelection()
+      refresh()
+    }
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
@@ -253,12 +271,16 @@ class FileSystem
   end
   def addDir(dir)
     return nil if ! @baseDir # empty dummy  filesys
-    mkdir_p(p=path(dir))
+    FileUtils::mkdir_p(p=path(dir))
     p
+  end
+  def mv(from,to)
+    return if ! @baseDir # empty dummy  filesys
+    FileUtils::mv(path(from),path(to))
   end
   def rmFile(dir)
     return if ! @baseDir # empty dummy  filesys
-    rm(path(dir))
+    FileUtils::rm(path(dir))
   end
   def readFile(dir)
     return nil if ! @baseDir # empty dummy  filesys
@@ -340,7 +362,7 @@ class ArchList < FXGroupBox
     arch = getApp().reg.get("ArchList:arch",nil){
       @arch
     }
-p arch
+#p arch
     if not arch
       app.addChore{newArch}
     else
