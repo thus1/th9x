@@ -3,11 +3,6 @@ require "eeprom"
 require "fileutils"
 include FileUtils
 
-def readEEFile(fn)
-  File.open(fn){|f|
-    r=Reader_V4.new; r.read(f); return r
-  }
-end
 
 
 SELUSER_RCLOADED=1000
@@ -135,15 +130,22 @@ class RcList < FXGroupBox
     
     hfb=FXHorizontalFrame.new(gbr, LAYOUT_CENTER_X, 0,0,0,0, 10,10,10,10, 40,20)
 
-    a=FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_UP)
-    a.arrowSize=30
-    a.connect(SEL_COMMAND) {
-      rcLoad()
-      checkUserConnects(self,MKUINT(0,SELUSER_RCLOADED),nil)
+    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_UP){|a|
+      a.arrowSize=30
+      a.connect(SEL_COMMAND) {
+        rcLoad()
+        checkUserConnects(self,MKUINT(0,SELUSER_RCLOADED),nil)
+      }
     }
 
-    a=FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_DOWN)
-    a.arrowSize=30
+    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_DOWN){|a|
+      a.arrowSize=30
+      a.connect(SEL_COMMAND) {
+        rcSave()
+      }
+    }
+    
+
     FXLabel.new(gbr,"",$icnth9x,LAYOUT_CENTER_X)
 
     
@@ -285,21 +287,60 @@ class RcList < FXGroupBox
 #      end
 ##    }
 #  end
-  def rcLoad()
-    #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
-    #sys("echo hello2;sleep 1; echo hello3; sleep 1")
-    rm_f "eeTmp"
+  def dudeBase()
     cmd  = ""
     cmd += @prefDialog.getVal(:AVRDUDEPATH)
     cmd += " -C " + @prefDialog.getVal(:AVRDUDECONF)
     cmd += " " + @prefDialog.getVal(:AVRDUDEPROGARGS)
-    cmd += " -p m64 -Ueeprom:r:eeTmp:r"
-    #cmd += " -p 2343 -Ueeprom:r:eeTmp:r"
-    sys cmd
+  end
+  def rcSave()
+    rm_f "eeTmp"
 
-    #cp "../eeprom.bin","eeTmp"
-    #eeReader=readEEFile("../eeprom.bin")
-    eeReader=readEEFile("eeTmp")
+    if $opt_t
+      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
+      cp "../eeprom.bin","eeTmp"
+    else
+      sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
+    end
+    eeReader=Reader_V4.new
+    File.open("eeTmp"){|f| eeReader.readEEprom(f); }
+    
+    eeWriter=Reader_V4.new
+    eeWriter.format() 
+
+    [0,18,19].each{|fi| #retain admin files (18,19 are unknown usage)
+      fb,typ,sz= eeReader.readFile(fi)
+      eeWriter.writeFile(fi,typ,fb) if fb.length!=0
+    }
+    (1..16).each{|idx|
+      name,contents = @rcFiles[idx]
+      eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
+    }
+    eeWriter.info
+    
+    File.open("eeTmp","w"){|f| f.write(eeWriter.toBin) }
+    if $opt_t
+      cp "eeTmp","../eeprom.bin"
+      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
+    else
+      sys dudeBase + " -p m64 -Ueeprom:w:eeTmp:r"
+    end
+    
+  end
+  def rcLoad()
+    #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
+    #sys("echo hello2;sleep 1; echo hello3; sleep 1")
+    rm_f "eeTmp"
+
+    if $opt_t
+      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
+      cp "../eeprom.bin","eeTmp"
+    else
+      sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
+    end
+
+    eeReader=Reader_V4.new
+    File.open("eeTmp"){|f| eeReader.readEEprom(f); }
     
     eeReader.eachFile{|idx,name,contents|
       name=name.strip.tr("\s","_")

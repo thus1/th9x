@@ -126,7 +126,16 @@ class Th9x < FXMainWindowPersSize
 end
 
 
+require 'optparse'
 def main
+  opts=ARGV.options
+  $opt_t=nil
+  opts.on("-t", "test mode")   {|$opt_t|}
+  opts.parse!
+
+
+
+
   initTmpDirs
   $app = FXApp.new('th9Xplorer', 'thus')
   if IS_WINDOWS
