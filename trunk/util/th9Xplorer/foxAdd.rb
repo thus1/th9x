@@ -265,6 +265,18 @@ class FXWindow #module Fox
       end
     end
   end
+  def findChildByClass(cls)
+    #puts "#{self.class().to_s} #{self.class() == cls}"
+    return self  if self.class() == cls
+    if w=getFirst() and w != self
+      while w
+        ret=w.findChildByClass(cls)
+        return ret if ret
+        w=w.getNext()
+      end
+    end
+    nil
+  end
 =begin
    usage:
      b.watchAllSels("SEL_UPDATE")
