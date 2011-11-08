@@ -7,19 +7,19 @@ require 'pp'
 require 'optparse'
 
 class String
-  def lcut(n)
+  def lcut(n) # String
     ret=self[0,n]
     self[0,n]=""
     return ret
   end
 end
 class Integer
-  def sgn()
+  def sgn() # Integer
     self<0 ? -1 : self==0 ? 0 : 1
   end
 end
 module CStruct; class CStructBase
-  def omitIfWellknown(val)
+  def omitIfWellknown(val) # CStruct;
     if (bin=toBin) == val
       hide()
       return ""
@@ -214,7 +214,7 @@ CStruct.defStruct "ExpoData_r171",<<-"END_TYP"
   END_TYP
 
 module CStruct; class ExpoData_r171
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     bin=toBin()
     if bin[0,1] == "\0"
       s=omitIfWellknown("\0\0\0")
@@ -241,7 +241,7 @@ CStruct.defStruct "TrimData_r143",<<-"END_TYP"
   int8_t  trim[4];    //quadratisch
   END_TYP
 module CStruct; class TrimData_r143
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     [(0...4).map{|i| "#{trim[i]}"}.join(",")+"\n",ofs+sizeof()]
   end
 end;end
@@ -263,12 +263,12 @@ CStruct.defStruct "LimitData_r167",<<-"END_TYP"
   int8_t  revert:1,offset:7;
   END_TYP
 module CStruct; class LimitData_r167
-  def lim(idx,ofs)
+  def lim(idx,ofs) # CStruct;
     idx = (idx+ofs) & 0x7f
     idx -= 128    if idx>=64 
     idx2val50_150(idx)
   end
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     s=sprintf("%4d < x < %4d  %s %s ofs %4d\n",
               lim(min,-40),
               lim(max7       ,+40),
@@ -288,7 +288,7 @@ CStruct.defStruct "MixData_r0",<<-"END_TYP"
   END_TYP
 
 module CStruct; class MixData_r0
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     if destCh == 0
       s=omitIfWellknown("\0\0\0\0")
     else
@@ -315,7 +315,7 @@ CStruct.defStruct "MixData_r192",<<-"END_TYP"
 
   END_TYP
 module CStruct; class MixData_r192
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     bin=toBin()
     if bin[0,1] == "\0"
       s=omitIfWellknown("\0\0\0\0\0")
@@ -343,7 +343,7 @@ CStruct.defStruct "Crv3_V4",<<-"END_TYP"
   int8_t    c[3];
   END_TYP
 module CStruct; class Crv3_V4
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     [(0...3).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
   end
 end;end
@@ -351,7 +351,7 @@ CStruct.defStruct "Crv5_V4",<<-"END_TYP"
   int8_t    c[5];
   END_TYP
 module CStruct; class Crv5_V4
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     [(0...5).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
   end
 end;end
@@ -359,7 +359,7 @@ CStruct.defStruct "Crv9_V4",<<-"END_TYP"
   int8_t    c[9];
   END_TYP
 module CStruct; class Crv9_V4
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     [(0...9).map{|i| "#{c[i]}"}.join(",")+"\n",ofs+sizeof()]
   end
 end;end
@@ -378,7 +378,7 @@ CStruct.defStruct "SwitchData_r204",<<-"END_TYP"
 
 
 module CStruct; class SwitchData_r204
-  def to_sInternal(ofs,nest=0)
+  def to_sInternal(ofs,nest=0) # CStruct;
     if opRes==0
       s=omitIfWellknown("\0\0\0")
     else
@@ -534,179 +534,8 @@ CStruct.defStruct "EeFs_V4",<<-"END_TYP"
 
 
 
-
-
-#x=CStruct::ModelData_r84.new
-#x.fromBin("\0"*500)
-#puts x 
-#  exit
-class ErrorBadNextIndex < Exception; end
-class Reader_V4
-  def deepCopy(dst,src,key="")
-    #pp "---",src
-    src.each{|n,val,obj|
-      n=n.sub(/swtch_posNeg/,"swtch5_curve3")
-      n=n.sub(/destCh_srcRaw/,"destCh4_srcRaw4")
-      k2 = key+"/"+n #.to_s
-      if(!dst.child(n))
-        puts "#{k2} not in dst"
-        next
-      end
-      if obj.is_a? CStruct::BaseT
-        dst.child(n).set(val)
-      else
-        deepCopy(dst.child(n),obj,k2)
-      end
-    }
-  end
-  def mod_fromV1(modv1)
-    modv4=CStruct::ModelData_V4.new()
-    deepCopy(modv4,modv1)
-    modv4.limitData.each{|n,val,obj|
-      obj.min+=100
-      obj.max-=100
-    }
-    modv4.mixData.each{|n,val,obj|
-      if (obj.swtch5_curve3 & 0x1f) != 0
-        obj.swtch5_curve3-=1 if (obj.swtch5_curve3 & 0x1f) <  0x10
-        obj.swtch5_curve3+=1 if (obj.swtch5_curve3 & 0x1f) >= 0x10
-      end
-    }
-    modv4
-    #puts modv4
-  end
-  attr_reader :fbuf, :fbufdec
-  def Reader_V4.mbuf2name(rawbuf)
-    mbuf=Reader_V4.decode1(rawbuf,11)
-    hlp=CStruct::ModelData_helper.new()
-    hlp.fromBin(mbuf)
-    hlp.name
-  end
-  def eachFile()
-    @fbuf.each_with_index{|fb,i|
-      next if fb == ""
-      yield i,Reader_V4.mbuf2name(fb),fb
-    }
-  end
-  def read(f)
-    @eefs=CStruct::EeFs_V4.new()
-    @eefs.read(f)
-    @eefs.mySize == (@eefs.sizeof) or raise "bad size eefs #{@eefs.mySize} != #{(@eefs.sizeof)}"
-    @bs=@eefs.bs
-    @blocks = 0.chr*@eefs.mySize + f.read
-
-    @fat=Array.new(@blocks.length/16,nil)
-    @fbuf=[]
-    #@fbufdec=[]
-
-    MAXFILES_V4.times{|fi|
-      bi  = @eefs.files[fi].startBlk
-      sz  = @eefs.files[fi].size_typ & 0xfff
-      buf=""
-      chain_each(bi){ |j,cnt,nxt|
-        buf+=@blocks[j*16+1,15]
-        if @fat[j] 
-          puts "ERROR multiple use of block #{j}" 
-          infoMap
-          break
-        end
-        @fat[j]=(fi+?a).chr+("%02d "%cnt);
-        true
-      }
-      @fbuf[fi]    = buf[0,sz]
-      # @fbufdec[fi] = decode(@fbuf[fi])
-    }
-    #free chain
-    @freeBlks=0
-    chain_each(@eefs.freeList){|j,cnt,nxt| 
-      @freeBlks+=1
-      puts "ERROR used block is also in free chain #{j}" if @fat[j] 
-      if nxt>=0x80
-        puts "ERROR bad chain index #{nxt} at idx#{j} = adr 0x%04x"%(j*16)
-        @fat[j]="%+3d "%(nxt-j); 
-        false
-      else
-        @fat[j]="%+3d "%(nxt-j); 
-        true
-      end
-    }
-    @fat.each_with_index{|f,i|
-      next if i<4
-      puts "ERROR lost block #{i}" if !f 
-    }
-  end
-  def format
-    @eefs=CStruct::EeFs_V4.new()
-    @eefs.version=4
-    @eefs.mySize=64
-    @eefs.bs=16
-    @blocks = 0.chr*2048
-    (5..127).each{|i|
-      @blocks[i*16]=i-1
-    }
-    @eefs.freeList=127
-    general=CStruct::EEGeneral_V4.new()
-    general.myVers = 1
-    general.contrast = 30
-    general.vBatWarn = 90
-    sum=0
-    4.times{|i|
-      general.calibMid[i]  = 0x200;
-      general.calibSpan[i] = 0x180;
-      sum+=0x200+0x180
-    }
-    general.chkSum = sum & 0xffff;
-    write(0,1,Reader_V4.encode(general.toBin))
-  end
-  def alloc()
-    ret=@eefs.freeList
-    @eefs.freeList=@blocks[ret*16]
-    @blocks[ret*16]=0
-    ret
-  end
-  def write(fi,typ,buf)
-    @eefs.files[fi].startBlk = p = alloc()
-    @eefs.files[fi].size_typ = buf.length + (typ << 12 ) 
-    while buf.length!=0
-      ct=buf.lcut(15)
-      @blocks[p*16+1,ct.length] = ct
-      if buf.length!=0
-         p=@blocks[p*16]=alloc
-      end
-    end
-  end
-  def close
-    @eefs.toBin+@blocks[64..-1]
-  end
-
-  def infoMap(arg=nil)
-    puts "allocation map"
-    @fat.each_with_index{|fx,i|
-      print fx ? fx : '////'
-      puts if i%16==15
-    }
-    puts
-    puts "name sz typ sz2  blocks"
-    puts "-----------------------"
-    #     a    24  1   40  127, 126,
-    MAXFILES_V4.times{|i|
-      infoFile(i)  if !arg or arg.to_i == i
-    }
-    MAXFILES_V4.times{|i|
-      infoFileFull(i) if !arg or arg.to_i == i
-    } if $opt_v>=1
-  end
-  def info(arg=nil)
-    @eefs.each{|n,val,obj|
-      printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
-    }
-    puts
-    totbl=@fat.length-4
-    puts "freeBlks=#{@freeBlks}/#{totbl} freeSz=#{@freeBlks*(@bs-1)} totSz=#{totbl*(@bs-1)}"
-    infoMap(arg)
-  end
-
-  def Reader_V4.encode(buf)
+module Codec
+  def Codec.encode(buf) # Codec Reader_V4
     buf=buf.dup
     obuf   = ""
     cnt    = 0
@@ -733,7 +562,7 @@ class Reader_V4
     }
     obuf
   end
-  def Reader_V4.encode2(buf)
+  def Codec.encode2(buf) # Codec Reader_V4
     buf=buf.dup
     obuf   = ""
     cnt2   = 0
@@ -769,7 +598,7 @@ class Reader_V4
     }
     obuf
   end
-  def Reader_V4.decode1(inbuf,len=10000)
+  def Codec.decode1(inbuf,len=10000) # Codec Reader_V4
     inbuf=inbuf.dup
     outbuf=""
     while inbuf.length != 0 and len!=0
@@ -786,7 +615,7 @@ class Reader_V4
     end
     outbuf
   end
-  def Reader_V4.decode2(inbuf,len=10000)
+  def Codec.decode2(inbuf,len=10000) # Codec Reader_V4
     inbuf=inbuf.dup
     outbuf=""
     zeros=0
@@ -817,10 +646,60 @@ class Reader_V4
     end
     outbuf
   end
-  def chain_each(i,lim=255)
+  
+end
+
+#x=CStruct::ModelData_r84.new
+#x.fromBin("\0"*500)
+#puts x 
+#  exit
+class ErrorBadNextIndex < Exception; end
+class Reader_V4
+#  def deepCopy(dst,src,key="") # Reader_V4
+#    #pp "---",src
+#    src.each{|n,val,obj|
+#      n=n.sub(/swtch_posNeg/,"swtch5_curve3")
+#      n=n.sub(/destCh_srcRaw/,"destCh4_srcRaw4")
+#      k2 = key+"/"+n #.to_s
+#      if(!dst.child(n))
+#        puts "#{k2} not in dst"
+#        next
+#      end
+#      if obj.is_a? CStruct::BaseT
+#        dst.child(n).set(val)
+#      else
+#        deepCopy(dst.child(n),obj,k2)
+#      end
+#    }
+#  end
+#  def mod_fromV1(modv1) # Reader_V4
+#    modv4=CStruct::ModelData_V4.new()
+#    deepCopy(modv4,modv1)
+#    modv4.limitData.each{|n,val,obj|
+#      obj.min+=100
+#      obj.max-=100
+#    }
+#    modv4.mixData.each{|n,val,obj|
+#      if (obj.swtch5_curve3 & 0x1f) != 0
+#        obj.swtch5_curve3-=1 if (obj.swtch5_curve3 & 0x1f) <  0x10
+#        obj.swtch5_curve3+=1 if (obj.swtch5_curve3 & 0x1f) >= 0x10
+#      end
+#    }
+#    modv4
+#    #puts modv4
+#  end
+  attr_reader :fbuf, :fbufdec
+  def Reader_V4.mbuf2name(rawbuf) # Reader_V4
+    mbuf=Codec::decode1(rawbuf,11)
+    hlp=CStruct::ModelData_helper.new()
+    hlp.fromBin(mbuf)
+    hlp.name
+  end
+
+  def chain_each(i,lim=255) # Reader_V4
     cnt=0
     while i!=0
-      nxt=@blocks[i*16+0]
+      nxt=@wholeEEprom[i*16+0]
       #printf("chain %d -> %d \n",i,nxt)
       if block_given?
         break if ! yield( i,cnt,nxt)
@@ -831,8 +710,178 @@ class Reader_V4
       i = nxt
     end
   end
-  def infoFileTyp(fi)
-    buf=Reader_V4.decode1(@fbuf[fi],11)
+  def format # Reader_V4
+    @eefs=CStruct::EeFs_V4.new()
+    @eefs.version=4
+    @eefs.mySize=64
+    @eefs.bs=16
+    @wholeEEprom = 0.chr*2048
+    (5..127).each{|i|
+      @wholeEEprom[i*16]=i-1
+    }
+    @eefs.freeList=127
+#    general=CStruct::EEGeneral_r0.new()
+#    general.myVers = 1
+#    general.contrast = 30
+#    general.vBatWarn = 90
+#    sum=0
+#    4.times{|i|
+#      general.calibMid[i]  = 0x200;
+#      general.calibSpan[i] = 0x180;
+#      sum+=0x200+0x180
+#    }
+#    general.chkSum = sum & 0xffff;
+#    write(0,1,Codec::encode(general.toBin))
+  end
+  def freeBlks(i) # Reader_V4
+    while i!=0
+      inxt = @wholeEEprom[i*16]
+      @wholeEEprom[i*16] = @eefs.freeList
+      @eefs.freeList = i
+      i=inxt
+    end
+  end
+  def alloc() # Reader_V4
+    ret=@eefs.freeList
+    ret != 0 or raise "eeprom full"
+    @eefs.freeList=@wholeEEprom[ret*16]
+    @wholeEEprom[ret*16]=0
+    ret
+  end
+  def writeFile(fi,typ,buf) # Reader_V4
+    buf=buf.dup #dont destroy source
+    @eefs.files[fi].startBlk = p = alloc()
+    @eefs.files[fi].size_typ = buf.length + (typ << 12 ) 
+    while buf.length!=0
+      ct=buf.lcut(15)
+      @wholeEEprom[p*16+1,ct.length] = ct
+      if buf.length!=0
+         p=@wholeEEprom[p*16]=alloc
+      end
+    end
+  end
+  def rmFile(fi) # Reader_V4
+    freeBlks(@eefs.files[fi].startBlk)
+    @eefs.files[fi].startBlk = 0
+    @eefs.files[fi].size_typ = 0
+  end
+  def rmAllFiles() # Reader_V4
+    MAXFILES_V4.times{|fi|rmFile(fi)}
+  end
+  def readFile(fi) # Reader_V4
+    bi  = @eefs.files[fi].startBlk
+    typ = (@eefs.files[fi].size_typ >> 12) & 0xf
+    sz  = @eefs.files[fi].size_typ & 0xfff
+    buf = ""
+    chain_each(bi){ |j,cnt,nxt|
+      buf+=@wholeEEprom[j*16+1,15]
+      true
+    }
+    [buf[0,sz],typ,sz]
+  end
+
+  #read eeprom, separate header, check integrity
+  def readEEprom(f) # Reader_V4
+    @wholeEEprom = f.read                                # whole eeprom data
+    @eefs        = CStruct::EeFs_V4.new()                # fs-header
+
+    @eefs.fromBin(@wholeEEprom[0,@eefs.sizeof])
+    @eefs.mySize == (@eefs.sizeof) or raise "bad size eefs #{@eefs.mySize} != #{(@eefs.sizeof)}"
+
+    checkFat
+  end
+
+  def checkFat # Reader_V4
+    fatInfo     = Array.new(@wholeEEprom.length/16,nil) # fat info
+    # integrity check all files
+    MAXFILES_V4.times{|fi|
+      bi  = @eefs.files[fi].startBlk
+      sz  = @eefs.files[fi].size_typ & 0xfff
+      # buf = ""
+      chain_each(bi){ |j,cnt,nxt|
+        # buf+=@wholeEEprom[j*16+1,15]
+        if fatInfo[j] 
+          puts "ERROR multiple use of block #{j}" 
+          infoMap
+          break
+        end
+        fatInfo[j]=(fi+?a).chr+("%02d "%cnt);
+        true
+      }
+      # @fbuf[fi]    = buf[0,sz]
+    }
+    #check free chain
+    freeBlks=0
+    chain_each(@eefs.freeList){|j,cnt,nxt| 
+      freeBlks+=1
+      puts "ERROR used block is also in free chain #{j}" if fatInfo[j] 
+      if nxt>=0x80
+        puts "ERROR bad chain index #{nxt} at idx#{j} = adr 0x%04x"%(j*16)
+        fatInfo[j]="%+3d "%(nxt-j); 
+        false
+      else
+        if nxt==0
+          fatInfo[j]="000 "
+        else
+          fatInfo[j]="%+3d "%(nxt-j)
+        end
+        true
+      end
+    }
+    fatInfo.each_with_index{|f,i|
+      next if i<4
+      puts "ERROR lost block #{i}" if !f 
+    }
+    [fatInfo,freeBlks]
+  end
+
+  def eachFile() # Reader_V4
+    MAXFILES_V4.times{|fi|
+      fb,typ,sz=readFile(fi)
+      next if fb == ""
+      yield fi,Reader_V4.mbuf2name(fb),fb
+    }
+  end
+  def toBin # Reader_V4
+    @eefs.toBin+@wholeEEprom[64..-1]
+  end
+
+
+  def infoMap(arg=nil,full=nil) # Reader_V4
+    puts "allocation map"
+
+    fatInfo,freeBlks=checkFat
+
+    fatInfo.each_with_index{|fx,i|
+      print fx ? fx : '////'
+      puts if i%16==15
+    }
+    puts
+    puts "name sz typ sz2  blocks"
+    puts "-----------------------"
+    #     a    24  1   40  127, 126,
+    MAXFILES_V4.times{|i|
+      infoFile(i)  if !arg or arg.to_i == i
+    }
+    MAXFILES_V4.times{|i|
+      infoFileFull(i) if !arg or arg.to_i == i
+    } if full
+  end
+  def info(arg=nil,full=nil) # Reader_V4
+    @eefs.each{|n,val,obj|
+      printf("%10s %5d 0x%x (%s)\n",n,val,val,obj.class.to_s[9..-1]) if val.is_a? Numeric
+    }
+    puts
+    fatInfo,freeBlks=checkFat
+    totbl=fatInfo.length-4
+    puts "freeBlks=#{freeBlks}/#{totbl} freeSz=#{freeBlks*(@eefs.bs-1)} totSz=#{totbl*(@eefs.bs-1)}"
+    infoMap(arg,full)
+  end
+
+  def infoFileTyp(fb) # Reader_V4
+    #buf=Codec::decode1(@fbuf[fi],11)
+    #fb,typ,sz=readFile(fi)
+    buf=Codec::decode1(fb,11)
     return nil,nil if buf == ""
     hlp=CStruct::EEGeneral_helper.new()
     hlp.fromBin(buf)
@@ -848,7 +897,7 @@ class Reader_V4
       hlp.fromBin(buf)
       #p hlp
       if hlp.mdVers<=3
-        buf=Reader_V4.decode1(@fbuf[fi])
+        buf=Codec::decode1(fb)
         if buf.length==CStruct::ModelData_r0.new().sizeof
           return 	"ModelData_r0  '#{hlp.name}'",1,CStruct::ModelData_r0
         end
@@ -865,39 +914,41 @@ class Reader_V4
       end
     end
   end
-  def infoFileFull(fi)
-    cmt,dec,cls = infoFileTyp(fi)
+  def infoFileFull(fi) # Reader_V4
+    fb,typ,sz=readFile(fi)
+    cmt,dec,cls = infoFileTyp(fb)
     puts "--- File #{fi} '#{cmt}' D#{dec}: ---------------------------------"
     return if !cls
     obj=cls.new
     #obj.fromBin(@fbufdec[fi])
-    fbufdec = (dec==1 ? Reader_V4.decode1(@fbuf[fi]) : Reader_V4.decode2(@fbuf[fi]))
-    puts "szRaw=#{@fbuf[fi].length} szDec=#{fbufdec.length}"
+    fbufdec = (dec==1 ? Codec::decode1(fb) : Codec::decode2(fb))
+    puts "szRaw=#{fb.length} szDec=#{fbufdec.length}"
     obj.fromBin(fbufdec)
     puts obj
   end
-  def infoFile(fi)
+  def infoFile(fi) # Reader_V4
     bi  = @eefs.files[fi].startBlk
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
-    cmt,dec,cls = infoFileTyp(fi)
-    fbufdec = (dec==1 ? Reader_V4.decode1(@fbuf[fi]) : Reader_V4.decode2(@fbuf[fi]))
+    fb,typ,sz=readFile(fi)
+    cmt,dec,cls = infoFileTyp(fb)
+    fbufdec = (dec==1 ? Codec::decode1(fb) : Codec::decode2(fb))
     printf("%s  %4d %2d  %3d %s D#{dec}",(fi+?a).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
   end
-  def export(dir)
-    @fbufdec.each_with_index{|buf,i|
-      typ = @eefs.files[i].size_typ   >> 12
-      File.open(dir+("/V4_%02d_%d"%[i,typ]),"w"){|fh|fh.write(buf)}
-    }
-  end
+#  def export(dir) # Reader_V4
+#    @fbufdec.each_with_index{|buf,i|
+#      typ = @eefs.files[i].size_typ   >> 12
+#      File.open(dir+("/V4_%02d_%d"%[i,typ]),"w"){|fh|fh.write(buf)}
+#    }
+#  end
 end
 
 
 
 class Main
-  def initialize
+  def initialize # Main
     opts=ARGV.options
     prg=File.basename($0)
     opts.summary_width=20
@@ -924,13 +975,21 @@ Options
     cmd=ARGV.shift || "ls"
     send(cmd)
   end
-  def export()
-    dir  = ARGV[0] || 'export'
-    Dir.mkdir(dir) if !File.directory?(dir)
-    r=read($opt_ee)
-    r.export(dir)
+#  def export() # Main
+#    dir  = ARGV[0] || 'export'
+#    Dir.mkdir(dir) if !File.directory?(dir)
+#    r=read($opt_ee)
+#    r.export(dir)
+#  end
+  def new
+    eeWriter=Reader_V4.new
+    eeWriter.format() 
+    eeWriter.writeFile(1,2,"helloworld")
+    eeWriter.info
+    File.open(ARGV[0] || "eeprom","w"){|f| f.write(eeWriter.toBin) }
   end
-  def test()
+
+  def test() # Main
     i  = ARGV[0].to_i
     r=read($opt_ee)
     s1=0
@@ -938,8 +997,8 @@ Options
     (0..19).each{|i|
       code1=r.fbuf[i] 
       full=r.fbufdec[i]
-      code2=Reader_V4.encode2(full) 
-      full2=Reader_V4.decode2(code2) 
+      code2=Codec::encode2(full) 
+      full2=Codec::decode2(code2) 
       full==full2 or raise "#{full} != #{full2}"
       puts "#{code1[0,10].inspect} #{code2[0,10].inspect}"
 
@@ -950,7 +1009,7 @@ Options
     }
     pp s1,s2
   end
-  def get()
+  def get() # Main
     i  = ARGV[0].to_i
     r=read($opt_ee)
     File.open($opt_o,"w"){|f| 
@@ -961,38 +1020,42 @@ Options
       end
     }
   end
-  def ls()
+  def ls() # Main
     r=read($opt_ee)
     #puts "eeprom version: #{@vers}"
-    r.info ARGV.shift
+    r.info(ARGV.shift,$opt_v>1)
+
+    #r.rmFile(1)
+
+    #r.info ARGV.shift
   end
   alias :info :ls
-  def convert
-    dir  = ARGV[0] || 'export'
-    Dir.mkdir(dir) if !File.directory?(dir)
-    dv1=read($opt_ee).data
-    puts dv1.modelData[0]
-    rv4=Reader_V4.new
-    rv4.format
-    16.times{|m|
-      dv4 = rv4.mod_fromV1(dv1.modelData[m])
-      buf = dv4.toBin
-      pp buf
-      buf2 = Reader_V4.encode(buf)
-      buf == Reader_V4.decode1(buf2) or raise
-      pp buf2
-      #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
-      rv4.write(m+1,2,buf2)
-    }
-    File.open(dir+"/eeprom.gen","w"){|fh| fh.write( rv4.close) }
-  end
-  def read(file)
+#  def convert # Main
+#    dir  = ARGV[0] || 'export'
+#    Dir.mkdir(dir) if !File.directory?(dir)
+#    dv1=read($opt_ee).data
+#    puts dv1.modelData[0]
+#    rv4=Reader_V4.new
+#    rv4.format
+#    16.times{|m|
+#      dv4 = rv4.mod_fromV1(dv1.modelData[m])
+#      buf = dv4.toBin
+#      pp buf
+#      buf2 = Codec::encode(buf)
+#      buf == Codec::decode1(buf2) or raise
+#      pp buf2
+#      #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
+#      rv4.write(m+1,2,buf2)
+#    }
+#    File.open(dir+"/eeprom.gen","w"){|fh| fh.write( rv4.close) }
+#  end
+  def read(file) # Main
     File.open(file){|f|
       @vers=f.read(1)[0]
       f.seek(0)
       case @vers
-      when 1; r=Reader_V1.new; r.read(f); return r
-      when 4; r=Reader_V4.new; r.read(f); return r
+      when 1; r=Reader_V1.new; r.readEEprom(f); return r
+      when 4; r=Reader_V4.new; r.readEEprom(f); return r
       else
         raise "unknown eeprom version #{@vers}"
       end
