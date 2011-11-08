@@ -88,9 +88,9 @@ class FXListRcItem < FXListGenericItem
   def getHeight()
     # puts "h1=#{list.font.getFontHeight()} h2=#{@icon.height}"
     #return @h if @h
-    #@h=list.font.getFontHeight()+2
-    #@h=[@icon.height+2,@h].max if @icon
-    #@h
+    # @h=list.font.getFontHeight()+2
+    # @h=[@icon.height+2,@h].max if @icon
+    # @h
     20
   end
   def handle(hindex,dx,dy,sender,sel,event)
@@ -155,11 +155,26 @@ class RcList < FXGroupBox
     FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          name,ctent = @rcFiles[i+1]
+          name,ctent = getNameContents(i+1) #@rcFiles[i+1]
           s = name
           s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
+          #dlg = FXInputDialog.new(self, "Rename File","from: #{s} to:",nil)
+          #dlg.numColumns = 10
+          #dlg.dumpTree
+          #tf = dlg.findChildByClass(Fox::FXTextField)
+          #pp tf.ext
+          #tf.connect(SEL_VERIFY){|sender,sel,event|
+          #  # tf.text.length<9 ? 1 : 0
+          #  1
+          #}
+          #dlg.text       = s
+          #ret = dlg.execute
+          #s = ret == 2? dlg.text : nil
+          
           if s and s != name
-            @rcFiles[i+1][0] = s
+            # @rcFiles[i+1][0] = s
+            @rcFiles[i+1][1,10] = (s+(" "*10))[0,10]
+
             # @fileSys.mv item.path(),item.path(s)
           end
         end
@@ -170,7 +185,7 @@ class RcList < FXGroupBox
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          @rcFiles[i+1]=[nil,""]
+          @rcFiles[i+1]="" #[nil,""]
         end
       }
       @list.killSelection()
@@ -196,14 +211,13 @@ class RcList < FXGroupBox
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
       #mode,sidx,*idxRest = data
-      #ret  = @rcFiles[sidx+1]
       mode,*idxRest = data
       ret=[]
       idxRest.each{|sidx|
-        ret << @rcFiles[sidx+1]
+        ret << getNameContents(sidx+1) #@rcFiles[sidx+1]
         @list.selectItem(sidx,false)
         if mode == DRAG_MOVE
-          @rcFiles[sidx+1]=[nil,""] 
+          @rcFiles[sidx+1]="" # [nil,""] 
           # puts "move deletes orig"
           break #move only the first of selection
         end
@@ -233,18 +247,12 @@ class RcList < FXGroupBox
     @list.connect(SEL_DND_DROP){|sender,sel,data|
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
-      # dsti,name_contents = data
-      #puts "dsti=#{dsti}"
-      # @rcFiles[dsti+1]=name_contents
-      # @list.selectItem(dsti,true)
       dsti,list = data
-      list.each{|name_contents| #=name_contents
+      list.each{|name,contents| #=name_contents
         @list.selectItem(dsti,true)
-        @rcFiles[dsti+1]=name_contents
+        @rcFiles[dsti+1] = contents #name_contents
         dsti+=1
       }
-
-      #pp @rcFiles
       refresh()
     }
   #drop ^^^^^^^^^^^^^^^^^^
@@ -270,8 +278,14 @@ class RcList < FXGroupBox
       return @userConnects[sel].call(sender,sel,event)
     end
   end
-   def getFiles
-    @rcFiles[1..16]
+  def getNameContents(fi)
+    cont=@rcFiles[fi]
+    return [nil,""] if !cont or cont==""
+    name = cont[1,10].strip.tr("\s","_")
+    [name,cont]
+  end
+  def getFiles
+    (1..16).to_a.map{|fi|getNameContents(fi)}
   end
 #  def sysPd(cmd)
 #    pd = FXProgressDialog.new(self, "caption", "label",PROGRESSDIALOG_NORMAL|PROGRESSBAR_HORIZONTAL)
@@ -313,7 +327,8 @@ class RcList < FXGroupBox
       eeWriter.writeFile(fi,typ,fb) if fb.length!=0
     }
     (1..16).each{|idx|
-      name,contents = @rcFiles[idx]
+      #name,contents = @rcFiles[idx]
+      contents = @rcFiles[idx]
       eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
     }
     eeWriter.info
@@ -343,14 +358,14 @@ class RcList < FXGroupBox
     File.open("eeTmp"){|f| eeReader.readEEprom(f); }
     
     eeReader.eachFile{|idx,name,contents|
-      name=name.strip.tr("\s","_")
-      @rcFiles[idx] = [name,contents]
+      #name=name.strip.tr("\s","_")
+      @rcFiles[idx] = contents # [name,contents]
     }
     refresh()
   end
   def refresh()
     16.times{|i|
-      name,contents=@rcFiles[i+1]
+      name,contents=getNameContents(i+1) #@rcFiles[i+1]
       if name
         @rcItems[i].set($minidoc,name,contents.length)
       else
