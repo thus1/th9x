@@ -11,9 +11,14 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
 
+cd util
+
 EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 wine "c:\SFRUBY_185\i486-windowsNT\bin\ruby" "c:\SFRUBY_185\i486-windowsNT\bin\rubyscript2exe.rb" th9Xplorer -h
 
 EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 rubyscript2exe.rb th9Xplorer -h
+
+mv th9Xplorer_linux ../th9Xplorer
+mv th9Xplorer.exe   ..
 
 
 =end
@@ -36,12 +41,13 @@ require "pref"
 =begin
 + log
 + new,open
-- preferences avrdude
++ preferences avrdude
 - help
-- write eeprom
++ write eeprom
 - progressbar
-- multiselect
+- multiselect !!
 - rename dir/file
+- rename in rcList
 - new dir
 - compare arch-rc > disk=need save
 =end
