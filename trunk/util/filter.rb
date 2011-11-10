@@ -126,7 +126,7 @@ class Main
     #addCurve("f4_#{grade}_n#{ noise}",@y2){|y| filter4(y,grade)-d*4}
     
     
-    #File.open( "gnuplot.dat", "w") { |gp|
+    #File.open( "gnuplot.dat", "wb") { |gp|
     Thread.new{
     Gnuplot.open() { |gp|
       Gnuplot::Plot.new( gp ) { |plot|

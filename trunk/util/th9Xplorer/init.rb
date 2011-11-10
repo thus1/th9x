@@ -31,7 +31,7 @@ require 'pp'
 require "rubyscript2exe"
 
 $: << RUBYSCRIPT2EXE.appdir
-puts "RUBYSCRIPT2EXE.appdir=#{RUBYSCRIPT2EXE.appdir}"
+# puts "RUBYSCRIPT2EXE.appdir=#{RUBYSCRIPT2EXE.appdir}"
 require "foxAdd"  # sets $FOX_VER
 #require "fxList2"
 require "rcList"

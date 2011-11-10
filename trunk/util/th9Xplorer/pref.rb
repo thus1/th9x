@@ -24,7 +24,7 @@ class  PrefDialog < FXDialogBox
     [
      [:AVRDUDEPATH,     "Avrdude Exe with path",   exe],
      [:AVRDUDECONF,     "Avrdude conf file",       conf],
-     [:AVRDUDEPROGARGS, "Programmer Args",["-c usbtiny","-c usbasp"]],
+     [:AVRDUDEPROGARGS, "Programmer Args",["-c usbtiny","-c usbasp","-c stk500v2 -P com4"]],
     ].each{|tag,lab,vals|
       lb=FXLabel.new(matrix,lab)
       if tag==:AVRDUDEPATH or tag==:AVRDUDECONF
