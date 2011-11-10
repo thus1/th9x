@@ -1,6 +1,7 @@
 require "fxList2"
 require "eeprom"
 require "fileutils"
+require "open3"
 include FileUtils
 
 
@@ -107,7 +108,7 @@ class RcList < FXGroupBox
     #gbr=FXGroupBox.new(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 0,0,0,0, 0,0) # x y w h  l r t b  h v
     gbr=self
     @myId = "rcList#{rand(10000)}"
-    super(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,25,5, 0,0) # x y w h  l r t b  h v
+    super(parent, "th9x" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,25,5, 0,0) # x y w h  l r t b  h v
 
 
     @list = FXList2.new(gbr,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|FRAME_SUNKEN,@myId,nil,0,0,0,16*20+26,0,0,0,0,0,0)
@@ -317,7 +318,7 @@ class RcList < FXGroupBox
       sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
     end
     eeReader=Reader_V4.new
-    File.open("eeTmp"){|f| eeReader.readEEprom(f); }
+    File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
     
     eeWriter=Reader_V4.new
     eeWriter.format() 
@@ -331,9 +332,10 @@ class RcList < FXGroupBox
       contents = @rcFiles[idx]
       eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
     }
-    eeWriter.info
-    
-    File.open("eeTmp","w"){|f| f.write(eeWriter.toBin) }
+    #eeWriter.info
+    sleep 1
+
+    File.open("eeTmp","wb"){|f| f.write(eeWriter.toBin) }
     if $opt_t
       cp "eeTmp","../eeprom.bin"
       sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
@@ -342,21 +344,62 @@ class RcList < FXGroupBox
     end
     
   end
+  $origStderr = $stderr.dup
+  def sysp(cmd)
+    $log.appendText(cmd+"\n")
+    # ferr = tmpFile("sys_err")
+    # $stderr.reopen(ferr)
+    
+#    Open3.popen3( cmd ) {|stdin, stdout, stderr, wait_thr|
+#      #pid = wait_thr.pid # pid of the started process.
+#      while ! stdout.eof?
+#        s=stdout.read(5); 
+#        print s
+#        $log.addColTxt(s,"darkgreen")
+#        if err=stderr.read(5)
+#          print "err=#{err}"
+#          $log.addColTxt(err,"red")
+#        end
+#        STDOUT.flush
+#        app().runWhileEvents()
+#      end
+#      #exit_status = wait_thr.value # Process::Status object returned.
+#    }
+#    IO.popen(cmd){|pipe|
+#      while ! pipe.eof?
+#        s=pipe.read(5); 
+#        print s
+#        #$log.addColTxt(s,"darkgreen")#
+#
+#        STDOUT.flush
+#        #app().runWhileEvents()
+#      end
+#    }
+    # $stdout.reopen($origStderr)
+    #if (err = IO.read(ferr)) != ""
+    #  $log.addColTxt("stderr = "+err,"red")
+    #end
+#    if $?.exitstatus != 0
+#      $log.addColTxt("system command failed exitstatus=#{$?.exitstatus}","red")
+#    end
+  end
   def rcLoad()
     #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
     #sys("echo hello2;sleep 1; echo hello3; sleep 1")
     rm_f "eeTmp"
 
     if $opt_t
-      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
+      #sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
+      sys "#$EXE_NAME #{RUBYSCRIPT2EXE.appdir}/longrun.rb"
       cp "../eeprom.bin","eeTmp"
     else
       sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
     end
 
     eeReader=Reader_V4.new
-    File.open("eeTmp"){|f| eeReader.readEEprom(f); }
-    
+    File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
+
+    @rcFiles=Array.new(20)
     eeReader.eachFile{|idx,name,contents|
       #name=name.strip.tr("\s","_")
       @rcFiles[idx] = contents # [name,contents]

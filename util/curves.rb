@@ -6,7 +6,7 @@ require "pp"
 
 def plotTrim
   Gnuplot.open do |gp|
-    #File.open( "gnuplot.dat", "w") do |gp|
+    #File.open( "gnuplot.dat", "wb") do |gp|
     Gnuplot::Plot.new( gp ) do |plot|
       
       #plot.title  "Array Plot Example"
@@ -70,7 +70,7 @@ end
 #exit
 def plotExp
   Gnuplot.open do |gp|
-    #File.open( "gnuplot.dat", "w") do |gp|
+    #File.open( "gnuplot.dat", "wb") do |gp|
     Gnuplot::Plot.new( gp ) do |plot|
       
       yi=[]

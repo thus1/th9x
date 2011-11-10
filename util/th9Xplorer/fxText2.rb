@@ -215,7 +215,7 @@ if $0 == __FILE__
   @text.styled   = true
                          
   
-  File.open(__FILE__){|fh|
+  File.open(__FILE__,"rb"){|fh|
     buf=fh.read
     buf.scan(/(\S+)(\s+)?/){
       p=@text.length

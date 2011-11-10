@@ -940,7 +940,7 @@ class Reader_V4
 #  def export(dir) # Reader_V4
 #    @fbufdec.each_with_index{|buf,i|
 #      typ = @eefs.files[i].size_typ   >> 12
-#      File.open(dir+("/V4_%02d_%d"%[i,typ]),"w"){|fh|fh.write(buf)}
+#      File.open(dir+("/V4_%02d_%d"%[i,typ]),"wb"){|fh|fh.write(buf)}
 #    }
 #  end
 end
@@ -986,7 +986,7 @@ Options
     eeWriter.format() 
     eeWriter.writeFile(1,2,"helloworld")
     eeWriter.info
-    File.open(ARGV[0] || "eeprom","w"){|f| f.write(eeWriter.toBin) }
+    File.open(ARGV[0] || "eeprom","wb"){|f| f.write(eeWriter.toBin) }
   end
 
   def test() # Main
@@ -1012,7 +1012,7 @@ Options
   def get() # Main
     i  = ARGV[0].to_i
     r=read($opt_ee)
-    File.open($opt_o,"w"){|f| 
+    File.open($opt_o,"wb"){|f| 
       if ARGV[1] =~ /r/
 	f.write(r.fbuf[i]) 
       else
@@ -1044,13 +1044,13 @@ Options
 #      buf2 = Codec::encode(buf)
 #      buf == Codec::decode1(buf2) or raise
 #      pp buf2
-#      #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"w"){|fh|dv4.write(fh)}
+#      #File.open(dir+("/V4_%02d_%d"%[m+1,2]),"wb"){|fh|dv4.write(fh)}
 #      rv4.write(m+1,2,buf2)
 #    }
-#    File.open(dir+"/eeprom.gen","w"){|fh| fh.write( rv4.close) }
+#    File.open(dir+"/eeprom.gen","wb"){|fh| fh.write( rv4.close) }
 #  end
   def read(file) # Main
-    File.open(file){|f|
+    File.open(file,"rb"){|f|
       @vers=f.read(1)[0]
       f.seek(0)
       case @vers

@@ -50,7 +50,7 @@ def main(xbm)
 ##include "sticks_lcd.h"
 #};
 
-  File.open("#{base}.lbm","w"){|f|
+  File.open("#{base}.lbm","wb"){|f|
     col=0
     f.printf("prog_uchar APM %s[] = {\n",base.sub(/.*\//,""))
     f.printf("%d,%d,%d,\n",w/cols,h/rows,w/cols*h/rows/8)

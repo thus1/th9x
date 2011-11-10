@@ -26,7 +26,7 @@ def extract(f,name,ofs,w,h)
   }
 
 
-  File.open(name+".xbm","w"){|fo|
+  File.open(name+".xbm","wb"){|fo|
     fo.puts "#define #{name}_width #{w}"
     fo.puts "#define #{name}_height #{h}"
     fo.puts "static unsigned char #{name}_bits[] = {"

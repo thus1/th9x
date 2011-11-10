@@ -284,15 +284,15 @@ class FileSystem
   end
   def readFile(dir)
     return nil if ! @baseDir # empty dummy  filesys
-    File.read(path(dir))
+    File.open(path(dir),"rb"){|f|f.read}
   end
   def addFile(dir,contents)
     return if ! @baseDir # empty dummy  filesys
-    File.open(path(dir),"w"){|f| f.write(contents) }
+    File.open(path(dir),"wb"){|f| f.write(contents) }
   end
   def copyLazy(srcFs,srcDir,dstDir)
     return if ! @baseDir # empty dummy  filesys
-    puts "def copyLazy(#{srcFs},#{srcDir},#{dstDir})"
+    #puts "def copyLazy(#{srcFs},#{srcDir},#{dstDir})"
     #srcFs.path(srcDir)
     dd=addDir(dstDir)
     srcFs.each(srcDir){|bn,stat,isdir,path|
@@ -340,7 +340,7 @@ class ArchList < FXGroupBox
   end
 
   def initialize(parent)
-    super(@parent=parent, "Organizer" ,LAYOUT_FILL_X|LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,0,5, 0,0) # x y w h  l r t b
+    super(@parent=parent, "local archive" ,LAYOUT_FILL_X|LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,0,5, 0,0) # x y w h  l r t b
 
     @arch=nil
     @repoHangar  = FileSystem.new(nil)
@@ -375,7 +375,7 @@ class ArchList < FXGroupBox
     dateDir=Time.new.strftime("%Y.%m/%Y.%m.%d/%Y.%m.%d-%H:%M:%S")
     # @repoArchive.addDir(dateDir)
     @repoArchive.copyLazy(@repoHangar,"./",dateDir)
-    rcdir = dateDir+"/rc"
+    rcdir = dateDir+"/th9x"
     @repoArchive.addDir(rcdir)
     rcFiles.each_with_index{|nc,idx| name,contents=nc; idx+=1
       @repoArchive.addFile(rcdir+"/%02d_%s"%[idx,name],contents) if name
