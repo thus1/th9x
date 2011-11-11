@@ -366,7 +366,8 @@ class ErrorDialogBox < FXDialogBox
     t0=txt[/[^\n]+/].sub(/[.!?]?$/,"!")
     t0=txtWrap("","",t0.length>80 ? 40 : 30,t0)
 
-    txt=err.hierStr+"\n\n"+txt
+    #txt=err.hierStr+"\n\n"+txt
+    txt+="\n\n"+err.hierStr #+"\n\n"+txt
     l0=FXLabel.new(self,"",iconFromDat("error.png"),LABEL_NORMAL|
                    ICON_ABOVE_TEXT|LAYOUT_CENTER_X)
     l1=FXLabel.new(self,t0,nil,LABEL_NORMAL|LAYOUT_CENTER_X)#| JUSTIFY_LEFT)
@@ -396,9 +397,9 @@ class ErrorDialogBox < FXDialogBox
       m12= $~.end(1)
       m21= $~.begin(2)
       m2 = $~.end(2)
-      l2.appendText(txt[lpos...m1])
+      l2.appendText(txt[lpos...m1].unpack("C*").pack("U*"))
       p1=l2.length
-      l2.appendText(txt[m1...m2])
+      l2.appendText(txt[m1...m2].unpack("C*").pack("U*"))
       p2=l2.length
       lpos=m2
       l2.addCmd(p1,p2-p1, [txt[m1...m12],txt[m21...m2].to_i]){|sender,sel,event,arg| 
@@ -406,7 +407,7 @@ class ErrorDialogBox < FXDialogBox
         edit(arg[0],arg[1])
       }
     }
-    l2.appendText(txt[lpos..-1])
+    l2.appendText(txt[lpos..-1].unpack("C*").pack("U*"))
     
     l2.hide
     dw,dh=self.defaultWidth,self.defaultHeight
@@ -416,7 +417,7 @@ class ErrorDialogBox < FXDialogBox
       more.hide
       l2.show
       #self.resize([self.defaultWidth,300].max,300)
-      self.resize([dw,500].max,dh+200)
+      self.resize([dw,800].max,dh+300)
     }
     #@bind=binding
     #begin
@@ -1528,13 +1529,12 @@ end
 
 
 class TxtReader < FXDialogBox
-  def initialize(owner,txt="",title="Reader",width=80,height=25)
+  def initialize(owner,txt="",title="Reader",width=80,height=25,attr=TEXT_READONLY|TEXT_WORDWRAP|TEXT_AUTOSCROLL)
     super(owner, title, DECOR_ALL, 10,10,500,500, 6, 6, 6, 6, 4, 4)
     persSize()
     #owner.getApp,title,10,10,500,500){|x, y, w, h|  }
     @buttonBox=FXHorizontalFrame.new(self, LAYOUT_FILL_X|LAYOUT_SIDE_BOTTOM, 0,0,0,0, 0,0,0,0, 0,0)
-    @text = FXText.new(self, nil, 0,
-      TEXT_READONLY|TEXT_WORDWRAP|LAYOUT_FILL_X|LAYOUT_FILL_Y)
+    @text = FXText.new(self, nil, 0,LAYOUT_FILL_X|LAYOUT_FILL_Y|attr)
     @text.visibleRows = height
     @text.visibleColumns = width
     self.text=txt

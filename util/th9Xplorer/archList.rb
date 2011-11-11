@@ -372,7 +372,7 @@ class ArchList < FXGroupBox
     end
   end
   def save(rcFiles)
-    dateDir=Time.new.strftime("%Y.%m/%Y.%m.%d/%Y.%m.%d-%H:%M:%S")
+    dateDir=Time.new.strftime("%Y.%m/%Y.%m.%d/%Y.%m.%d_%H.%M.%S")
     # @repoArchive.addDir(dateDir)
     @repoArchive.copyLazy(@repoHangar,"./",dateDir)
     rcdir = dateDir+"/th9x"

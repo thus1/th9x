@@ -65,8 +65,8 @@ class Th9x < FXMainWindowPersSize
     #super(app, "th9Xplorer", nil, nil, DECOR_ALL, 20, 20, 700, 500,*[0]*6)
     super(app, "th9Xplorer", nil, nil, DECOR_ALL, 0, 0, 0, 0,*[0]*6)
 
-    $log=TxtReader.new(self)
-    $log.title="Log View"
+    $log=TxtReader.new(self,"","Log View")
+    #$log=TxtReader.new(self,"","Log View",80,25,TEXT_AUTOSCROLL|TEXT_SHOWACTIVE)
 
     @menubar = FXMenuBar.new(self, LAYOUT_SIDE_TOP|LAYOUT_FILL_X|FR0)
     filemenu = FXMenuPane.new(self)
@@ -145,7 +145,9 @@ def main
   initTmpDirs
   $app = FXApp.new('th9Xplorer', 'thus')
   if IS_WINDOWS
-    $app.normalFont = FXFont.new($app, "Terminal", 10, FONTPITCH_FIXED|FONTWEIGHT_NORMAL)#LIGHT)
+    #terminal kann kein \ -> Y
+    #$app.normalFont = FXFont.new($app, "Terminal", 10, FONTPITCH_FIXED|FONTWEIGHT_NORMAL)#LIGHT)
+    $app.normalFont = FXFont.new($app, "fixed", 10, FONTWEIGHT_BOLD)
   else
     $app.normalFont = FXFont.new($app, "fixed", 10, FONTWEIGHT_BOLD)
   end
