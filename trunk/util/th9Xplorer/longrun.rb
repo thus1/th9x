@@ -15,4 +15,4 @@ while (Time.new-t0)<dt
   end
 end
 puts "finished"
-exit 1
+exit (rand(100)<30 ? 1 : 0)

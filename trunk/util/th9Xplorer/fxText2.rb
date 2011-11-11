@@ -47,10 +47,13 @@ class FXText
     #txt=txt.tr("\x7f-\xff",".")
     if txt=~/[\x7f-\xff]/
       txt=txt.unpack("C*").pack("U*") 
-      puts txt
+      #puts txt
     end
     i=color ? col(color) : 0
     appendStyledText txt,i
+  end
+  def showEnd()
+    makePositionVisible(length) 
   end
 end
 
@@ -222,7 +225,7 @@ if $0 == __FILE__
       @text.addColTxt($1,%w(Red Blue Green:Red)[rand(3)])
       l=@text.length-p
       @text.addCmd(p,l,$1){|sender,sel,event,arg| puts "hit '#{arg}'"  }
-      @text.appendText($2)
+      @text.appendText($2.unpack("C*").pack("U*"))
     }
     
   }

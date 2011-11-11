@@ -109,8 +109,8 @@ class RcList < FXGroupBox
     gbr=self
     @myId = "rcList#{rand(10000)}"
     super(parent, "th9x" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,25,5, 0,0) # x y w h  l r t b  h v
-
-
+    
+    
     @list = FXList2.new(gbr,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|FRAME_SUNKEN,@myId,nil,0,0,0,16*20+26,0,0,0,0,0,0)
     @list.backColor = parent.backColor
     @list.appendHeader("Nr",  nil, 25, :Nr)
@@ -121,7 +121,7 @@ class RcList < FXGroupBox
     #  @keyDispatcher.onKeypress(event.code,event.state,event.time)
     #}
     #@list.clear
-
+    
     @userConnects={}
     @rcItems=[]
     16.times{|i|
@@ -129,26 +129,31 @@ class RcList < FXGroupBox
       @list.appendItem(nil,it) 
     }
     
-    hfb=FXHorizontalFrame.new(gbr, LAYOUT_CENTER_X, 0,0,0,0, 10,10,10,10, 40,20)
-
-    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_UP){|a|
+    hfc=FXHorizontalFrame.new(gbr, LAYOUT_CENTER_X, 0,0,0,0, 0,0,0,0, 0,0)
+    hfb=FXHorizontalFrame.new(hfc, LAYOUT_CENTER_X, 0,0,0,0, 0,0,10,10, 10,0)
+    sze=40
+    
+    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_UP|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,0,0,sze,sze){|a|
       a.arrowSize=30
       a.connect(SEL_COMMAND) {
         rcLoad()
         checkUserConnects(self,MKUINT(0,SELUSER_RCLOADED),nil)
       }
     }
-
-    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_DOWN){|a|
-      a.arrowSize=30
+    @progress=FXProgressBar.new(hfb,nil,0, PROGRESSBAR_DIAL|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,0,0,sze,sze,*[0]*4 ) 
+    #@progress.total=100
+    #@progress.progress=1
+    
+    FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_DOWN|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,0,0,sze,sze){|a|
+      #a.arrowSize=30
       a.connect(SEL_COMMAND) {
         rcSave()
       }
     }
     
-
+    
     FXLabel.new(gbr,"",$icnth9x,LAYOUT_CENTER_X)
-
+    
     
     @mpop = FXPopup.new(self)
     #FXMenuCaption.new(@mpop,"Caption")
@@ -159,23 +164,10 @@ class RcList < FXGroupBox
           name,ctent = getNameContents(i+1) #@rcFiles[i+1]
           s = name
           s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
-          #dlg = FXInputDialog.new(self, "Rename File","from: #{s} to:",nil)
-          #dlg.numColumns = 10
-          #dlg.dumpTree
-          #tf = dlg.findChildByClass(Fox::FXTextField)
-          #pp tf.ext
-          #tf.connect(SEL_VERIFY){|sender,sel,event|
-          #  # tf.text.length<9 ? 1 : 0
-          #  1
-          #}
-          #dlg.text       = s
-          #ret = dlg.execute
-          #s = ret == 2? dlg.text : nil
-          
           if s and s != name
             # @rcFiles[i+1][0] = s
             @rcFiles[i+1][1,10] = (s+(" "*10))[0,10]
-
+            
             # @fileSys.mv item.path(),item.path(s)
           end
         end
@@ -192,7 +184,7 @@ class RcList < FXGroupBox
       @list.killSelection()
       refresh()
     }
-
+    
     @list.connect(SEL_RIGHTBUTTONPRESS){|sender,sel,data|
       @mpop.create
       item,index,hindex,dx,dy=@list.getItemAtCsr()
@@ -205,10 +197,10 @@ class RcList < FXGroupBox
         @mpop.popup(nil, x+10, y-4)
       end
     }
-
-
-
-  #drag vvvvvvvvvvvvvvvvv
+    
+    
+    
+    #drag vvvvvvvvvvvvvvvvv
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
       #mode,sidx,*idxRest = data
@@ -226,8 +218,8 @@ class RcList < FXGroupBox
       refresh()
       ret
     }
-  #drag ^^^^^^^^^^^^^^^^^^
-  #drop vvvvvvvvvvvvvvvvv
+    #drag ^^^^^^^^^^^^^^^^^^
+    #drop vvvvvvvvvvvvvvvvv
     @list.connect(SEL_DND_MOTION){|sender,sel,data|
       # drop-tgt: action an drag-src liefern
       tgtIndex,tgtItem,srcId = data
@@ -244,7 +236,7 @@ class RcList < FXGroupBox
       end
       ret
     }
-
+    
     @list.connect(SEL_DND_DROP){|sender,sel,data|
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
@@ -256,8 +248,12 @@ class RcList < FXGroupBox
       }
       refresh()
     }
-  #drop ^^^^^^^^^^^^^^^^^^
+    #drop ^^^^^^^^^^^^^^^^^^
     @rcFiles=Array.new(20)
+  end
+  def create
+    super
+    app.addChore{ @progress.hide }
   end
   def connect(sel,*args,&block)
     #if [SEL_LEFTBUTTONPRESS,
@@ -288,123 +284,171 @@ class RcList < FXGroupBox
   def getFiles
     (1..16).to_a.map{|fi|getNameContents(fi)}
   end
-#  def sysPd(cmd)
-#    pd = FXProgressDialog.new(self, "caption", "label",PROGRESSDIALOG_NORMAL|PROGRESSBAR_HORIZONTAL)
-#    pd.create
-#    pd.show
-#    sleep 0.1
-#    IO.popen(cmd){|f|
-#      while !f.eof
-#	s=f.gets
-#	puts s
-#	$log.appendText(s)
-#	pd.increment(10)
-#      end
-##    }
-#  end
+  #  def sysPd(cmd)
+  #    pd = FXProgressDialog.new(self, "caption", "label",PROGRESSDIALOG_NORMAL|PROGRESSBAR_HORIZONTAL)
+  #    pd.create
+  #    pd.show
+  #    sleep 0.1
+  #    IO.popen(cmd){|f|
+  #      while !f.eof
+  #	s=f.gets
+  #	puts s
+  #	$log.appendText(s)
+  #	pd.increment(10)
+  #      end
+  ##    }
+  #  end
   def dudeBase()
     cmd  = ""
     cmd += @prefDialog.getVal(:AVRDUDEPATH)
     cmd += " -C " + @prefDialog.getVal(:AVRDUDECONF)
     cmd += " " + @prefDialog.getVal(:AVRDUDEPROGARGS)
   end
-  def rcSave()
-    rm_f "eeTmp"
-
-    if $opt_t
-      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
-      cp "../eeprom.bin","eeTmp"
-    else
-      sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
+  
+  
+  def progress(tot=100)
+    begin
+      @progress.total=tot
+      @progress.progress=1
+      @progress.show
+      yield
+    ensure
+      @progress.hide
+      refresh()
     end
-    eeReader=Reader_V4.new
-    File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
-    
-    eeWriter=Reader_V4.new
-    eeWriter.format() 
-
-    [0,18,19].each{|fi| #retain admin files (18,19 are unknown usage)
-      fb,typ,sz= eeReader.readFile(fi)
-      eeWriter.writeFile(fi,typ,fb) if fb.length!=0
-    }
-    (1..16).each{|idx|
-      #name,contents = @rcFiles[idx]
-      contents = @rcFiles[idx]
-      eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
-    }
-    #eeWriter.info
-    sleep 1
-
-    File.open("eeTmp","wb"){|f| f.write(eeWriter.toBin) }
-    if $opt_t
-      cp "eeTmp","../eeprom.bin"
-      sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
-    else
-      sys dudeBase + " -p m64 -Ueeprom:w:eeTmp:r"
-    end
-    
+  end
+  def processInc(inc=1)
+    @progress.progress+=inc
+    @progress.progress = 1 if @progress.progress>=@progress.total
+    app.runModalWhileEvents(nil) 
   end
   $origStderr = $stderr.dup
   def sysp(cmd)
-    $log.appendText(cmd+"\n")
-    # ferr = tmpFile("sys_err")
-    # $stderr.reopen(ferr)
-    
-#    Open3.popen3( cmd ) {|stdin, stdout, stderr, wait_thr|
-#      #pid = wait_thr.pid # pid of the started process.
-#      while ! stdout.eof?
-#        s=stdout.read(5); 
-#        print s
-#        $log.addColTxt(s,"darkgreen")
-#        if err=stderr.read(5)
-#          print "err=#{err}"
-#          $log.addColTxt(err,"red")
-#        end
-#        STDOUT.flush
-#        app().runWhileEvents()
-#      end
-#      #exit_status = wait_thr.value # Process::Status object returned.
-#    }
-#    IO.popen(cmd){|pipe|
-#      while ! pipe.eof?
-#        s=pipe.read(5); 
-#        print s
-#        #$log.addColTxt(s,"darkgreen")#
-#
-#        STDOUT.flush
-#        #app().runWhileEvents()
-#      end
-#    }
-    # $stdout.reopen($origStderr)
-    #if (err = IO.read(ferr)) != ""
-    #  $log.addColTxt("stderr = "+err,"red")
-    #end
-#    if $?.exitstatus != 0
-#      $log.addColTxt("system command failed exitstatus=#{$?.exitstatus}","red")
-#    end
-  end
-  def rcLoad()
-    #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
-    #sys("echo hello2;sleep 1; echo hello3; sleep 1")
-    rm_f "eeTmp"
+    puts cmd
+    $log.addColTxt(cmd+"\n","blue")
+    processInc(1)
+    out=""
+    ss=""
+    IO.popen(cmd+" 2>&1"){|pipe|
+      t0=Time.new
+      while ! pipe.eof?
+        s=""
+        begin
+          timeout(0.5){
+            s+= (pipe.read(1)||"") while 1
+          }
+        rescue Timeout::Error
+        end
+        ss+=s
+        out+=s
+        if ss.count("\#")!=0 or ss=~/\n/
 
-    if $opt_t
-      #sys dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r"
-      sys "#$EXE_NAME #{RUBYSCRIPT2EXE.appdir}/longrun.rb"
-      cp "../eeprom.bin","eeTmp"
-    else
-      sys dudeBase + " -p m64 -Ueeprom:r:eeTmp:r"
-    end
-
-    eeReader=Reader_V4.new
-    File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
-
-    @rcFiles=Array.new(20)
-    eeReader.eachFile{|idx,name,contents|
-      #name=name.strip.tr("\s","_")
-      @rcFiles[idx] = contents # [name,contents]
+          $log.addColTxt(ss)#,"darkgreen")#
+          $log.showEnd
+          #STDOUT.flush
+          yield ss if block_given? #makes runModalWhileEvents
+          #app.runModalWhileEvents(nil) 
+          ss=""
+        end
+      end
     }
-    refresh()
+    if $?.exitstatus != 0
+      $log.addColTxt("system command failed exitstatus=#{$?.exitstatus}","red")
+      $log.showEnd
+      raise "system command failed:\n"+
+        "#{out}\n\n"+
+        "cmd=#{cmd}\n\n"+
+        "exitstatus=#{$?.exitstatus}\n"
+    end
+  end
+  def progressRead(ss)
+    processInc(ss.count("\#")/5.0)
+  end
+  def progressWrite(ss)
+    if ! ss
+      @cnt=@lcnt=0
+      return
+    end
+    @cnt+=ss.count("\#")
+    while @lcnt<@cnt
+      processInc(1); 
+      if    @lcnt< 50;@lcnt+= 5
+      elsif @lcnt<100;@lcnt+= 1
+      else           ;@lcnt+= 5
+      end
+    end
+  end
+  
+  def rcSave()
+    progress(100){
+      rm_f "eeTmp"
+      processInc
+      if $opt_t
+        sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
+        cp "../eeprom.bin","eeTmp"
+      else
+        sysp(dudeBase + " -p m64 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
+      end
+      eeReader=Reader_V4.new
+      File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
+      processInc
+
+      eeWriter=Reader_V4.new
+      eeWriter.format() 
+      
+      [0,18,19].each{|fi| #retain admin files (18,19 are unknown usage)
+        fb,typ,sz= eeReader.readFile(fi)
+        eeWriter.writeFile(fi,typ,fb) if fb.length!=0
+      }
+      (1..16).each{|idx|
+        #name,contents = @rcFiles[idx]
+        contents = @rcFiles[idx]
+        eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
+      }
+      #eeWriter.info
+      sleep 1
+      processInc
+
+      File.open("eeTmp","wb"){|f| f.write(eeWriter.toBin) }
+
+      progressWrite(nil)
+      if $opt_t
+        cp "eeTmp","../eeprom.bin"
+        sysp(dudeBase + " -p 2343 -Uflash:w:eeTmp:r") {|ss| progressWrite(ss)}
+      else
+        sysp(dudeBase + " -p m64 -Ueeprom:w:eeTmp:r") {|ss| progressWrite(ss)}
+      end
+    }
+  end
+  
+  def rcLoad()
+    progress(40) {
+      #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
+      #sys("echo hello2;sleep 1; echo hello3; sleep 1")
+      rm_f "eeTmp"
+      processInc
+
+      if $opt_t
+        #sysp dudeBase + " -p 2343 -Uflash:w:../eeprom.bin:r"
+        cnt,lcnt=0
+        sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
+
+        #sysp "#$EXE_NAME #{RUBYSCRIPT2EXE.appdir}/longrun.rb"
+        cp "../eeprom.bin","eeTmp"
+      else
+        sysp(dudeBase + " -p m64 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
+      end
+      
+      eeReader=Reader_V4.new
+      File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
+      
+      @rcFiles=Array.new(20)
+      eeReader.eachFile{|idx,name,contents|
+        #name=name.strip.tr("\s","_")
+        @rcFiles[idx] = contents # [name,contents]
+        processInc
+      }
+    }
   end
   def refresh()
     16.times{|i|

@@ -102,7 +102,7 @@ def sysCommon(cmd,fout,ferr,block)
   #puts "def sysCommon(cmd,fout,ferr,block)"
   vcmd      = cmd.join(" ")
   puts   (fout ? "'>'" : ">") + vcmd if $opt_v>=1
-  $log.appendText("\n> " +vcmd+"\n")
+  $log.addColTxt("\n> " +vcmd+"\n")
 
   $stdout.reopen(fout) if fout
   $stderr.reopen(ferr)
