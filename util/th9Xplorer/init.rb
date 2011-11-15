@@ -44,12 +44,13 @@ require "pref"
 + preferences avrdude
 - help
 + write eeprom
-- progressbar
++ progressbar
 - multiselect !!
 - rename dir/file
 - rename in rcList
-- new dir
+- new/delete folder
 - compare arch-rc > disk=need save
+- archive zeitl rueckwaerts
 =end
 
 

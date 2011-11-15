@@ -278,7 +278,8 @@ class RcList < FXGroupBox
   def getNameContents(fi)
     cont=@rcFiles[fi]
     return [nil,""] if !cont or cont==""
-    name = cont[1,10].strip.tr("\s","_")
+    name = Reader_V4.mbuf2name(cont).strip.tr("\s","_")
+    #name = cont[1,10].strip.tr("\s","_")
     [name,cont]
   end
   def getFiles
@@ -317,7 +318,7 @@ class RcList < FXGroupBox
       refresh()
     end
   end
-  def processInc(inc=1)
+  def progressInc(inc=1)
     @progress.progress+=inc
     @progress.progress = 1 if @progress.progress>=@progress.total
     app.runModalWhileEvents(nil) 
@@ -326,7 +327,7 @@ class RcList < FXGroupBox
   def sysp(cmd)
     puts cmd
     $log.addColTxt(cmd+"\n","blue")
-    processInc(1)
+    progressInc(1)
     out=""
     ss=""
     IO.popen(cmd+" 2>&1"){|pipe|
@@ -362,7 +363,7 @@ class RcList < FXGroupBox
     end
   end
   def progressRead(ss)
-    processInc(ss.count("\#")/5.0)
+    progressInc(ss.count("\#")/5.0)
   end
   def progressWrite(ss)
     if ! ss
@@ -371,7 +372,7 @@ class RcList < FXGroupBox
     end
     @cnt+=ss.count("\#")
     while @lcnt<@cnt
-      processInc(1); 
+      progressInc(1); 
       if    @lcnt< 50;@lcnt+= 5
       elsif @lcnt<100;@lcnt+= 1
       else           ;@lcnt+= 5
@@ -382,16 +383,16 @@ class RcList < FXGroupBox
   def rcSave()
     progress(100){
       rm_f "eeTmp"
-      processInc
+      progressInc
       if $opt_t
-        sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
+        #sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
         cp "../eeprom.bin","eeTmp"
       else
         sysp(dudeBase + " -p m64 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
       end
       eeReader=Reader_V4.new
       File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
-      processInc
+      progressInc
 
       eeWriter=Reader_V4.new
       eeWriter.format() 
@@ -407,14 +408,14 @@ class RcList < FXGroupBox
       }
       #eeWriter.info
       sleep 1
-      processInc
+      progressInc
 
       File.open("eeTmp","wb"){|f| f.write(eeWriter.toBin) }
 
       progressWrite(nil)
       if $opt_t
         cp "eeTmp","../eeprom.bin"
-        sysp(dudeBase + " -p 2343 -Uflash:w:eeTmp:r") {|ss| progressWrite(ss)}
+        #sysp(dudeBase + " -p 2343 -Uflash:w:eeTmp:r") {|ss| progressWrite(ss)}
       else
         sysp(dudeBase + " -p m64 -Ueeprom:w:eeTmp:r") {|ss| progressWrite(ss)}
       end
@@ -426,14 +427,12 @@ class RcList < FXGroupBox
       #/etc/udev/rules.d:  PRODUCT=="USBasp",    MODE="0666", OPTIONS="last_rule"
       #sys("echo hello2;sleep 1; echo hello3; sleep 1")
       rm_f "eeTmp"
-      processInc
+      progressInc
 
       if $opt_t
         #sysp dudeBase + " -p 2343 -Uflash:w:../eeprom.bin:r"
-        cnt,lcnt=0
-        sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
-
-        #sysp "#$EXE_NAME #{RUBYSCRIPT2EXE.appdir}/longrun.rb"
+        #cnt,lcnt=0
+        #sysp(dudeBase + " -p 2343 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
         cp "../eeprom.bin","eeTmp"
       else
         sysp(dudeBase + " -p m64 -Ueeprom:r:eeTmp:r") {|ss| progressRead(ss)}
@@ -446,7 +445,7 @@ class RcList < FXGroupBox
       eeReader.eachFile{|idx,name,contents|
         #name=name.strip.tr("\s","_")
         @rcFiles[idx] = contents # [name,contents]
-        processInc
+        progressInc
       }
     }
   end
