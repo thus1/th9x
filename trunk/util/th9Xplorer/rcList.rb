@@ -56,7 +56,9 @@ class FXListRcItem < FXListGenericItem
       bgCol = list.selbackColor 
       fgCol = list.seltextColor;
     end
-    dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
+    bgCol -= FXRGB(60,60,60) if data== :Nr
+    #dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
+    dc.setForeground(bgCol)
     dc.fillRectangle(x,y,w,h);
     x+=LPAD
 

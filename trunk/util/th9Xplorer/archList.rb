@@ -36,6 +36,28 @@ class FXListArchItem < FXListGenericItem
   #
   #IDT = 15
   LPAD=4
+  def drawNum(dc,x,y,w,h,i)
+    font=list.font
+    th=font.getFontHeight()
+    asc=font.getFontAscent()
+    w=1+5+font.getTextWidth("99")
+
+
+    white  = FXRGB(255,255,255)
+    white2 = FXRGB(225,240,235)
+    bgCol = i%2==0 ? white  : white2
+    fgCol = list.textColor;
+    if selected? #and data != 1
+      bgCol = list.selbackColor 
+      fgCol = list.seltextColor;
+    end
+    dc.setForeground(bgCol- FXRGB(60,60,60))#$app.baseColor-cdiff)
+    dc.fillRectangle(x,y,w,h);
+
+    dc.setForeground(fgCol);
+    dc.drawText(x+1,y+(h-th)/2+asc,"%02d"%i)# if @nr
+    return x+w
+  end
   def draw(dc,x,y,w,h,i,data)
     white  = FXRGB(255,255,255)
     white2 = FXRGB(225,240,235)
@@ -47,7 +69,8 @@ class FXListArchItem < FXListGenericItem
       bgCol = list.selbackColor 
       fgCol = list.seltextColor;
     end
-    dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
+    #dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
+    dc.setForeground(bgCol)
     dc.fillRectangle(x,y,w,h);
     x+=LPAD
 
@@ -60,8 +83,18 @@ class FXListArchItem < FXListGenericItem
     #when :Icon
     #  dc.drawIcon(@icon,x,y) if @icon
     when :Name
-      x=8+drawTreeIcon(dc,x,y,w,h,@icon,bgCol) if @icon
-      dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr); x+=16
+      #x=8+drawTreeIcon(dc,x,y,w,h,@icon,bgCol) if @icon
+      #dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr); x+=16
+      x=4+drawTreeIcon(dc,x,y,w,h,nil,bgCol) 
+      if @icon
+        if @kind == :file
+          dc.setForeground(bgCol- FXRGB(60,60,60))
+          dc.fillRectangle(x,y,@icon.width,h);
+        end
+        dc.drawIcon(@icon, x, y+(h-@icon.height)/2) 
+        x+=@icon.width
+        x=8+drawNum(dc,x,y,w,h,@nr) if @kind==:file
+      end
       if @name
         dc.drawText(x,y+(h-th)/2+asc,@name)
       end
@@ -202,15 +235,46 @@ class OrgaList < FXList2
       #puts "SEL_DND_DROP"
       #pp data
       dsti,list = data
-      if dsti and item=@list.items[dsti]  and item.kind==:file   #only if item exists and is file
-        p=File.dirname(item.path) #+"/"
-        # p+=item.name+"/" if item.kind==:dir
+      if dsti and item=@list.items[dsti] #only if item
+        #  and item.kind==:file   #only if item exists and is file
+        if item.kind==:file
+          p       = File.dirname(item.path) 
+          parent  = item.parent
+        else
+          p       = item.path
+          parent  = item
+        end
+        pp parent.to_s
+        nr=0
         list.each{|name,contents| #=name_contents
-          while ! (item=@list.items[dsti]).empty?
+          #p item.parent.to_s
+          while 1
+            item=@list.items[dsti]
+            if ! item
+              nr+=1
+              break
+            end
+            if item.parent!=parent 
+              nr+=1
+              break
+            end
+            nr=item.nr
+            if item.empty?
+              break
+            end
+            #pp [dsti,nr,item.to_s,item.parent.to_s]
             dsti+=1
           end
-          item.allocate!
-          @fileSys.addFile(p,item.nr,contents)
+          #if item
+          #  if ! item.nr
+          #    pp item
+          #  end
+          #  nr=item.nr
+          #else
+          #end
+          @fileSys.addFile(p,nr,contents)
+          #item.allocate!
+          dsti+=1
         }
       end
       #p+=name
@@ -237,11 +301,12 @@ class OrgaList < FXList2
 
   def readDir(dir,parent)
     #puts "def readDir(#{dir},parent)"
-    files=[]
-    dirs=[]
+    files = []
+    dirs  = []
     # @fileSys.each(dir){|name,stat,isdir,path|
     @fileSys.each(dir){|nr,name,stat,isdir,path|
       #name=File.basename(n)
+      #pp [nr,name,stat,isdir,path]
       size=stat.size
       date=stat.mtime
       if isdir #File.directory?(n)
@@ -269,10 +334,10 @@ class OrgaList < FXList2
       @list.appendItem(parent,fi) 
       nrNxt+=1
     }
-    10.times{
-      @list.appendItem(parent, FXListArchItem.new(self,:file,$minidoc,dir+"/dummy",nrNxt,nil,nil,nil))
-      nrNxt+=1
-    }
+    #1.times{
+    #  @list.appendItem(parent, FXListArchItem.new(self,:file,$minidoc,dir+"/dummy",nrNxt,nil,nil,nil))
+    #  nrNxt+=1
+    #}
     if ! parent and ! @opened
       @list.collapseSubtrees
     end
@@ -291,59 +356,63 @@ class FileSystem
   def _path(dir=nil)
     dir ? @baseDir+"/"+dir : @baseDir
   end
-  private :_path
+  #private :_path
   def each(dir)
     return if ! @baseDir # empty dummy  filesys
-    Dir[_path(dir)+"/*"].each{|n|
-      next if n=~/\/\.\.?$/
-      next if ! File.directory?(n)
-      yield nil,File.basename(n),File.stat(n),File.directory?(n) ,n
-    }
-    Dir[_path(dir)+"/*"].each{|path|
-      next if path=~/\/\.\.?$/
-      next if File.directory?(path)
-      bn=File.basename(path)
-      next if bn !~ /^(\d{3})_(.*)/
-      nr,bn=$1.to_i,$2
-      yield nr,bn,File.stat(path),File.directory?(path) ,path
+
+    #puts "each(#{dir}) #{_path(dir)}"
+    #pp Dir[_path(dir)+"/*"]
+    Dir.chdir(@baseDir){
+      Dir[dir+"/*"].each{|n|
+        #pp n
+        next if n=~/\/\.\.?$/
+        next if ! File.directory?(n)
+        yield nil,File.basename(n),File.stat(n),File.directory?(n) ,n
+      }
+      Dir[dir+"/*"].each{|path|
+        next if path=~/\/\.\.?$/
+        next if File.directory?(path)
+        bn=File.basename(path)
+        next if bn !~ /^(\d{3})_(.*)/
+        nr,bn=$1.to_i,$2
+        yield nr,bn,File.stat(path),File.directory?(path) ,path
+      }
     }
   end
 #  def mv(from,to)
 #    return if ! @baseDir # empty dummy  filesys
 #    FileUtils::mv(_path(from),_path(to))
 #  end
-  def rmFile(path)
+  def rmFile(relPath)
     return if ! @baseDir # empty dummy  filesys
-    puts "def rmFile(#{path})"
-    FileUtils::Verbose::rm(path)
+    FileUtils::Verbose::rm(_path(relPath))
   end
-  def readFile(path)
+  def readFile(relPath)
     return nil if ! @baseDir # empty dummy  filesys
-    File.open(path,"rb"){|f|f.read}
-    #File.open(_path(dir),"rb"){|f|f.read}
+    File.open(_path(relPath),"rb"){|f|f.read}
   end
-  def addFile(dir,nr,contents)
+  def addFile(relPath,nr,contents)
     return if ! @baseDir # empty dummy  filesys
     name = Reader_V4.mbuf2name(contents).strip.tr("\s","_")
-    d=dir+"/%03d_#{name}"%nr
+    d=relPath+"/%03d_#{name}"%nr
     File.open(_path(d),"wb"){|f| f.write(contents) }
   end
-  def addDir(dir)
+  def addDir(relPath)
     return nil if ! @baseDir # empty dummy  filesys
-    FileUtils::mkdir_p(p=_path(dir))
+    FileUtils::mkdir_p(p=_path(relPath))
     p
   end
-  def copyLazy(srcFs,srcDir,dstDir)
+  def copyLazy(srcFs,srcRelPath,dstRelPath)
     return if ! @baseDir # empty dummy  filesys
-    #puts "def copyLazy(#{srcFs},#{srcDir},#{dstDir})"
-    #srcFs._path(srcDir)
-    dd=addDir(dstDir)
-    srcFs.each(srcDir){|nr,bn,stat,isdir,path| #|bn,stat,isdir,p|
-      bn=File.basename(path)
+    #puts "def copyLazy(#{srcFs},#{srcRelPath},#{dstRelPath})"
+    #srcFs._path(srcRelPath)
+    dd=addDir(dstRelPath)
+    srcFs.each(srcRelPath){|nr,bn,stat,isdir,relPath| #|bn,stat,isdir,p|
+      bn=File.basename(relPath)
       if isdir
-        copyLazy(srcFs,srcDir+"/"+bn,dstDir+"/"+bn)
+        copyLazy(srcFs,srcRelPath+"/"+bn,dstRelPath+"/"+bn)
       else
-        File.link(path,dd+"/"+bn)
+        File.link(srcFs._path(relPath),dd+"/"+bn)
       end
     }
   end
@@ -415,10 +484,12 @@ class ArchList < FXGroupBox
     mkdir_p(repo+"/Archive")
   end
   def tryOpenArch(arch)
+    #puts "def tryOpenArch(#{arch})"
     ah=arch+"/Hangars"
     aa=arch+"/Archive"
-    return false if not (File.exists?(ah) 
-    mkdir_p(aa) if not File.exists?(aa))
+    #pp ah,aa
+    return false if not File.exists?(ah) 
+    mkdir_p(aa) if not File.exists?(aa)
     @arch=arch
     @repoHangar  = FileSystem.new(ah)
     @repoArchive = FileSystem.new(aa,false)
@@ -465,13 +536,26 @@ class ArchList < FXGroupBox
       @arch
     }
 #p arch
-    if not arch
-      app.addChore{newArch}
-    else
-      if not tryOpenArch(arch)
-	app.addChore{openArch}
+
+    
+    app.addChore{
+      if not arch
+        openArch
+        #newArch
+      else
+        if not tryOpenArch(arch)
+          openArch
+        end
       end
-    end
+      
+    }
+#    if not arch
+#      app.addChore{newArch}
+#    else
+#      if not tryOpenArch(arch)
+#	app.addChore{openArch}
+#      end
+#    end
   end
   def save(rcFiles)
     dateDir=Time.new.strftime("%Y.%m/%Y.%m.%d/%Y.%m.%d_%H.%M.%S")
