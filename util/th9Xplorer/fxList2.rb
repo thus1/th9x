@@ -674,9 +674,11 @@ class FXListGenericItem
     end
 
     #dc.drawRectangle(x1-5, y+h/2-5, 10, 10)
-    dc.drawIcon(icon, x, y+(h-icon.height)/2) 
+    if icon
+      dc.drawIcon(icon, x, y+(h-icon.height)/2) 
+      x+=icon.width
+    end
     #dc.drawIcon(icn2, x, y+(h-icon.height)/2) if icn2
-    x+=icon.width
     x
   end
   def selected?()
