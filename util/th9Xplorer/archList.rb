@@ -1,8 +1,6 @@
 require "fxList2"
-#require 'rexml/parsers/sax2parser'
-#require "parsedate"
 require "fileutils"
-#include FileUtils
+require "modelFile"
 
 
 class FXListArchItem < FXListGenericItem
@@ -11,6 +9,9 @@ class FXListArchItem < FXListGenericItem
   def initialize(alist,kind,icon,path,nr,name,size,date)#,lev)#,isDir)
     @alist,@kind,@icon,@path,@nr,@name,@size,@date=alist,kind,icon,path,nr,name,size,date
     @selected=false
+  end
+  def dir
+    File.basename(@path)
   end
   #def path(name=@name)
   #  @dir+"/"+name
@@ -138,6 +139,7 @@ class FXListArchItem < FXListGenericItem
 end
 
 class OrgaList < FXList2
+  include ModelFileUtils
   def initialize(parent,fileSys,opened=true)
     @fileSys,@opened=fileSys,opened
     @myId = "orgaList#{rand(10000)}"
@@ -162,11 +164,20 @@ class OrgaList < FXList2
     FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          s = item.name
-          k=item.kind == :file ? "File" : "Folder"
-          s = FXInputDialog.getString(s, self, "Rename #{k}","from: #{s} to:",nil) 
-          if s and s != item.name
-            @fileSys.mv item.path(),item.path(s)
+          if item.kind == :file
+            ret = renameFileDialog(@fileSys.read(item.path()))
+            if ret
+              @fileSys.rmFile(item.path)
+              item.path,item.name = @fileSys.addFile(item.dir, item.nr, ret)
+              #      fi = FXListArchItem.new(self,:file,$minidoc,path,nr,name,size,date)
+            end
+          else
+            s = item.name
+            #k=item.kind == :file ? "File" : "Folder"
+            s = FXInputDialog.getString(s, self, "Rename Folder","from: #{s} to:",nil) 
+            if s and s != item.name
+              @fileSys.mv item.path(),item.path(s)
+            end
           end
         end
       }
@@ -244,34 +255,20 @@ class OrgaList < FXList2
           p       = item.path
           parent  = item
         end
-        pp parent.to_s
+        #pp parent.to_s
         nr=0
         list.each{|name,contents| #=name_contents
           #p item.parent.to_s
           while 1
             item=@list.items[dsti]
-            if ! item
-              nr+=1
-              break
-            end
-            if item.parent!=parent 
+            if ! item or item.parent!=parent 
               nr+=1
               break
             end
             nr=item.nr
-            if item.empty?
-              break
-            end
-            #pp [dsti,nr,item.to_s,item.parent.to_s]
+            break if item.empty?
             dsti+=1
           end
-          #if item
-          #  if ! item.nr
-          #    pp item
-          #  end
-          #  nr=item.nr
-          #else
-          #end
           @fileSys.addFile(p,nr,contents)
           #item.allocate!
           dsti+=1
@@ -311,9 +308,7 @@ class OrgaList < FXList2
       date=stat.mtime
       if isdir #File.directory?(n)
         dirs  << it=FXListArchItem.new(self,:dir,$minifolder,path,nil,name,0,date)
-        #it.collapsed = true #! @opened
       else
-        #files << FXListArchItem.new(self,:file,$minidoc,path,name,size,date)
         files << [nr,name,size,date,path]
       end
     }
@@ -392,10 +387,11 @@ class FileSystem
     File.open(_path(relPath),"rb"){|f|f.read}
   end
   def addFile(relPath,nr,contents)
-    return if ! @baseDir # empty dummy  filesys
+    return nil if ! @baseDir # empty dummy  filesys
     name = Reader_V4.mbuf2name(contents).strip.tr("\s","_")
     d=relPath+"/%03d_#{name}"%nr
     File.open(_path(d),"wb"){|f| f.write(contents) }
+    return [d,name]
   end
   def addDir(relPath)
     return nil if ! @baseDir # empty dummy  filesys

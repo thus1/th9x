@@ -2,6 +2,7 @@ require "fxList2"
 require "eeprom"
 require "fileutils"
 require "open3"
+require "modelFile"
 include FileUtils
 
 
@@ -105,6 +106,7 @@ end
 
 
 class RcList < FXGroupBox
+  module ModelFileUtils
   def initialize(parent,prefDialog)
     @prefDialog=prefDialog
     #gbr=FXGroupBox.new(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 0,0,0,0, 0,0) # x y w h  l r t b  h v
@@ -163,15 +165,19 @@ class RcList < FXGroupBox
     FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          name,ctent = getNameContents(i+1) #@rcFiles[i+1]
-          s = name
-          s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
-          if s and s != name
-            # @rcFiles[i+1][0] = s
-            @rcFiles[i+1][1,10] = (s+(" "*10))[0,10]
-            
-            # @fileSys.mv item.path(),item.path(s)
-          end
+          #name,ctent = getNameContents(i+1) #@rcFiles[i+1]
+          fi = i+1
+          ret = renameFileDialog(@rcFiles[fi]) 
+          @rcFiles[fi] = ret if ret
+          #)
+          #s = name
+          #s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
+          #if s and s != name
+          #  # @rcFiles[i+1][0] = s
+          #  @rcFiles[i+1][1,10] = (s+(" "*10))[0,10]
+          #  
+          #  # @fileSys.mv item.path(),item.path(s)
+          #end
         end
       }
       @list.killSelection()
