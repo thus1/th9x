@@ -5,13 +5,14 @@ require "modelFile"
 
 class FXListArchItem < FXListGenericItem
     #attr_accessor :txt, :icon, :lev #, :list
-  attr_reader :path,:nr,:name,:kind
+  attr_accessor :path,:nr,:name,:kind
+  
   def initialize(alist,kind,icon,path,nr,name,size,date)#,lev)#,isDir)
     @alist,@kind,@icon,@path,@nr,@name,@size,@date=alist,kind,icon,path,nr,name,size,date
     @selected=false
   end
   def dir
-    File.basename(@path)
+    File.dirname(@path)
   end
   #def path(name=@name)
   #  @dir+"/"+name
@@ -37,45 +38,22 @@ class FXListArchItem < FXListGenericItem
   #
   #IDT = 15
   LPAD=4
-  def drawNum(dc,x,y,w,h,i)
-    font=list.font
-    th=font.getFontHeight()
-    asc=font.getFontAscent()
-    w=1+5+font.getTextWidth("99")
-
-
-    white  = FXRGB(255,255,255)
-    white2 = FXRGB(225,240,235)
-    bgCol = i%2==0 ? white  : white2
-    fgCol = list.textColor;
-    if selected? #and data != 1
-      bgCol = list.selbackColor 
-      fgCol = list.seltextColor;
-    end
-    dc.setForeground(bgCol- FXRGB(60,60,60))#$app.baseColor-cdiff)
-    dc.fillRectangle(x,y,w,h);
-
-    dc.setForeground(fgCol);
-    dc.drawText(x+1,y+(h-th)/2+asc,"%02d"%i)# if @nr
-    return x+w
-  end
   def draw(dc,x,y,w,h,i,data)
-    white  = FXRGB(255,255,255)
-    white2 = FXRGB(225,240,235)
-    bgCol = i%2==0 ? white  : white2
-    cdiff = white-bgCol
+    xEnd=x+w
+    # white  = FXRGB(255,255,255)
+    # white2 = FXRGB(225,240,235)
+    # bgCol = i%2==0 ? white  : white2
+    bgCol = i%2==0 ? BG_WHITE1  : BG_WHITE2
     fgCol = list.textColor;
     #i%2==0 ? list.backColor : FXRGB(240,245,250))
     if selected? #and data != 1
       bgCol = list.selbackColor 
       fgCol = list.seltextColor;
     end
-    #dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
     dc.setForeground(bgCol)
     dc.fillRectangle(x,y,w,h);
     x+=LPAD
 
-    dc.setForeground(fgCol);
     font=list.font
     th=font.getFontHeight()
     asc=font.getFontAscent()
@@ -86,22 +64,18 @@ class FXListArchItem < FXListGenericItem
     when :Name
       #x=8+drawTreeIcon(dc,x,y,w,h,@icon,bgCol) if @icon
       #dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr); x+=16
-      x=4+drawTreeIcon(dc,x,y,w,h,nil,bgCol) 
-      if @icon
-        if @kind == :file
-          dc.setForeground(bgCol- FXRGB(60,60,60))
-          dc.fillRectangle(x,y,@icon.width,h);
-        end
-        dc.drawIcon(@icon, x, y+(h-@icon.height)/2) 
-        x+=@icon.width
-        x=8+drawNum(dc,x,y,w,h,@nr) if @kind==:file
-      end
+      dc.setForeground(fgCol);
+      x=4+drawTreeIcon(dc,x,y,xEnd-x,h,@kind == :file ? nil : @icon,bgCol) 
+      x=8+drawNumIcon(dc,x,y,xEnd-x,h,@nr,@icon) if @kind==:file
       if @name
+        dc.setForeground(fgCol);
         dc.drawText(x,y+(h-th)/2+asc,@name)
       end
     when :Size
+      dc.setForeground(fgCol);
       dc.drawText(x,y+(h-th)/2+asc,@size.to_s)if @size
     when :Date
+      dc.setForeground(fgCol);
       dc.drawText(x,y+(h-th)/2+asc,@date.strftime("%y.%m.%d-%H:%M:%S"))if @date
     end
 
@@ -160,12 +134,17 @@ class OrgaList < FXList2
     
 
     FXMenuCommand.new(@mpop,"New Folder").connect(SEL_COMMAND){|sender,sel,event|
+      if @popItem and s = FXInputDialog.getString("newfolder", self, "Create new Folder","Folder Name:",nil) 
+        dir = @popItem.kind==:file ? @popItem.dir : @popItem.dir
+        @fileSys.addDir(dir+"/"+s)
+        refresh
+      end
     }
     FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
           if item.kind == :file
-            ret = renameFileDialog(@fileSys.read(item.path()))
+            ret = renameFileDialog(@fileSys.readFile(item.path()))
             if ret
               @fileSys.rmFile(item.path)
               item.path,item.name = @fileSys.addFile(item.dir, item.nr, ret)
@@ -187,7 +166,11 @@ class OrgaList < FXList2
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          @fileSys.rmFile(item.path)
+          if item.kind==:file
+            @fileSys.rmFile(item.path)
+          else
+            @fileSys.rmDir(item.path)
+          end
         end
       }
       @list.killSelection()
@@ -197,6 +180,7 @@ class OrgaList < FXList2
     @list.connect(SEL_RIGHTBUTTONPRESS){|sender,sel,data|
       @mpop.create
       item,index,hindex,dx,dy=@list.getItemAtCsr()
+      @popItem=item
       if item 
         if  ! item.selected?
           @list.killSelection()
@@ -246,6 +230,7 @@ class OrgaList < FXList2
       #puts "SEL_DND_DROP"
       #pp data
       dsti,list = data
+      ret=true #more data
       if dsti and item=@list.items[dsti] #only if item
         #  and item.kind==:file   #only if item exists and is file
         if item.kind==:file
@@ -257,28 +242,33 @@ class OrgaList < FXList2
         end
         #pp parent.to_s
         nr=0
-        list.each{|name,contents| #=name_contents
-          #p item.parent.to_s
-          while 1
-            item=@list.items[dsti]
-            if ! item or item.parent!=parent 
-              nr+=1
-              break
+        if list.length==0
+          refresh()
+          ret=false
+        else
+          list.each{|name,contents| #=name_contents
+            #p item.parent.to_s
+            while 1
+              item=@list.items[dsti]
+              if ! item or item.parent!=parent 
+                nr+=1
+                break
+              end
+              nr=item.nr
+              break if item.empty?
+              dsti+=1
             end
-            nr=item.nr
-            break if item.empty?
+            @fileSys.addFile(p,nr,contents)
+            #item.allocate!
             dsti+=1
-          end
-          @fileSys.addFile(p,nr,contents)
-          #item.allocate!
-          dsti+=1
-        }
+          }
+        end
       end
-      #p+=name
-      # @list.selectItem(dsti,true)
-      #pp @rcFiles
-      refresh()
+      #refresh()
+      ret #get more data?
     }
+
+
     refresh()
   end
   def fileSys=(fs)
@@ -342,134 +332,6 @@ end
 
 
 
-class FileSystem
-  attr_reader :allowedDrop
-  def initialize(baseDir,allowedDrop=true)
-    @baseDir     = baseDir
-    @allowedDrop = allowedDrop
-  end
-  def _path(dir=nil)
-    dir ? @baseDir+"/"+dir : @baseDir
-  end
-  #private :_path
-  def each(dir)
-    return if ! @baseDir # empty dummy  filesys
-
-    #puts "each(#{dir}) #{_path(dir)}"
-    #pp Dir[_path(dir)+"/*"]
-    Dir.chdir(@baseDir){
-      Dir[dir+"/*"].each{|n|
-        #pp n
-        next if n=~/\/\.\.?$/
-        next if ! File.directory?(n)
-        yield nil,File.basename(n),File.stat(n),File.directory?(n) ,n
-      }
-      Dir[dir+"/*"].each{|path|
-        next if path=~/\/\.\.?$/
-        next if File.directory?(path)
-        bn=File.basename(path)
-        next if bn !~ /^(\d{3})_(.*)/
-        nr,bn=$1.to_i,$2
-        yield nr,bn,File.stat(path),File.directory?(path) ,path
-      }
-    }
-  end
-#  def mv(from,to)
-#    return if ! @baseDir # empty dummy  filesys
-#    FileUtils::mv(_path(from),_path(to))
-#  end
-  def rmFile(relPath)
-    return if ! @baseDir # empty dummy  filesys
-    FileUtils::Verbose::rm(_path(relPath))
-  end
-  def readFile(relPath)
-    return nil if ! @baseDir # empty dummy  filesys
-    File.open(_path(relPath),"rb"){|f|f.read}
-  end
-  def addFile(relPath,nr,contents)
-    return nil if ! @baseDir # empty dummy  filesys
-    name = Reader_V4.mbuf2name(contents).strip.tr("\s","_")
-    d=relPath+"/%03d_#{name}"%nr
-    File.open(_path(d),"wb"){|f| f.write(contents) }
-    return [d,name]
-  end
-  def addDir(relPath)
-    return nil if ! @baseDir # empty dummy  filesys
-    FileUtils::mkdir_p(p=_path(relPath))
-    p
-  end
-  def copyLazy(srcFs,srcRelPath,dstRelPath)
-    return if ! @baseDir # empty dummy  filesys
-    #puts "def copyLazy(#{srcFs},#{srcRelPath},#{dstRelPath})"
-    #srcFs._path(srcRelPath)
-    dd=addDir(dstRelPath)
-    srcFs.each(srcRelPath){|nr,bn,stat,isdir,relPath| #|bn,stat,isdir,p|
-      bn=File.basename(relPath)
-      if isdir
-        copyLazy(srcFs,srcRelPath+"/"+bn,dstRelPath+"/"+bn)
-      else
-        File.link(srcFs._path(relPath),dd+"/"+bn)
-      end
-    }
-  end
-end
-
-
-
-
-
-class FileSystemOld
-  attr_reader :allowedDrop
-  def initialize(baseDir,allowedDrop=true)
-    @baseDir = baseDir
-    @allowedDrop = allowedDrop
-  end
-  def _path(dir=nil)
-    dir ? @baseDir+"/"+dir : @baseDir
-  end
-  private :_path
-  def each(dir)
-    return if ! @baseDir # empty dummy  filesys
-    Dir[_path(dir)+"/*"].each{|n|
-      next if n=~/\/\.\.?$/
-      yield nil,File.basename(n),File.stat(n),File.directory?(n) ,n
-    }
-  end
-  def addDir(dir)
-    return nil if ! @baseDir # empty dummy  filesys
-    FileUtils::mkdir_p(p=_path(dir))
-    p
-  end
-  def mv(from,to)
-    return if ! @baseDir # empty dummy  filesys
-    FileUtils::mv(_path(from),_path(to))
-  end
-  def rmFile(dir)
-    return if ! @baseDir # empty dummy  filesys
-    FileUtils::rm(_path(dir))
-  end
-  def readFile(dir)
-    return nil if ! @baseDir # empty dummy  filesys
-    File.open(_path(dir),"rb"){|f|f.read}
-  end
-  def addFile(dir,contents)
-    return if ! @baseDir # empty dummy  filesys
-    File.open(_path(dir),"wb"){|f| f.write(contents) }
-  end
-  def copyLazy(srcFs,srcDir,dstDir)
-    return if ! @baseDir # empty dummy  filesys
-    #puts "def copyLazy(#{srcFs},#{srcDir},#{dstDir})"
-    #srcFs._path(srcDir)
-    dd=addDir(dstDir)
-    srcFs.each(srcDir){|nr,bn,stat,isdir| #,__p|
-      if isdir
-        copyLazy(srcFs,srcDir+"/"+bn,dstDir+"/"+bn)
-      else
-        File.link(srcDir+"/"+bn,dd+"/"+bn)
-      end
-    }
-  end
-end
 
 class ArchList < FXGroupBox
 

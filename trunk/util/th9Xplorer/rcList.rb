@@ -47,17 +47,18 @@ class FXListRcItem < FXListGenericItem
   #
   #IDT = 15
   def draw(dc,x,y,w,h,i,data)
-    white  = FXRGB(255,255,255)
-    white2 = FXRGB(225,240,235)
-    bgCol = i%2==0 ? white  : white2
-    cdiff = white-bgCol
+    # white  = FXRGB(255,255,255)
+    # white2 = FXRGB(225,240,235)
+    # bgCol = i%2==0 ? white  : white2
+    bgCol = i%2==0 ? BG_WHITE1  : BG_WHITE2
+    #cdiff = white-bgCol
     fgCol = list.textColor;
     #i%2==0 ? list.backColor : FXRGB(240,245,250))
     if selected? #and data != 1
       bgCol = list.selbackColor 
       fgCol = list.seltextColor;
     end
-    bgCol -= FXRGB(60,60,60) if data== :Nr
+    #bgCol -= FXRGB(60,60,60) if data== :Nr
     #dc.setForeground(data== :Nr ? $app.baseColor-cdiff : bgCol)
     dc.setForeground(bgCol)
     dc.fillRectangle(x,y,w,h);
@@ -69,15 +70,17 @@ class FXListRcItem < FXListGenericItem
     asc=font.getFontAscent()
     dc.setFont(font);
     case data
-    when :Icon
-      dc.drawIcon(@icon,x,y) if @icon
+    #when :Icon
+    #  dc.drawIcon(@icon,x,y) if @icon
     when :Nr
-      dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr) if @nr
+      #dc.drawText(x,y+(h-th)/2+asc,"%2d"%@nr) if @nr
+      x=8+drawNumIcon(dc,x,y,w,h,@nr,$minidoc) #if @kind==:file
+
     when :Name
       if @name
         dc.drawText(x,y+(h-th)/2+asc,@name)
       else
-        dc.setForeground(i%2==0 ? white2  : white)
+        dc.setForeground(i%2==0 ? BG_WHITE2  : BG_WHITE1)
         dc.drawText(x,y+(h-th)/2+asc,"e m p t y")
       end
     when :Size
@@ -106,7 +109,7 @@ end
 
 
 class RcList < FXGroupBox
-  module ModelFileUtils
+  include ModelFileUtils
   def initialize(parent,prefDialog)
     @prefDialog=prefDialog
     #gbr=FXGroupBox.new(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 0,0,0,0, 0,0) # x y w h  l r t b  h v
@@ -117,7 +120,7 @@ class RcList < FXGroupBox
     
     @list = FXList2.new(gbr,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|FRAME_SUNKEN,@myId,nil,0,0,0,16*20+26,0,0,0,0,0,0)
     @list.backColor = parent.backColor
-    @list.appendHeader("Nr",  nil, 25, :Nr)
+    @list.appendHeader("Nr",  nil, 50, :Nr)
     @list.appendHeader("",  iconFromDat("flag.png"), 24, :Icon)
     @list.appendHeader("Modelname",  nil, 100,:Name)
     @list.appendHeader("Size",  nil, 40,:Size)
@@ -234,13 +237,13 @@ class RcList < FXGroupBox
       #puts "#{@myId} MOTION #{srcId} #{tgtItem}"
       ret=DRAG_REJECT
       if tgtItem and tgtItem.empty?
-	if srcId==@myId
+        if srcId==@myId
           #puts "#{@myId} == #{srcId}"
-	  ret=DRAG_MOVE
-	else
+          ret=DRAG_MOVE
+        else
           #puts "#{@myId} != #{srcId}"
-	  ret=DRAG_COPY
-	end
+          ret=DRAG_COPY
+        end
       end
       ret
     }
@@ -255,6 +258,7 @@ class RcList < FXGroupBox
         dsti+=1
       }
       refresh()
+      false # no more data
     }
     #drop ^^^^^^^^^^^^^^^^^^
     @rcFiles=Array.new(20)
@@ -314,7 +318,6 @@ class RcList < FXGroupBox
     cmd += " " + @prefDialog.getVal(:AVRDUDEPROGARGS)
   end
   
-  
   def progress(tot=100)
     begin
       @progress.total=tot
@@ -351,7 +354,7 @@ class RcList < FXGroupBox
         ss+=s
         out+=s
         if ss.count("\#")!=0 or ss=~/\n/
-
+          
           $log.addColTxt(ss)#,"darkgreen")#
           $log.showEnd
           #STDOUT.flush
@@ -401,7 +404,7 @@ class RcList < FXGroupBox
       eeReader=Reader_V4.new
       File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
       progressInc
-
+      
       eeWriter=Reader_V4.new
       eeWriter.format() 
       
@@ -417,9 +420,9 @@ class RcList < FXGroupBox
       #eeWriter.info
       sleep 1
       progressInc
-
+      
       File.open("eeTmp","wb"){|f| f.write(eeWriter.toBin) }
-
+      
       progressWrite(nil)
       if $opt_t
         cp "eeTmp","../eeprom.bin"
@@ -436,7 +439,7 @@ class RcList < FXGroupBox
       #sys("echo hello2;sleep 1; echo hello3; sleep 1")
       rm_f "eeTmp"
       progressInc
-
+      
       if $opt_t
         #sysp dudeBase + " -p 2343 -Uflash:w:../eeprom.bin:r"
         #cnt,lcnt=0
