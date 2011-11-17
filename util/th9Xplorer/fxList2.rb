@@ -493,6 +493,8 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
       when DRAG_LINK
         puts "DRAG_LINK"
       end
+      p ["endDrag2",@canvas.endDrag]
+      
       @canvas.dragCursor=@nocsr
       @canvas.ungrab
     end
@@ -502,19 +504,26 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
     # @mousepressed=false
   end
   def onDndRequest(sender,sel,event)
+    puts "def onDndRequest(sender,sel,event)"
     #pp event.ext
     case event.target 
     when $dndTypeIdentify
       #puts "SEL_DND_REQUEST #{event.target} dndTypeIdentify"
       @canvas.setDNDData(FROM_DRAGNDROP, $dndTypeIdentify,Marshal.dump([@id]))
     when $dndTypeRcData
-      #puts "SEL_DND_REQUEST #{event.target} dndTypeRcData"
+      # puts "SEL_DND_REQUEST #{event.target} dndTypeRcData"
       arr=[@canvas.didAccept]#move or copy ..
-      @items.each_with_index{|item,i|arr << i if item.selected?}
-      #pp arr
+      @items.each_with_index{|item,i|
+        if item.selected?
+          arr << i 
+          item.select(false)
+          break
+        end
+        }
+      # pp arr
       data=checkUserConnects(self,MKUINT(0,SEL_DND_REQUEST),arr)
-      #pp data
-      killSelection()
+      # pp data
+      # killSelection()
       @canvas.setDNDData(FROM_DRAGNDROP, $dndTypeRcData, Marshal.dump(data))
     else
       raise "unknown request #{event.target} != #{$dndTypeIdentify},#{$dndTypeRcData}"
@@ -529,6 +538,7 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
   end
   def onDnd_Drop_Motion(sender,sel,event)#SEL_DND_MOTION,SEL_DND_DROP
     selt=FXSELTYPE(sel)
+    puts "def onDnd_Drop_Motion(sender,#{selt},event)"
     #pp event.ext
     # bug??? win_x win_y hat flalschen bezugspunkt bei SEL_DND_DROP
     #item,index,hindex,dx,dy = if selt==SEL_DND_MOTION
@@ -571,14 +581,15 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
         end
       else #SEL_DND_DROP
         #puts "getDNDData(FROM_DRAGNDROP >"
-        if data = @canvas.getDNDData(FROM_DRAGNDROP, $dndTypeRcData)
+        while data = @canvas.getDNDData(FROM_DRAGNDROP, $dndTypeRcData)
           #pp "getDNDData=",data
           #puts "getDNDData(FROM_DRAGNDROP < #{data}"
           data = Marshal.load(data)    
-          killSelection()
-          checkUserConnects(self,MKUINT(0,SEL_DND_DROP),[index,data])
-          return 
+          # killSelection()
+          more=checkUserConnects(self,MKUINT(0,SEL_DND_DROP),[index,data])
+          break if !more
         end
+        return 
       end
     end
     if selt==SEL_DND_MOTION
@@ -610,6 +621,9 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
 
 end
 class FXListGenericItem
+  BG_WHITE1 = FXRGB(255,255,255)
+  BG_WHITE2 = FXRGB(225,240,235)
+
   attr_reader   :list      #meine liste
   attr_reader   :parent    #mein parent-dir
   attr_accessor :childs    #meine kinder
@@ -681,6 +695,39 @@ class FXListGenericItem
     #dc.drawIcon(icn2, x, y+(h-icon.height)/2) if icn2
     x
   end
+  def drawNumIcon(dc,x,y,w,h,nr,icon=nil)
+    bgCol  = nr%2==0 ? BG_WHITE1 : BG_WHITE2
+    dimcol = FXRGB(60,60,60)
+    fgCol = list.textColor;
+ 
+    if icon
+      dc.setForeground(bgCol- dimcol)
+      dc.fillRectangle(x,y,icon.width,h);
+
+      dc.drawIcon(icon, x, y+(h-icon.height)/2) 
+      x+=icon.width
+      w-=icon.width
+    end
+    
+
+    font = list.font
+    th   = font.getFontHeight()
+    asc  = font.getFontAscent()
+    wt   = 1+5+font.getTextWidth("99")
+
+    #if selected? #and data != 1
+    #  bgCol = list.selbackColor 
+    #  fgCol = list.seltextColor;
+    #end
+    dc.setForeground(bgCol- dimcol)#$app.baseColor-cdiff)
+    dc.fillRectangle(x,y,wt,h);
+
+    dc.setForeground(fgCol);
+    dc.drawText(x+1,y+(h-th)/2+asc,"%02d"%nr)# if @nr
+    return x+wt
+  end
+
+
   def selected?()
     @selected
   end
