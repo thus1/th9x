@@ -162,8 +162,8 @@ def main
   #}
   $icnth9x         = iconFromDat("th9x-icn-128x128.png")
 
-  $dndTypeIdentify= $app.registerDragType("application/identify#$$")#"text/uri-list"
-  $dndTypeRcData = $app.registerDragType("application/rcdata#$$")#"text/uri-list"
+  $dndTypeIdentify= $app.registerDragType("application/identify")#"text/uri-list"
+  $dndTypeRcData = $app.registerDragType("application/rcdata")#"text/uri-list"
 
 
   th9x=Th9x.new($app)

@@ -485,15 +485,15 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
       #puts "canvas.endDrag win_x=#{event.win_x}win_y=#{event.win_y}"
       case @canvas.endDrag
       when DRAG_COPY
-        puts "DRAG_COPY"
+        #puts "DRAG_COPY"
       when DRAG_MOVE
-        puts "DRAG_MOVE #{DRAG_MOVE}"
+        #puts "DRAG_MOVE #{DRAG_MOVE}"
         # @fxpdir.reload
         #setDir(@fxpdir)
       when DRAG_LINK
-        puts "DRAG_LINK"
+        #puts "DRAG_LINK"
       end
-      p ["endDrag2",@canvas.endDrag]
+      #p ["endDrag2",@canvas.endDrag]
       
       @canvas.dragCursor=@nocsr
       @canvas.ungrab
@@ -504,26 +504,19 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
     # @mousepressed=false
   end
   def onDndRequest(sender,sel,event)
-    puts "def onDndRequest(sender,sel,event)"
-    #pp event.ext
     case event.target 
     when $dndTypeIdentify
-      #puts "SEL_DND_REQUEST #{event.target} dndTypeIdentify"
-      @canvas.setDNDData(FROM_DRAGNDROP, $dndTypeIdentify,Marshal.dump([@id]))
+      @canvas.setDNDData(FROM_DRAGNDROP, $dndTypeIdentify,Marshal.dump({:srcid=>@id}))
     when $dndTypeRcData
-      # puts "SEL_DND_REQUEST #{event.target} dndTypeRcData"
-      arr=[@canvas.didAccept]#move or copy ..
+      #puts "def onDndRequest(sender,sel,event) dndTypeRcData"
+      data={:droptyp => @canvas.didAccept}#move or copy ..
       @items.each_with_index{|item,i|
-        if item.selected?
-          arr << i 
-          item.select(false)
-          break
-        end
-        }
-      # pp arr
-      data=checkUserConnects(self,MKUINT(0,SEL_DND_REQUEST),arr)
-      # pp data
-      # killSelection()
+        next if !item.selected?
+        data[:srcidx]=i
+        item.select(false)
+        break
+      }
+      data=checkUserConnects(self,MKUINT(0,SEL_DND_REQUEST),data)
       @canvas.setDNDData(FROM_DRAGNDROP, $dndTypeRcData, Marshal.dump(data))
     else
       raise "unknown request #{event.target} != #{$dndTypeIdentify},#{$dndTypeRcData}"
@@ -538,7 +531,6 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
   end
   def onDnd_Drop_Motion(sender,sel,event)#SEL_DND_MOTION,SEL_DND_DROP
     selt=FXSELTYPE(sel)
-    puts "def onDnd_Drop_Motion(sender,#{selt},event)"
     #pp event.ext
     # bug??? win_x win_y hat flalschen bezugspunkt bei SEL_DND_DROP
     #item,index,hindex,dx,dy = if selt==SEL_DND_MOTION
@@ -548,27 +540,22 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
     #                          end
     x,y=@canvas.translateCoordinatesFrom(@canvas.root,event.root_x,event.root_y)  
     item,index,hindex,dx,dy = getItemAt(x,y) 
-
-
+    
+    #puts "def onDnd_Drop_Motion(#{selt},#{x}.#{y},#{index})"
 
     #puts "onDndDropMotion #{@parent.class} #{$SEL2NAME[selt]} #{index}"
-    #pp index,hindex,dx,dy
-    #if i=event2idx(event) and ! (@items[i] and @items[i].selected?)
     if  item and
         !(item.selected?) and
         @canvas.offeredDNDType?(FROM_DRAGNDROP, $dndTypeIdentify) and
         @canvas.offeredDNDType?(FROM_DRAGNDROP, $dndTypeRcData)
       #puts " event2idx = #{i}"
-        #if @canvas.offeredDNDType?(FROM_DRAGNDROP, $dndTypeIdentify)
       if selt==SEL_DND_MOTION
 	if idData = @canvas.getDNDData(FROM_DRAGNDROP, $dndTypeIdentify)
-          data = Marshal.load(idData)
+          #pp idData
 
-          acc=checkUserConnects(self,MKUINT(0,SEL_DND_MOTION),[index,item]+data)
-#          #puts "  moveidxType"
-#          #pp data
-#          acc = data==@id ? DRAG_MOVE : DRAG_COPY
-          #if selt==SEL_DND_MOTION
+          data = Marshal.load(idData)
+          data[:dstidx],data[:dstitem] = index,item
+          acc=checkUserConnects(self,MKUINT(0,SEL_DND_MOTION),data)#[index,item]+data)
             if (event.state     & 4)!= 0 #ctrl
               acc=DRAG_COPY
             elsif (event.state & 1) != 0 #sft
@@ -582,11 +569,9 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
       else #SEL_DND_DROP
         #puts "getDNDData(FROM_DRAGNDROP >"
         while data = @canvas.getDNDData(FROM_DRAGNDROP, $dndTypeRcData)
-          #pp "getDNDData=",data
-          #puts "getDNDData(FROM_DRAGNDROP < #{data}"
           data = Marshal.load(data)    
-          # killSelection()
-          more=checkUserConnects(self,MKUINT(0,SEL_DND_DROP),[index,data])
+          data[:dstidx]=index
+          more=checkUserConnects(self,MKUINT(0,SEL_DND_DROP),data)#[index,data])
           break if !more
         end
         return 
@@ -733,6 +718,7 @@ class FXListGenericItem
   end
   def select(what=true)
     what = !@selected if what == :TOG
+    what = false      if empty?
     if @selected != what
       @selected=what
       update()

@@ -20,6 +20,9 @@ class FXListArchItem < FXListGenericItem
   def allocate!
     @name="allocated"
   end
+  def empty!
+    @name=nil
+  end
   def empty?
     not @name
   end
@@ -155,7 +158,7 @@ class OrgaList < FXList2
             #k=item.kind == :file ? "File" : "Folder"
             s = FXInputDialog.getString(s, self, "Rename Folder","from: #{s} to:",nil) 
             if s and s != item.name
-              @fileSys.mv item.path(),item.path(s)
+              @fileSys.mv item.path(),item.dir+"/#{s}"
             end
           end
         end
@@ -165,7 +168,7 @@ class OrgaList < FXList2
     }
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
-        if item.selected?
+        if item.selected? and !item.empty?
           if item.kind==:file
             @fileSys.rmFile(item.path)
           else
@@ -194,29 +197,35 @@ class OrgaList < FXList2
 
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
-      mode,*idxRest = data
-      ret=[]
-      idxRest.each{|sidx|
-        ret << [@list.items[sidx].name,@fileSys.readFile(idx2Path(sidx))]
+      #mode,*idxRest = data
+      mode = data[:droptyp]
+      #ret={} #[]
+      #idxRest.each{|sidx|
+      if sidx = data[:srcidx]
+        item=@list.items[sidx]
+        data[:name]     = item.name
+        data[:contents] = @fileSys.readFile(item.path)
         @list.selectItem(sidx,false)
         if mode == DRAG_MOVE
-          @fileSys.rmFile(idx2Path(sidx))
+          @fileSys.rmFile(item.path)
+          item.empty!
           #puts "move deletes orig"
-          break #move only the first of selection
+          #break #move only the first of selection
         end
-      }
+      end
+      #}
       #puts "#{@myId} SEL_DND_REQUEST #{ret}"
-      ret
+      data #ret
     }
   #drag ^^^^^^^^^^^^^^^^^^
   #drop vvvvvvvvvvvvvvvvv
 
     @list.connect(SEL_DND_MOTION){|sender,sel,data|
       # drop-tgt: action an drag-src liefern
-      index,item,srcId = data
+      dstIndex,dstItem,srcId = data[:dstidx],data[:dstitem],data[:srcid]
       #puts "#{@myId} MOTION #{srcId} #{item}"
       ret=DRAG_REJECT
-      if item and @fileSys.allowedDrop
+      if dstItem and @fileSys.allowedDrop
 	if srcId==@myId
 	  ret=DRAG_MOVE
 	else
@@ -229,39 +238,47 @@ class OrgaList < FXList2
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
       #pp data
-      dsti,list = data
-      ret=true #more data
+      # dsti,list = data
+      dsti,name,contents = data[:dstidx],data[:name],data[:contents]
+      ret=false #more data
       if dsti and item=@list.items[dsti] #only if item
         #  and item.kind==:file   #only if item exists and is file
         if item.kind==:file
-          p       = File.dirname(item.path) 
+          #p       = File.dirname(item.path) 
           parent  = item.parent
+          childs  = parent.childs
+          dsti    = childs.index(item)
+          #puts "found dsti=#{dsti}"
         else
-          p       = item.path
+          #p       = item.path
           parent  = item
+          childs  = parent.childs
+          dsti    = 0
         end
-        #pp parent.to_s
+        #p       = parent.path
         nr=0
-        if list.length==0
-          refresh()
-          ret=false
-        else
-          list.each{|name,contents| #=name_contents
-            #p item.parent.to_s
-            while 1
-              item=@list.items[dsti]
-              if ! item or item.parent!=parent 
-                nr+=1
-                break
-              end
-              nr=item.nr
-              break if item.empty?
-              dsti+=1
+        #pp [parent.path,nr,parent.object_id]
+        if contents #list.length==0
+          while 1
+            item = childs[dsti] #@list.items[dsti]
+            if ! item #or item.parent!=parent 
+              nr+=1
+              item=FXListArchItem.new(self,:file,$minidoc,parent.path+"/dummy",nr,nil,nil,nil)
+              @list.appendItem(parent,item)
             end
-            @fileSys.addFile(p,nr,contents)
-            #item.allocate!
+            nr=item.nr
+            if item.empty?
+              item.allocate!
+              break 
+            end
             dsti+=1
-          }
+          end
+          #puts "dsti=#{dsti} nr=#{nr}"
+          @fileSys.addFile(parent.path,nr,contents)
+          dsti+=1
+          ret=true
+        else
+          refresh()
         end
       end
       #refresh()
