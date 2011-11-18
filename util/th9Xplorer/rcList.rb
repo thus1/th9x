@@ -168,7 +168,6 @@ class RcList < FXGroupBox
     FXMenuCommand.new(@mpop,"Rename..").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          #name,ctent = getNameContents(i+1) #@rcFiles[i+1]
           fi = i+1
           ret = renameFileDialog(@rcFiles[fi]) 
           @rcFiles[fi] = ret if ret
@@ -189,7 +188,7 @@ class RcList < FXGroupBox
     FXMenuCommand.new(@mpop,"Delete").connect(SEL_COMMAND){|sender,sel,event|
       @list.items.each_with_index{|item,i|
         if item.selected?
-          @rcFiles[i+1]="" #[nil,""]
+          @rcFiles[i+1]=nil #[nil,""]
         end
       }
       @list.killSelection()
@@ -215,28 +214,32 @@ class RcList < FXGroupBox
     @list.connect(SEL_DND_REQUEST){|sender,sel,data|
       # drag-src: daten an drop target ausliefern
       #mode,sidx,*idxRest = data
-      mode,*idxRest = data
-      ret=[]
-      idxRest.each{|sidx|
-        ret << getNameContents(sidx+1) #@rcFiles[sidx+1]
+      #mode,*idxRest = data
+      mode = data[:droptyp]
+      #ret={} #[]
+      #idxRest.each{|sidx|
+      if sidx = data[:srcidx]
+        data[:name],data[:contents] = getNameContents(sidx+1) #@rcFiles[sidx+1]
         @list.selectItem(sidx,false)
         if mode == DRAG_MOVE
-          @rcFiles[sidx+1]="" # [nil,""] 
+          @rcFiles[sidx+1]=nil # [nil,""] 
           # puts "move deletes orig"
-          break #move only the first of selection
+          #break #move only the first of selection
         end
-      }
+      end
+      #}
       refresh()
-      ret
+      data #ret
     }
     #drag ^^^^^^^^^^^^^^^^^^
     #drop vvvvvvvvvvvvvvvvv
     @list.connect(SEL_DND_MOTION){|sender,sel,data|
       # drop-tgt: action an drag-src liefern
-      tgtIndex,tgtItem,srcId = data
+      #tgtIndex,tgtItem,srcId = data
+      dstIndex,dstItem,srcId = data[:dstidx],data[:dstitem],data[:srcid]
       #puts "#{@myId} MOTION #{srcId} #{tgtItem}"
       ret=DRAG_REJECT
-      if tgtItem and tgtItem.empty?
+      if dstItem and dstItem.empty?
         if srcId==@myId
           #puts "#{@myId} == #{srcId}"
           ret=DRAG_MOVE
@@ -251,14 +254,28 @@ class RcList < FXGroupBox
     @list.connect(SEL_DND_DROP){|sender,sel,data|
       # drop-tgt: drop ausfuehren
       #puts "SEL_DND_DROP"
-      dsti,list = data
-      list.each{|name,contents| #=name_contents
-        @list.selectItem(dsti,true)
-        @rcFiles[dsti+1] = contents #name_contents
+      dsti,name,contents = data[:dstidx],data[:name],data[:contents]
+      ret=false
+      if contents
+        # @list.selectItem(dsti,true)
+        while dsti<16
+          if @rcFiles[dsti+1].nil?
+            if contents
+              @rcFiles[dsti+1] = contents
+              contents         = nil
+            else
+              ret=true
+              break
+            end
+          end
+          dsti+=1
+        end
+        #puts "next dsti=#{dsti}"
         dsti+=1
-      }
-      refresh()
-      false # no more data
+        refresh()
+      else
+      end
+      ret # no more data
     }
     #drop ^^^^^^^^^^^^^^^^^^
     @rcFiles=Array.new(20)
@@ -289,7 +306,7 @@ class RcList < FXGroupBox
   end
   def getNameContents(fi)
     cont=@rcFiles[fi]
-    return [nil,""] if !cont or cont==""
+    return [nil,nil] if !cont
     name = Reader_V4.mbuf2name(cont).strip.tr("\s","_")
     #name = cont[1,10].strip.tr("\s","_")
     [name,cont]
