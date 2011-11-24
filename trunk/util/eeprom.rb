@@ -790,10 +790,13 @@ class Reader_V4
 
     checkFat
   end
-
+  attr_reader :spclBlks,:totBlks,:freeBlks,:usedBlks
   def checkFat # Reader_V4
-    fatInfo     = Array.new(@wholeEEprom.length/16,nil) # fat info
+    @totBlks = @wholeEEprom.length/16  
+    @spclBlks = 4
+    fatInfo     = Array.new(@totBlks,nil) # fat info
     # integrity check all files
+    usedBlks=0
     MAXFILES_V4.times{|fi|
       bi  = @eefs.files[fi].startBlk
       sz  = @eefs.files[fi].size_typ & 0xfff
@@ -805,6 +808,7 @@ class Reader_V4
           infoMap
           break
         end
+        usedBlks+=1
         fatInfo[j]=(fi+?a).chr+("%02d "%cnt);
         true
       }
@@ -829,9 +833,12 @@ class Reader_V4
       end
     }
     fatInfo.each_with_index{|f,i|
-      next if i<4
+      next if i<@spclBlks
       puts "ERROR lost block #{i}" if !f 
     }
+    @freeBlks=freeBlks
+    @usedBlks=usedBlks
+    @usedBlks+@freeBlks+@spclBlks == @totBlks or raise ""
     [fatInfo,freeBlks]
   end
 
