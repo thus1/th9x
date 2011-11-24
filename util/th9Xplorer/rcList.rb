@@ -148,8 +148,6 @@ class RcList < FXGroupBox
       }
     }
     @progress=FXProgressBar.new(hfb,nil,0, PROGRESSBAR_DIAL|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,0,0,sze,sze,*[0]*4 ) 
-    #@progress.total=100
-    #@progress.progress=1
     
     FXArrowButton.new(hfb,nil,0,FRAME_RAISED|FRAME_THICK|ARROW_DOWN|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT,0,0,sze,sze){|a|
       #a.arrowSize=30
@@ -159,8 +157,8 @@ class RcList < FXGroupBox
     }
     
     
-    FXLabel.new(gbr,"",$icnth9x,LAYOUT_CENTER_X)
-    
+    @th9x=FXLabel.new(gbr,"",$icnth9x,LAYOUT_CENTER_X)
+
     
     @mpop = FXPopup.new(self)
     #FXMenuCaption.new(@mpop,"Caption")
@@ -282,7 +280,18 @@ class RcList < FXGroupBox
   end
   def create
     super
-    app.addChore{ @progress.hide }
+    app.addChore{ 
+      @progress.hide
+      w=42
+      h=16
+      p2=FXProgressBar.new(self,nil,0, LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y,
+                           @th9x.x+@th9x.width/2-w/2,@th9x.y+108-h/2,w,h,*[0]*4 ) 
+      p2.barBGColor = FXRGB(0,100,50)
+      p2.barColor = FXRGB(250,50,50)
+      p2.progress=0
+      p2.create
+      @fillBar=p2
+    }
   end
   def connect(sel,*args,&block)
     #if [SEL_LEFTBUTTONPRESS,
@@ -475,6 +484,7 @@ class RcList < FXGroupBox
         @rcFiles[idx] = contents # [name,contents]
         progressInc
       }
+      @fillBar.progress = eeReader.usedBlks*100/(eeReader.usedBlks+eeReader.freeBlks)
     }
   end
   def refresh()
