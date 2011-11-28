@@ -282,16 +282,20 @@ class RcList < FXGroupBox
     super
     app.addChore{ 
       @progress.hide
+    }
+  end
+  def showFillRc(prc)
+    unless @fillBar
       w=42
       h=16
       p2=FXProgressBar.new(self,nil,0, LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y,
                            @th9x.x+@th9x.width/2-w/2,@th9x.y+108-h/2,w,h,*[0]*4 ) 
       p2.barBGColor = FXRGB(0,100,50)
       p2.barColor = FXRGB(250,50,50)
-      p2.progress=0
       p2.create
       @fillBar=p2
-    }
+    end
+    @fillBar.progress=prc
   end
   def connect(sel,*args,&block)
     #if [SEL_LEFTBUTTONPRESS,
@@ -456,6 +460,8 @@ class RcList < FXGroupBox
       else
         sysp(dudeBase + " -p m64 -Ueeprom:w:eeTmp:r") {|ss| progressWrite(ss)}
       end
+      #showFillRc(eeWriter.usedBlks*100/(eeWriter.usedBlks+eeWriter.freeBlks))
+      showFillRc(eeWriter.getFillLevel*100)
     }
   end
   
@@ -484,7 +490,7 @@ class RcList < FXGroupBox
         @rcFiles[idx] = contents # [name,contents]
         progressInc
       }
-      @fillBar.progress = eeReader.usedBlks*100/(eeReader.usedBlks+eeReader.freeBlks)
+      showFillRc(eeReader.getFillLevel*100)
     }
   end
   def refresh()

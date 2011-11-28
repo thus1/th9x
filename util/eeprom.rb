@@ -790,7 +790,7 @@ class Reader_V4
 
     checkFat
   end
-  attr_reader :spclBlks,:totBlks,:freeBlks,:usedBlks
+  #attr_reader :spclBlks,:totBlks,:freeBlks,:usedBlks
   def checkFat # Reader_V4
     @totBlks = @wholeEEprom.length/16  
     @spclBlks = 4
@@ -841,7 +841,10 @@ class Reader_V4
     @usedBlks+@freeBlks+@spclBlks == @totBlks or raise ""
     [fatInfo,freeBlks]
   end
-
+  def getFillLevel
+    checkFat 
+    return @usedBlks.to_f/(@usedBlks+@freeBlks)
+  end
   def eachFile() # Reader_V4
     MAXFILES_V4.times{|fi|
       fb,typ,sz=readFile(fi)
