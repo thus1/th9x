@@ -841,9 +841,12 @@ class Reader_V4
     @usedBlks+@freeBlks+@spclBlks == @totBlks or raise ""
     [fatInfo,freeBlks]
   end
-  def getFillLevel
+  def getStat
     checkFat 
-    return @usedBlks.to_f/(@usedBlks+@freeBlks)
+    return {
+      :fillLev => @usedBlks.to_f/(@usedBlks+@freeBlks),
+      :totUserBlks => (@totBlks-@spclBlks)
+    }
   end
   def eachFile() # Reader_V4
     MAXFILES_V4.times{|fi|
@@ -888,7 +891,7 @@ class Reader_V4
     infoMap(arg,full)
   end
 
-  def infoFileTyp(fb) # Reader_V4
+  def Reader_V4.infoFileTyp(fb) # Reader_V4
     #buf=Codec::decode1(@fbuf[fi],11)
     #fb,typ,sz=readFile(fi)
     buf=Codec::decode1(fb,11)
@@ -926,7 +929,7 @@ class Reader_V4
   end
   def infoFileFull(fi) # Reader_V4
     fb,typ,sz=readFile(fi)
-    cmt,dec,cls = infoFileTyp(fb)
+    cmt,dec,cls = Reader_V4.infoFileTyp(fb)
     puts "--- File #{fi} '#{cmt}' D#{dec}: ---------------------------------"
     return if !cls
     obj=cls.new
@@ -936,12 +939,22 @@ class Reader_V4
     obj.fromBin(fbufdec)
     puts obj
   end
+  def Reader_V4.file_to_s(contents) # Reader_V4
+    cmt,dec,cls = Reader_V4.infoFileTyp(contents)
+    return "" if !cls
+    obj=cls.new
+    fbufdec = (dec==1 ? Codec::decode1(contents) : Codec::decode2(contents))
+    #pp fbufdec
+    obj.fromBin(fbufdec)
+    #pp obj.to_s
+    obj.to_s
+  end
   def infoFile(fi) # Reader_V4
     bi  = @eefs.files[fi].startBlk
     sz  = @eefs.files[fi].size_typ & 0xfff
     typ = @eefs.files[fi].size_typ   >> 12
     fb,typ,sz=readFile(fi)
-    cmt,dec,cls = infoFileTyp(fb)
+    cmt,dec,cls = Reader_V4.infoFileTyp(fb)
     fbufdec = (dec==1 ? Codec::decode1(fb) : Codec::decode2(fb))
     printf("%s  %4d %2d  %3d %s D#{dec}",(fi+?a).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}

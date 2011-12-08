@@ -16,6 +16,25 @@ module ModelFileUtils #for include in archList and rcList
     return nil
   end
 
+  def showModelData(item)
+    if item and item.kind == :file
+       # showModelData( @fileSys.readFile(item.path()) )
+      filecontents = item.readFile()
+      $modeldata.text=Reader_V4.file_to_s(filecontents)
+      $modeldata.show
+    end
+  end
+  def onClicked(sender,sel,data)
+    event,item=data
+    if event.click_count==2
+      #if item and item.kind == :file
+      showModelData( item )
+      #end
+      true #processing complete
+    else
+      false
+    end
+  end
 end
 
 class FileSystem

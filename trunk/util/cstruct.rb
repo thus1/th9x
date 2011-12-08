@@ -193,7 +193,7 @@ module CStruct
     def sizeof()            @strlen                                      end
     def CString.granu()     1                                            end
     def to_sInternal(ofs,nest=0) 
-        [sprintf("'%s' (%s)\n",@value,self.class.to_s[9..-1]),ofs+@strlen]             end
+        [sprintf("%s (%s)\n",@value.inspect,self.class.to_s[9..-1]),ofs+@strlen]             end
       def set(v)    @value = v;                                          end
       def get()     @value;                                              end
       def toBin()   [@value].pack "a#{@strlen}";                         end

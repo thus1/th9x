@@ -26,6 +26,9 @@ class FXListArchItem < FXListGenericItem
   def empty?
     not @name
   end
+  def readFile
+    @alist.fileSys.readFile(path())
+  end
 
   # D      Dir
   # |- D   SubDir
@@ -117,6 +120,7 @@ end
 
 class OrgaList < FXList2
   include ModelFileUtils
+  attr_reader :fileSys
   def initialize(parent,fileSys,opened=true)
     @fileSys,@opened=fileSys,opened
     @myId = "orgaList#{rand(10000)}"
@@ -136,6 +140,12 @@ class OrgaList < FXList2
     #FXMenuSeparator.new(@mpop)
     
 
+    #FXMenuCommand.new(@mpop,"View Model Data").connect(SEL_COMMAND){|sender,sel,event|
+     # showModelData( @popItem )
+      #if @popItem and @popItem.kind == :file
+      #  showModelData( @fileSys.readFile(@popItem.path()) )
+      #end
+    #}
     FXMenuCommand.new(@mpop,"New Folder").connect(SEL_COMMAND){|sender,sel,event|
       if @popItem and s = FXInputDialog.getString("newfolder", self, "Create new Folder","Folder Name:",nil) 
         dir = @popItem.kind==:file ? @popItem.dir : @popItem.dir
@@ -180,6 +190,9 @@ class OrgaList < FXList2
       refresh()
     }
 
+    @list.connect(SEL_CLICKED){|sender,sel,data|
+      onClicked(sender,sel,data)
+    }
     @list.connect(SEL_RIGHTBUTTONPRESS){|sender,sel,data|
       @mpop.create
       item,index,hindex,dx,dy=@list.getItemAtCsr()

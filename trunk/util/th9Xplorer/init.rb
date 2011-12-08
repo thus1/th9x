@@ -67,7 +67,7 @@ class Th9x < FXMainWindowPersSize
     super(app, "th9Xplorer", nil, nil, DECOR_ALL, 0, 0, 0, 0,*[0]*6)
 
     $log=TxtReader.new(self,"","Log View")
-    #$log=TxtReader.new(self,"","Log View",80,25,TEXT_AUTOSCROLL|TEXT_SHOWACTIVE)
+    $modeldata=TxtReader.new(self,"","Model Data")
 
     @menubar = FXMenuBar.new(self, LAYOUT_SIDE_TOP|LAYOUT_FILL_X|FR0)
     filemenu = FXMenuPane.new(self)
@@ -107,6 +107,9 @@ class Th9x < FXMainWindowPersSize
     FXMenuSeparator.new(helpmenu)
     FXMenuCommand.new(helpmenu, "&View Log").connect(SEL_COMMAND) {
       $log.show()
+    }
+    FXMenuCommand.new(helpmenu, "&View Modeldata").connect(SEL_COMMAND) {
+      $modeldata.show()
     }
 
     hf=FXHorizontalFrame.new(self, LAYOUT_FILL_X|LAYOUT_FILL_Y, 0,0,0,0, 15,15,5,10, 40,20)

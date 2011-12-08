@@ -14,7 +14,7 @@ class FXListRcItem < FXListGenericItem
     #attr_accessor :txt, :icon, :lev #, :list
     #attr_reader :txt, :icon, :lev #, :list
   LPAD=4
-
+  def kind; :file ; end
   def empty?
     not @name
   end
@@ -23,14 +23,17 @@ class FXListRcItem < FXListGenericItem
     super if ! empty?
   end
 
-  def initialize(nr)#,lev)#,isDir)
-    @nr=nr
+  def initialize(alist,nr)#,lev)#,isDir)
+    @alist,@nr=alist,nr
     @selected=false
     set(nil,nil,nil)
   end
   def set(icon,name,size)#,lev)#,isDir)
     # @name,@icon,@lev,@isDir=name,icon,lev,isDir
     @icon,@name,@size=icon,name,size
+  end
+  def readFile
+    @alist.getNameContents(@nr)[1]
   end
 
   # D      Dir
@@ -113,12 +116,14 @@ class RcList < FXGroupBox
   def initialize(parent,prefDialog)
     @prefDialog=prefDialog
     #gbr=FXGroupBox.new(parent, "RC" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 0,0,0,0, 0,0) # x y w h  l r t b  h v
-    gbr=self
+    # gbr=self
     @myId = "rcList#{rand(10000)}"
-    super(parent, "th9x" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,25,5, 0,0) # x y w h  l r t b  h v
+    super(parent, "th9x" ,LAYOUT_FILL_Y|GROUPBOX_NORMAL|GROUPBOX_TITLE_CENTER|FRAME_RIDGE, 0,0,0,0, 10,10,9,5, 0,0) # x y w h  l r t b  h v
+    uf=FXHorizontalFrame.new(self, LAYOUT_CENTER_X, 0,0,0,0, 0,0,0,0, 0,0)
+    FXLabel.new(uf,"Usage: ",nil,LAYOUT_CENTER_X)
+    @usageLab = FXLabel.new(uf,"-",nil,LAYOUT_CENTER_X)
     
-    
-    @list = FXList2.new(gbr,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|FRAME_SUNKEN,@myId,nil,0,0,0,16*20+26,0,0,0,0,0,0)
+    @list = FXList2.new(self,LAYOUT_FILL_X|LAYOUT_FIX_HEIGHT|FRAME_SUNKEN,@myId,nil,0,0,0,16*20+26,0,0,0,0,0,0)
     @list.backColor = parent.backColor
     @list.appendHeader("Nr",  nil, 50, :Nr)
     @list.appendHeader("",  iconFromDat("flag.png"), 24, :Icon)
@@ -132,11 +137,11 @@ class RcList < FXGroupBox
     @userConnects={}
     @rcItems=[]
     16.times{|i|
-      @rcItems[i]=it=FXListRcItem.new(i+1)
+      @rcItems[i]=it=FXListRcItem.new(self,i+1)
       @list.appendItem(nil,it) 
     }
     
-    hfc=FXHorizontalFrame.new(gbr, LAYOUT_CENTER_X, 0,0,0,0, 0,0,0,0, 0,0)
+    hfc=FXHorizontalFrame.new(self, LAYOUT_CENTER_X, 0,0,0,0, 0,0,0,0, 0,0)
     hfb=FXHorizontalFrame.new(hfc, LAYOUT_CENTER_X, 0,0,0,0, 0,0,10,10, 10,0)
     sze=40
     
@@ -157,7 +162,7 @@ class RcList < FXGroupBox
     }
     
     
-    @th9x=FXLabel.new(gbr,"",$icnth9x,LAYOUT_CENTER_X)
+    @th9x=FXLabel.new(self,"",$icnth9x,LAYOUT_CENTER_X)
 
     
     @mpop = FXPopup.new(self)
@@ -169,15 +174,6 @@ class RcList < FXGroupBox
           fi = i+1
           ret = renameFileDialog(@rcFiles[fi]) 
           @rcFiles[fi] = ret if ret
-          #)
-          #s = name
-          #s = FXInputDialog.getString(s, self, "Rename File","from: #{s} to:",nil) 
-          #if s and s != name
-          #  # @rcFiles[i+1][0] = s
-          #  @rcFiles[i+1][1,10] = (s+(" "*10))[0,10]
-          #  
-          #  # @fileSys.mv item.path(),item.path(s)
-          #end
         end
       }
       @list.killSelection()
@@ -192,7 +188,10 @@ class RcList < FXGroupBox
       @list.killSelection()
       refresh()
     }
-    
+    @list.connect(SEL_CLICKED){|sender,sel,data|
+      onClicked(sender,sel,data)
+    }
+
     @list.connect(SEL_RIGHTBUTTONPRESS){|sender,sel,data|
       @mpop.create
       item,index,hindex,dx,dy=@list.getItemAtCsr()
@@ -277,6 +276,7 @@ class RcList < FXGroupBox
     }
     #drop ^^^^^^^^^^^^^^^^^^
     @rcFiles=Array.new(20)
+    @totfree = (2048-4*16)*15/16
   end
   def create
     super
@@ -320,7 +320,7 @@ class RcList < FXGroupBox
   def getNameContents(fi)
     cont=@rcFiles[fi]
     return [nil,nil] if !cont
-    name = Reader_V4.mbuf2name(cont).strip.tr("\s","_")
+    name = Reader_V4.mbuf2name(cont).strip #.tr("\s","_")
     #name = cont[1,10].strip.tr("\s","_")
     [name,cont]
   end
@@ -356,7 +356,8 @@ class RcList < FXGroupBox
       yield
     ensure
       @progress.hide
-      refresh()
+      update
+      #refresh()
     end
   end
   def progressInc(inc=1)
@@ -443,7 +444,6 @@ class RcList < FXGroupBox
         eeWriter.writeFile(fi,typ,fb) if fb.length!=0
       }
       (1..16).each{|idx|
-        #name,contents = @rcFiles[idx]
         contents = @rcFiles[idx]
         eeWriter.writeFile(idx,2,contents) if contents and contents.length!=0
       }
@@ -484,24 +484,34 @@ class RcList < FXGroupBox
       eeReader=Reader_V4.new
       File.open("eeTmp","rb"){|f| eeReader.readEEprom(f); }
       
+      stat=eeReader.getStat
+      showFillRc(stat[:fillLev]*100)
+      @totfree = stat[:totUserBlks]*15
+      
       @rcFiles=Array.new(20)
       eeReader.eachFile{|idx,name,contents|
+        if idx==0
+          @totfree -= ((contents.length+14)/15)*15 if contents
+        end
         #name=name.strip.tr("\s","_")
         @rcFiles[idx] = contents # [name,contents]
         progressInc
       }
-      showFillRc(eeReader.getFillLevel*100)
     }
+    refresh
   end
   def refresh()
+    used    = 0
     16.times{|i|
       name,contents=getNameContents(i+1) #@rcFiles[i+1]
+      used += ((contents.length+14)/15)*15 if contents
       if name
         @rcItems[i].set($minidoc,name,contents.length)
       else
         @rcItems[i].set(nil,nil,nil)
       end
     }
+    @usageLab.text="%d/%d (%d%%)"%[used,@totfree,used*100/@totfree]
     @list.update
   end
 end
