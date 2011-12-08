@@ -384,7 +384,7 @@ class FXList2 < FXVerticalFrame #FXScrollWindow#Area
     item or return
     # @canvas.update
     return if item.handle(hindex,dx,dy,sender,sel,event)
-    checkUserConnects(self,MKUINT(0,SEL_CLICKED),item)
+    return if checkUserConnects(self,MKUINT(0,SEL_CLICKED),[event,item])
 
 
     action = nil
