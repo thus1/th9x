@@ -461,7 +461,8 @@ class RcList < FXGroupBox
         sysp(dudeBase + " -p m64 -Ueeprom:w:eeTmp:r") {|ss| progressWrite(ss)}
       end
       #showFillRc(eeWriter.usedBlks*100/(eeWriter.usedBlks+eeWriter.freeBlks))
-      showFillRc(eeWriter.getFillLevel*100)
+      stat=eeWriter.getStat
+      showFillRc(stat[:fillLev]*100)
     }
   end
   
