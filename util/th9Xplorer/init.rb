@@ -13,7 +13,8 @@
 
 cd util
 
-EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 wine "c:\SFRUBY_185\i486-windowsNT\bin\ruby" "c:\SFRUBY_185\i486-windowsNT\bin\rubyscript2exe.rb" th9Xplorer -h --rubyscript2exe-rubyw
+EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 wine "c:\SFRUBY_185\i486-windowsNT\bin\ruby" "c:\SFRUBY_185\i486-windowsNT\bin\rubyscript2exe.rb" th9Xplorer -h
+ --rubyscript2exe-rubyw
 
 EEE_TEMPDIR=eee.th9Xplorer EEE_KEEP=1 rubyscript2exe.rb th9Xplorer -h
 
