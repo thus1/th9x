@@ -342,7 +342,7 @@ end
 
 class FXMainWindowPersSize< FXMainWindow
   def initialize(app,title,icon,miniicon,opts,xDef,yDef,wDef,hDef,*args)
-    super(app, title,icon,miniicon,opts, xDef,yDef,wDef,hDef,*args)
+    super(app, title,icon,miniicon,opts, xDef, yDef>20 ? yDef : yDef+20,wDef,hDef,*args)
     persSize()
   end
   def close(notify=false) #only fox16
