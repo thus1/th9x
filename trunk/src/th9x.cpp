@@ -35,8 +35,15 @@ todo
 
 - Beschleunigungssensor BMA020 oder BMA180 http://www.rclineforum.de/forum/index.php?page=ExternalLink&url=aHR0cDovL3d3dy5lbHYuZGUvMy1BY2hzZW4tQmVzY2hsZXVuaWd1bmdzc2Vuc29yLTNELUJTLC1Lb21wbGV0dGJhdXNhdHoveC5hc3B4L2NpZF83NC9kZXRhaWxfMTAvZGV0YWlsMl8yODUxNQ==
 
-- bitwerte im ppm-signal fuer schalter
-- use receiver instead of trainer-cable
++ new line am ende einfuegen
++ edit-mode exit mit 'menu' 
++ bitwerte im ppm-signal fuer schalter output mode S 
+- multi trim (flight phases)
+- signalton als output issue59
+- issue111 backlight auto off mit keys statt sticks 
+- issue111 backlight time shorter, option on
+
++ use receiver instead of trainer-cable
 - convert old models
 + timer mit thr-switch, 
 + timer2

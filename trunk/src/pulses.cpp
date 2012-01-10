@@ -22,6 +22,7 @@
 
 static uint8_t  pulses2MHz[50*3];
 static uint8_t *pulses2MHzPtr;
+uint8_t  g_pulseLoopCnt; //only in ppm-mode
 
 #define CTRL_END 0
 #define CTRL_CNT 1
@@ -256,6 +257,7 @@ static void setupPulsesPPM()
     _send_2(300*2-1,v-1);
   }
   _send_2(300*2-1,rest-1);
+  g_pulseLoopCnt++;
 
 }
 

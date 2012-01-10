@@ -17,6 +17,14 @@
 
 FoldedList FoldedList::inst;
 
+uint8_t  FoldedList::getCh(uint8_t idt)
+{
+  return inst.m_chProc(arrayElt(idt),0);
+}
+void     FoldedList::setCh(uint8_t idt,uint8_t ch)
+{
+  inst.m_chProc(arrayElt(idt),ch);
+}
 
 void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,uint8_t numChn)
 {
@@ -38,7 +46,7 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
     inst.m_lines[0].showHeader=true;
     for( idt=0; idt < dimArr && *arrayElt(idt); idt++)
     {
-      uint8_t ch=chProc(arrayElt(idt),0);
+      uint8_t ch=getCh(idt);//chProc(arrayElt(idt),0);
       if(idt>0 && ch < inst.m_lines[inst.m_prepCurrIFL-1].chId){
         printf("\nERROR re-sort %d:ch%d <=> %d:ch%d\n",idt-1,ch,idt,inst.m_lines[inst.m_prepCurrIFL-1].chId);
         memswap(inst.arrayElt(idt-1), inst.arrayElt(idt), inst.m_prepSzeElt);
@@ -47,9 +55,10 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
         eeDirty(EE_MODEL);
         break; //data ist resorted, try once more
       }
-      bool ret=fill(ch,idt);
+      //bool ret=
+      fill(ch,idt);
       Line &l=inst.m_lines[inst.m_prepCurrIFL++];
-      l.showCh   = ret;//true;
+      //l.showCh   = ret;//true;
       l.chId     = inst.m_prepCurrCh;
       l.idt      = idt;
       l.showDat  = true;
@@ -58,23 +67,27 @@ void FoldedList::init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,
   }while(failed);
 
   inst.fill(numChn+1,idt);
+  inst.m_lines[inst.m_prepCurrIFL].showCh=false;
 }
 
-bool FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
+//bool 
+void FoldedList::fill(uint8_t ch, uint8_t idt) //helper func for construction
 {
   if(ch > inst.m_prepCurrCh) {
+    //empty or first lines
     while(1){
       inst.m_prepCurrCh++;
-      if(inst.m_prepCurrCh>=ch) break;
-      Line &l=inst.m_lines[inst.m_prepCurrIFL++];
+      Line &l=inst.m_lines[inst.m_prepCurrIFL];
       l.showCh = true;
       l.chId   = inst.m_prepCurrCh;
       l.idt    = idt; //insert behind
+      if(inst.m_prepCurrCh>=ch) break;
+      inst.m_prepCurrIFL++;
       assert(inst.m_prepCurrIFL<=DIM(inst.m_lines));
     }
-    return true;
-  }else{
-    return false;
+    //return true;
+    //}else{
+    //return false;
   }
 }
 uint8_t FoldedList::findChn(uint8_t chn)
@@ -106,6 +119,7 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
   inst.m_subChanged = subChanged; //sub wurde gerade veraendert +x oder -x
   inst.m_chnNav     = chnNav;     //wir sind im chn navi bereich
 
+  //handle line moves
   if(inst.m_listEdit && subChanged 
      && sub //jetz nicht im header
      && (sub-subChanged) //vorher nicht im header
@@ -113,22 +127,23 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
   ) //
   {
     int8_t idt2  = inst.m_currIDT+subChanged;
-    uint8_t chn1 = inst.m_chProc(arrayElt(inst.m_currIDT),0);
+    uint8_t chn1 = inst.getCh(inst.m_currIDT);//m_chProc(arrayElt(inst.m_currIDT),0);
     //    assert(idt2>=0);
     uint8_t chn2 = 0; //ungueltig
     if((idt2>=0) && (idt2<inst.m_prepCurrIDT))
-      chn2=inst.m_chProc(arrayElt(idt2),0);
+      chn2=inst.getCh(idt2);//m_chProc(arrayElt(idt2),0);
     
-    printf("subChanged=%d currIDT=%d idt2=%d chn1=%d,chn2=%d prepCurrIDT=%d\n",subChanged,inst.m_currIDT,idt2,chn1,chn2,inst.m_prepCurrIDT);
+    //printf("subChanged=%d currIDT=%d idt2=%d chn1=%d,chn2=%d prepCurrIDT=%d\n",subChanged,inst.m_currIDT,idt2,chn1,chn2,inst.m_prepCurrIDT);
     if(chn1==chn2){
       memswap(inst.arrayElt(inst.m_currIDT),
               inst.arrayElt(idt2),
               inst.m_prepSzeElt);
     }else{      
-      inst.m_chProc(arrayElt(inst.m_currIDT),chn1+subChanged);
+      //inst.m_chProc(arrayElt(inst.m_currIDT),chn1+subChanged);
+      inst.setCh(inst.m_currIDT,chn1+subChanged);
       if(subChanged>0){ //Spezialfall multidat ->
         if(inst.m_currIDT>=1){ //es gibt einen Vorgaenger
-          uint8_t chn0 = inst.m_chProc(arrayElt(inst.m_currIDT-1),0);
+          uint8_t chn0 = inst.getCh(inst.m_currIDT-1);//m_chProc(arrayElt(inst.m_currIDT-1),0);
           if(chn0 == chn1) inst.m_subIFL -= 1;//zeile steht, ch springt um
         }
       }else{            //Spezialfall multidat <-
@@ -136,8 +151,7 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
       }
     }
     return 0;
-
-  }
+  }//end line move
 
   //ensure selection is at showed ch or dat
   while(inst.m_subIFL>0 && inst.m_subIFL<inst.m_prepCurrIFL) {
@@ -187,6 +201,7 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
         goto ret_dup;
       }
       if(inst.m_chnNav){  //neue Zeile einfuegen
+
         ret=FoldedListNew;
         goto ret_dup;
       }
@@ -194,11 +209,6 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
     case EVT_KEY_LONG(KEY_MENU):  // _LONG
       if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
       if(inst.m_listEdit) break;
-//       {
-//         ret = FoldedListDup;
-//         goto ret_dup;
-//       }
-      //if(inst.m_currInsMode){  //neue Zeile einfuegen
       if(inst.m_chnNav){  //neue Zeile einfuegen
         if(! NAVI_ADVANCED) break;
         ret=FoldedListNewEdit;//FoldedListNew;
@@ -206,6 +216,7 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
       }
       beepKey();
       killEvents(); //cut off 
+      inst.m_editIDT = inst.m_currIDT;
       return FoldedListEdit; //Zeile edit
   }
 
@@ -218,6 +229,18 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
     //printf("currIDT %d dimArr %d\n",inst.m_prepCurrIDT,dimArr);
     beepErr();
     return 0;
+  }
+  if(ret==FoldedListNew || ret==FoldedListNewEdit){
+    //add the new line not at top, but at the end of an existing line block
+    //therefore find the end IDT
+    uint8_t ifl=inst.m_subIFL;
+    //    printf("editidt=%d currDestCh=%d\n",inst.m_editIDT,inst.m_currDestCh);
+    
+    while(inst.m_currDestCh == inst.m_lines[ifl++].chId){
+      inst.m_currIDT     = inst.m_lines[ifl].idt;
+      //      printf("editidt=%d currDestCx=%d\n",inst.m_editIDT,inst.m_lines[ifl].chId);
+    }
+    inst.m_editIDT = inst.m_currIDT; //editIDT lives longer than currIDT
   }
 
   memmove(

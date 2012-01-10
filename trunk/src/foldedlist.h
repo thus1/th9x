@@ -18,17 +18,19 @@
 #include "th9x.h"
 
 
-//ch selChn  dat selDat
-// 1  _0    
-// 2          21  *1
-//            22  *2
-//    _4      23  *3
-// 3  _5    
-// 4  _6    
-// 5  _7    
-// 6  _8    
-// 7  _9    
-// 8  _10    
+//ch  shwDat idt shwHdr
+//                 t
+// 1    dat0  0    
+// 2          1
+// 3          1
+// 4    dat1  1
+//  (4) dat2  2  
+//  (4) dat3  3  
+//  (4) dat4  4  
+// 5          5
+// 6          5
+// 7          5
+// 8          5
 typedef uint8_t ChProc(uint8_t*line, uint8_t setCh);
 
 
@@ -41,21 +43,15 @@ public:
     bool   showDat:1;// show the data info
     bool   showHeader:1;// show the header
     uint8_t chId;    //:4  1..NUM_XCHNOUT  dst chn id             
-    //int8_t islCh;   //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
-    //int8_t islDat;  //:5  1..MAX_MIXERS+NUM_XCHNOUT sel sequence
     int8_t idt;     //:5  0..MAX_MIXERS-1  edit index into mix data tab
   };
  private:
   Line    m_lines[MAX(MAX_MIXERS+NUM_XCHNOUT,MAX_EXPOS+4)+1];
 //indize:
-//
-// IDT  data tab
-// ISL  select sequence
-// IFL  foldedlist
-// IFLr rel. foldedlist
+// IDT  index into user data tab
+// IFL  index into foldedlist m_lines
   uint8_t m_prepCurrCh;   //for construction init,fill,addDat
   uint8_t m_prepCurrIFL;
-  //  uint8_t m_prepCurrISL;
   uint8_t m_prepCurrIDT;  // number of lines in data tab
   ChProc* m_chProc;
   uint8_t m_numChn;
@@ -72,26 +68,27 @@ public:
   bool    m_chnNav;
  private:
   int8_t  m_subChanged;
-  //  uint8_t m_iterMinISL;
 
   bool    m_isSelectedCh; // * user info after nextline
   bool    m_isSelectedDat;// *
 
   bool    m_listEdit;     // * user info after doEvent
   uint8_t m_currIDTOld;   // * user info for move ops
-  uint8_t m_currIDT;      // * user info for move ops, curr user line
+  uint8_t m_currIDT;      // * user index for move ops
+  uint8_t m_editIDT;      // * user index for edit one dataset
   uint8_t m_currDestCh;   // * for init new lines
   //bool    m_currInsMode;  // * is edit one called by insert or by edit
 
 private:
   static uint8_t*   arrayElt(uint8_t idx){return (uint8_t*)inst.m_prepArray + (uint8_t)(inst.m_prepSzeElt * idx);  }
   //static void    editModeOff()  { inst.m_listEdit=false;}
-  
+  static uint8_t  getCh(uint8_t idt);//{return inst.m_chProc(arrayElt(idt),0);}
+  static void     setCh(uint8_t idt,uint8_t ch);//{inst.m_chProc(arrayElt(idt),ch);}
 public:  
   static bool    listEditMode(bool val) {return inst.m_listEdit=val;}
   static bool    listEditMode() {return inst.m_listEdit;}
   static uint8_t fillLevel()    {return inst.m_prepCurrIDT;}
-  static uint8_t currIDT()      {return inst.m_currIDT;}
+  static uint8_t editIDT()      {return inst.m_editIDT;}
   //  static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
   static uint8_t currDestCh()   {return inst.m_currDestCh;}
   //static bool    currInsMode()  {return inst.m_currInsMode;}
@@ -103,7 +100,7 @@ public:
   static void init(void*array,uint8_t dimArr, uint8_t szeElt, ChProc* chProc,uint8_t numChn);
   static inline bool addDat(uint8_t ch, uint8_t idx);
   static void show();           //helper func for debug
-  static bool fill(uint8_t ch, uint8_t idt); //helper func for construction
+  static void fill(uint8_t ch, uint8_t idt); //helper func for construction
   static uint8_t findChn(uint8_t chn);
 
   /// iterate one time through the filled list (show loop)

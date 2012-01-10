@@ -312,7 +312,7 @@ void eeLoadModel(uint8_t id)
       model167->limitData[i].scale = 0;
       v = model143->limitData[i].max+100;
       model167->limitData[i].max   = add7Bit(val2idx50_150(v),-40);
-      model167->limitData[i].resv  = 0;
+      model167->limitData[i].binSwtch = 0;
     }
     model143->mdVers = MDVERS167;
   }
