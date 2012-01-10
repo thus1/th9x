@@ -159,7 +159,7 @@ int8_t  val2idx50_150(int16_t val);
 
 
 enum EnumKeys {
-  KEY_MENU ,
+  KEY_MENU=0 ,
   KEY_EXIT ,
   KEY_DOWN ,
   KEY_UP  ,
@@ -508,9 +508,7 @@ void menuProc0();
 void menuProcDisplayTest();
 
 extern "C" uint8_t* setupPulses();
-//void setupPulsesPPM();
-//void setupPulsesSilver();
-//void setupPulsesTracerCtp1009();
+extern uint8_t  g_pulseLoopCnt; //only in ppm-mode
 
 extern int16_t intpol(int16_t, uint8_t);
 

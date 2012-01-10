@@ -6,11 +6,12 @@ require "pp"
 # avrdude -c usbtiny -p m64 -U hfuse:w:0x81:m
 # avrdude -c usbtiny -p m64 -U lfuse:w:0x0e:m
 # avrdude -c usbtiny -p m64 -U efuse:w:0xff:m
+#avrdude -c usbasp -p m64 -U hfuse:r:-:h -U lfuse:r:-:h -U efuse:r:-:h
 
 
 PARDEF={}
-PARDEF[:PROG]     = "USBPROG"
-#PARDEF[:PROG]     = "AVRDUDE"
+#PARDEF[:PROG]     = "USBPROG"
+PARDEF[:PROG]     = "AVRDUDE"
 PARDEF[:TC]       = "TC_PAR1"
 
 
@@ -25,6 +26,7 @@ TC_PAR1=%w(
   AVR_PATH=/opt/cross
   USBPROG=usbprog.rb
   AVRDUDE=avrdude
+  AVRDUDEC=usbasp
   OBJCOPY=avr-objcopy
   CC=avr-gcc
 )
@@ -156,7 +158,7 @@ class Builder
         sys "usbprog wrFlash",@pars[:USBPROG] +" wrFlash #{fbin}"
       when "AVRDUDE"
         typ = MCU_PAR[@pars[:MCU].to_sym][:id]
-        sys "avrdude wrFlash",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U flash:w:#{fbin}:r"
+        sys "avrdude wrFlash",@pars[:AVRDUDE] +" -q -c#{@pars[:AVRDUDEC]} -p #{typ} -U flash:w:#{fbin}:r"
       when "USBTINY"
 	typ = @pars[:MCU]
 	typ=="attiny10" or raise "unknown typ"
@@ -175,7 +177,7 @@ class Builder
       sys "usbprog wrEeprom",@pars[:USBPROG] +" wrEeprom #{fbin}"
     when "AVRDUDE"
       typ = MCU_PAR[@pars[:MCU].to_sym][:id]
-      sys "avrdude rdEeprom",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U eeprom:w:#{fbin}:r"
+      sys "avrdude rdEeprom",@pars[:AVRDUDE] +" -q -c#{@pars[:AVRDUDEC]} -p #{typ} -U eeprom:w:#{fbin}:r"
     else
       raise "bad progrmmer"
     end
@@ -190,7 +192,7 @@ class Builder
         sys "usbprog #{uspact}", @pars[:USBPROG] +" #{uspact} 0 #{size} #{fn}"
       when "AVRDUDE"
         typ = mpars[:id]
-        sys "avrdude #{uspact}",@pars[:AVRDUDE] +" -q -cusbtiny -p #{typ} -U #{avdact}:r:#{fn}:r"
+        sys "avrdude #{uspact}",@pars[:AVRDUDE] +" -q -c#{@pars[:AVRDUDEC]} -p #{typ} -U #{avdact}:r:#{fn}:r"
       else
         raise "bad progrmmer"
       end

@@ -215,16 +215,19 @@ bool keyState(EnumKeys enuk)
 
 void slowEvents(uint8_t event)
 {
-  event=event & EVT_KEY_MASK;
+  if(!event) return;
+  event &= EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].slowEvents();
 }
 void pauseEvents(uint8_t event)
 {
-  event=event & EVT_KEY_MASK;
+  if(!event) return;
+  event &= EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].pauseEvents();
 }
 void killEventsRaw(uint8_t event)
 {
+  if(!event) return;
   event &= EVT_KEY_MASK;
   if(event < (int)DIM(keys))  keys[event].killEvents();
 }
@@ -236,7 +239,9 @@ void killEvents()
 
 uint8_t getEventDbl(uint8_t event)
 {
-  event=event & EVT_KEY_MASK;
+  assert(event);
+  if(!event) return 0;
+  event &= EVT_KEY_MASK;
   if(event < (int)DIM(keys))  return keys[event].getDbl();
   return 0;
 }

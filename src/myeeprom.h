@@ -201,7 +201,7 @@ typedef struct t_LimitData_r167 {
   int8_t  min:7;
   bool    scale:1;
   int8_t  max:7; 
-  bool    resv:1;
+  bool    binSwtch:1; //resv
   bool    revert:1;
   int8_t  offset:7;
 } __attribute__((packed)) LimitData_r167;
@@ -229,7 +229,7 @@ typedef struct t_MixData_r192 {
   uint8_t mixMode:2;   // + * =
   uint8_t dmy1:2;   //
 
-  uint8_t srcRaw:5;    // S1-4,P1-3,max,cur,X1-X4,p1-3,T1-8  24
+  uint8_t srcRaw:5;    // S1-4,P1-3,p1-3,max,cur,Ch1-8,X1-4,T1-8  32
   uint8_t switchMode:2; //switchMode oOff\tiNeg\tiNul\tiPos
   uint8_t curveNeg:1;  // Cv cV
 

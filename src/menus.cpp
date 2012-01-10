@@ -112,20 +112,13 @@ void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_
     curr--; //calc from 0, user counts from 1
 
     if(m_posVert==0){
-      attr = BLINK;
+      attr = ATT_CSR_EDT;
       switch(g_event)
       {
         case EVT_KEY_FIRST(KEY_LEFT):
           curr += menuTabSize-2;
-//           if(curr>0){
-//             chainMenu((MenuFuncP)pgm_read_adr(&menuTab[curr-1]));
-//           }
-// 	  killEvents();
-//           break;
+	  //fallthrough
         case EVT_KEY_FIRST(KEY_RIGHT):
-//           if(curr < (menuTabSize-1)){
-//             chainMenu((MenuFuncP)pgm_read_adr(&menuTab[curr+1]));
-//           }
           curr++;
           if(curr>=menuTabSize) curr-=menuTabSize;
           chainMenu((MenuFuncP)pgm_read_adr(&menuTab[curr]));
@@ -208,9 +201,11 @@ void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_
       case EVT_KEY_LONG(KEY_LEFT):   //
       case EVT_KEY_LONG(KEY_RIGHT):  //start edit
         if(! NAVI_ADVANCED) break;
+        m_valEdit = 1;
+        break;
       case EVT_KEY_BREAK(KEY_MENU):
         BLINK_SYNC; 
-        m_valEdit = 1;
+        m_valEdit ^= 1;
         break;
       case EVT_KEY_BREAK(KEY_RIGHT):  //inc horz
         if(m_valEdit) break;
@@ -290,16 +285,16 @@ void menuProcCurveOne() {
 
   for (uint8_t i = 0; i < min(cvTyp,(uint8_t)5); i++) {
     uint8_t y = i * FH + 16;
-    uint8_t attr = sub == i ? BLINK : 0;
+    uint8_t attr = sub == i ? ATT_CSR_EDT : 0;
     lcd_outdezAtt(4 * FW, y, crv[i], attr);
   }
   if(cvTyp==9)
     for (uint8_t i = 0; i < 4; i++) {
       uint8_t y = i * FH + 16;
-      uint8_t attr = sub == i + 5 ? BLINK : 0;
+      uint8_t attr = sub == i + 5 ? ATT_CSR_EDT : 0;
       lcd_outdezAtt(8 * FW, y, crv[i + 5], attr);
     }
-  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == cvTyp ? BLINK : 0);
+  lcd_putsAtt( 2*FW, 7*FH,PSTR("PRESET"),sub == cvTyp ? ATT_CSR_EDT : 0);
 
   static int8_t dfltCrv;
   if(sub<cvTyp)  CHECK_INCDEC_H_MODELVAR(  crv[sub], -100,100);
@@ -368,7 +363,7 @@ void menuProcCurve() {
   }
   uint8_t y    = 1*FH;
   for (uint8_t i = 0; i < 7; i++) {
-    uint8_t attr = sub == i ? BLINK : 0;
+    uint8_t attr = sub == i ? ATT_CSR_EDT : 0;
     lcd_putsAtt(   FW*0, y,PSTR("f"),attr);
     lcd_outdezAtt( FW*2, y,i+1 ,attr);
 
@@ -409,7 +404,7 @@ void menuProcLimits()
     lcd_putsmAtt(x , 1*FH,PSTR("subT\t""min\t""scl\t""max\t""inv"),i,(sub==1 && mstate2.m_posHorz==i) ? INVERS : 0);
   }
   sub-=2;
-#define ATTR(row,col) ((sub==row && subHor==col) ? (mstate2.m_valEdit?BLINK:BLINKF) : 0)
+#define ATTR(row,col) ((sub==row && subHor==col) ? (mstate2.m_valEdit?ATT_CSR_EDT:ATT_CSR_MV) : 0)
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
@@ -418,7 +413,7 @@ void menuProcLimits()
     putsChn(0,y,k+1, 0);
     for(uint8_t j=1; j<=5;j++){
       uint8_t attr = ATTR(k,j);
-      bool    edit = attr == BLINK;
+      bool    edit = attr == ATT_CSR_EDT;
       switch(j)
       {
         case 1:
@@ -435,12 +430,16 @@ void menuProcLimits()
           }
           ld->min = add7Bit(v,40);
           break;        
-        case 3:
-          lcd_putsmAtt(   13*FW, y, PSTR(" \t""*"),ld->scale,attr);
+      case 3:{
+	  uint8_t scl_bin=ld->scale+ld->binSwtch*2;
+          lcd_putsmAtt(   13*FW, y, PSTR(" \t*\tS"),scl_bin,attr);
           if(edit) {
-            CHECK_INCDEC_H_MODELVAR_BF(  ld->scale,    0,1);
+            CHECK_INCDEC_H_MODELVAR_BF(  scl_bin,    0,2);
+	    ld->scale    =     scl_bin & 1;
+	    ld->binSwtch = !! (scl_bin & 2);
           }
           break;
+      }
         case 4:
           v = add7Bit(ld->max,+40);
           lcd_outdezAtt( 18*FW, y, idx2val50_150(v),    attr);
@@ -498,7 +497,7 @@ void menuProcTrim()
     putsChnRaw(0,y,iLog,0);//attr);
     for(uint8_t j=0; j<2;j++){
       uint8_t attr = ATTR(iLog,j);
-      bool    edit = attr == BLINK;
+      bool    edit = attr == ATT_CSR_EDT;
       switch(j)
       {
         case 0:
@@ -511,10 +510,10 @@ void menuProcTrim()
         case 1:
 	  //uint8_t attr = sub==iLog ? INVERS : 0; 
 	  lcd_outdezAtt( 9*FW, y, trimVal(iLog)*2, attr|PREC1 );
-	  if(edit && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? BLINK|SIGN : 0);
+	  if(edit && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? ATT_CSR_EDT|SIGN : 0);
 	  else           lcd_outdezAtt(14*FW, y, g_model.limitData[iLog].offset , 0);
 	  
-	  if(edit && outHelp[iLog+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[iLog+4] , outHelp[iLog+4] ? BLINK|SIGN : 0);
+	  if(edit && outHelp[iLog+4] && BLINK_ON_PHASE)lcd_outdezAtt(19*FW, y, outHelp[iLog+4] , outHelp[iLog+4] ? ATT_CSR_EDT|SIGN : 0);
 	  else           lcd_outdezAtt(19*FW, y, g_model.limitData[iLog+4].offset , 0);
 	  if(edit && g_event== EVT_KEY_BREAK(KEY_RIGHT)) {
 	    for(uint8_t i=0; i<NUM_CHNOUT;i++){
@@ -552,7 +551,7 @@ int16_t getSrcValSw(int8_t swId,int8_t opCmp)
 void editSwitchVals( uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
 {
   bool     edit    = mEdit==1;
-  uint8_t  editAtt = mEdit ? (edit ? BLINK : BLINKF ) : 0;
+  uint8_t  editAtt = mEdit ? (edit ? ATT_CSR_EDT : ATT_CSR_MV ) : 0;
   SwitchData_r204 &sd = g_model.switchTab[idt];
   switch(which)
   {
@@ -617,7 +616,7 @@ void menuProcSwitchOne()
   static MState2 mstate2;
   uint8_t x=TITLEP(FL_INST.currInsMode() ? PSTR("INSERT ") : PSTR("EDIT "));  
   lcd_puts_P( x, 0,PSTR("SW"));
-  lcd_putc( x+2*FW, 0,g_model.switchTab[FL_INST.currIDT()].sw+'1');
+  lcd_putc( x+2*FW, 0,g_model.switchTab[FL_INST.editIDT()].sw+'1');
   MSTATE_CHECK0_V(5);
   int8_t  sub    = mstate2.m_posVert;
 
@@ -629,7 +628,7 @@ void menuProcSwitchOne()
     if(i==4){y+=FH;}
     lcd_putsmAtt( FW*8, y,PSTR("Val1\tOp1 \tVal2\t Op2\tRM  "),i,INVERS);
 
-    editSwitchVals(i,sub==i,x, y,FL_INST.currIDT());
+    editSwitchVals(i,sub==i,x, y,FL_INST.editIDT());
     y+=FH;
   }
 }
@@ -684,7 +683,7 @@ void menuProcSwitchesCom( bool nested)
     case FoldedListNew:
     case FoldedListNewEdit:
       {
-        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.currIDT()];
+        SwitchData_r204  *sd = &g_model.switchTab[FL_INST.editIDT()];
         sd->sw              = FL_INST.currDestCh()-1; //1;   //
         sd->opRes           = 1;
       }
@@ -722,8 +721,8 @@ void menuProcSwitchesCom( bool nested)
       lcd_puts_P( 5*FW+2, y,PSTR("val op val op2 "ARR_N_S));
     }  
     if(line->showCh){  
-      lcd_putsAtt( 0, y,PSTR("SW"),FL_INST.isSelectedCh()?BLINKF:0);
-      lcd_putcAtt( 0+2*FW, y,line->chId+'0',FL_INST.isSelectedCh()?BLINKF:0);
+      lcd_putsAtt( 0, y,PSTR("SW"),FL_INST.isSelectedCh()?ATT_CSR_MV:0);
+      lcd_putcAtt( 0+2*FW, y,line->chId+'0',FL_INST.isSelectedCh()?ATT_CSR_MV:0);
     }
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
@@ -774,9 +773,10 @@ void showSwitches(uint8_t subSw) //submenu of main
 void editMixVals( uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
 {
   bool     edit    = mEdit==1;
-  uint8_t  editAtt = mEdit ? (edit ? BLINK : BLINKF ) : 0;
+  uint8_t  editAtt = mEdit ? (edit ? ATT_CSR_EDT : ATT_CSR_MV ) : 0;
   MixData_r192 &md2 = g_model.mixData[idt];
 #define CURV_STR     "  \t""f1\t""f2\t""f3\t""f4\t""f5\t""f6\t""f7"
+  //if(g_model.limitData[destCh].binSwtch) {md2.srcRaw=SRC_MAX;md2.curve=0;md2.speedDown=md2.speedUp=0; }
 
   switch(which)
   {
@@ -871,7 +871,7 @@ void menuProcMixOne()
 {
   static MState2 mstate2;
   uint8_t x=TITLEP(FL_INST.currInsMode() ? PSTR("INSERT MIX ") : PSTR("EDIT MIX "));  
-  MixData_r192 &md2 = g_model.mixData[FL_INST.currIDT()];
+  MixData_r192 &md2 = g_model.mixData[FL_INST.editIDT()];
   putsChn(x,0,md2.destCh,0);
   MSTATE_CHECK0_V(9);
   int8_t  sub    = mstate2.m_posVert;
@@ -886,7 +886,7 @@ void menuProcMixOne()
     if(i==8){y+=FH;}
     lcd_putsmAtt( FW*8, y,PSTR(" Src \t%  Op\t\tCurve\tSwtch\t\tSlope\t\t RM  "),i,INVERS);
 
-    editMixVals(i,sub==i,x, y,FL_INST.currIDT());
+    editMixVals(i,sub==i,x, y,FL_INST.editIDT());
     y+=FH;
   }
 
@@ -936,7 +936,7 @@ void menuProcMix()
       lcd_puts_P(     3*FW+2, y, PSTR("inp  % crv sw,mod"ARR_N_S));
     }  
     if(line->showCh){  
-      putsChn(0,y,line->chId,FL_INST.isSelectedCh()?BLINKF:0); // show CHx
+      putsChn(0,y,line->chId,FL_INST.isSelectedCh()?ATT_CSR_MV:0); // show CHx
     }
     if(line->showDat){ //show data 
       MixData_r192 &md2=md[line->idt];
@@ -980,7 +980,7 @@ void menuProcMix()
     case FoldedListNew:
     case FoldedListNewEdit:
       {
-        MixData_r192  *md = &g_model.mixData[FL_INST.currIDT()];
+        MixData_r192  *md = &g_model.mixData[FL_INST.editIDT()];
         md->destCh      = FL_INST.currDestCh(); //-s_mixTab[sub];
         md->srcRaw      = FL_INST.currDestCh()-1; //1;   //
         md->weight      = 100;
@@ -1000,11 +1000,8 @@ void menuProcMix()
     default:;
       break;
   }
-  mstate2.m_posVert=FL_INST.m_subIFL;
+  mstate2.m_posVert=FL_INST.m_subIFL; //
   if(FL_INST.m_chnNav && mstate2.m_posVert) mstate2.m_posHorz=subHor=0;
-
-
-  //printf("menuProcMixE.mstate2.m_posVert=%d\n",mstate2.m_posVert);
 
 }
 
@@ -1067,7 +1064,7 @@ inline int16_t expo(int16_t x, int8_t k)
 void editExpoVals(uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
 {
   bool     edit    = mEdit==1;
-  uint8_t  editAtt = mEdit ? (edit ? BLINK : BLINKF ) : 0;
+  uint8_t  editAtt = mEdit ? (edit ? ATT_CSR_EDT : ATT_CSR_MV ) : 0;
   ExpoData_r171 &ed = g_model.expoTab[idt];
  
   switch(which)
@@ -1140,7 +1137,7 @@ void menuProcExpoOne()
 {
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR ");  
-  ExpoData_r171 &ed = g_model.expoTab[FL_INST.currIDT()];
+  ExpoData_r171 &ed = g_model.expoTab[FL_INST.editIDT()];
   putsChnRaw(x,0,ed.chn,0);
   MSTATE_CHECK0_V(6);
   int8_t  sub    = mstate2.m_posVert;
@@ -1150,7 +1147,7 @@ void menuProcExpoOne()
   for(uint8_t i=0;i<6;i++){
     lcd_putsm_P(0,y,PSTR("Expo\t""Crv\t""Weight\t""DrSw\t""Mode\t""RM"),i);
     //editExpoVals(i,sub==i,5*FW, y,FL_INST.currIDT());
-    editExpoVals(i,sub==i,9*FW, y,FL_INST.currIDT());
+    editExpoVals(i,sub==i,9*FW, y,FL_INST.editIDT());
     y+=FH;
   }
 
@@ -1230,7 +1227,7 @@ void menuProcExpoAll()
       lcd_puts_P( 3*FW+2, y, PSTR("exp crv % sw mod "ARR_N_S));
     }  
     if(line->showCh){  
-      putsChnRaw( 0, y,line->chId-1,FL_INST.isSelectedCh()?BLINKF:0);
+      putsChnRaw( 0, y,line->chId-1,FL_INST.isSelectedCh()?ATT_CSR_MV:0);
     }
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
@@ -1256,7 +1253,7 @@ void menuProcExpoAll()
     case FoldedListNew:
     case FoldedListNewEdit:
       {
-        ExpoData_r171  *ed = &g_model.expoTab[FL_INST.currIDT()];
+        ExpoData_r171  *ed = &g_model.expoTab[FL_INST.editIDT()];
         ed->chn         = FL_INST.currDestCh()-1; //-s_mixTab[sub];
         ed->mode3       = 3; //both neg+pos
         //ed->exp5        = 0;
@@ -1329,9 +1326,9 @@ void menuProcModel()
   {
     y+=FH;
 #ifdef UNIFIED
-    uint8_t attr = sub==i ? (mstate2.m_valEdit ? BLINK : BLINKF) : 0; 
+    uint8_t attr = sub==i ? (mstate2.m_valEdit ? ATT_CSR_EDT : ATT_CSR_MV) : 0; 
 #else
-    uint8_t attr = sub==i ? BLINK  : 0; 
+    uint8_t attr = sub==i ? ATT_CSR_EDT  : 0; 
 #endif
     if(i<3)
       lcd_putsmAtt(  0,    y,    PSTR("Name\t""Timer\t""Proto"),i,(subHor==0 && attr) ? INVERS : 0);
@@ -1343,7 +1340,7 @@ void menuProcModel()
         if(attr && subHor) {
           char v = char2idx(g_model.name[subHor-1]);
 #ifdef UNIFIED
-          if(attr == BLINK){
+          if(attr == ATT_CSR_EDT){
             CHECK_INCDEC_H_MODELVAR_BF( v ,0,NUMCHARS-1);
           }
 #else
@@ -1362,7 +1359,7 @@ void menuProcModel()
                        ( subHor==3 ? attr:0));
         putsDrSwitches(15*FW, y, g_model.tmrSw , ( subHor==4 ? attr:0));
 
-        if(attr==BLINK) switch(subHor) 
+        if(attr==ATT_CSR_EDT) switch(subHor) 
         {
           case 1:
             {
@@ -1422,7 +1419,7 @@ void menuProcModel()
 
 	  lcd_putsmAtt(   6*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
 	  lcd_putsmAtt(   12*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
-	  if(attr==BLINK) switch(subHor)    {
+	  if(attr==ATT_CSR_EDT) switch(subHor)    {
 #ifdef UNIFIED
 	  case 1: CHECK_INCDEC_H_MODELVAR_BF(g_model.protocol,0,PROT_MAX);	    break;
 	  case 2: CHECK_INCDEC_H_MODELVAR_BF(g_model.protocolPar,0,pgm_read_byte(p));break;
@@ -1523,10 +1520,10 @@ void menuProcModelSelect()
   for(uint8_t i=0; i<6; i++){
     uint8_t y=(i+2)*FH;
     uint8_t k=i+s_pgOfs;
-    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_listEditMode ? INVERS : BLINK ) : 0) + LEADING0,2);
+    lcd_outdezNAtt(  2*FW, y, k+1, ((sub==k) ? (s_listEditMode ? INVERS : ATT_CSR_EDT ) : 0) + LEADING0,2);
     static char buf[sizeof(g_model.name)+8];
     eeLoadModelName(k,buf,sizeof(buf));
-    lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_listEditMode ? BLINK : 0 ) : 0));
+    lcd_putsnAtt(  3*FW, y, buf,sizeof(buf),BSS_NO_INV|((sub==k) ? (s_listEditMode ? ATT_CSR_EDT : 0 ) : 0));
   }
 
 }
@@ -1650,7 +1647,7 @@ void menuProcDiagAna()
         //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
-      putsVBat(12*FW,y,sub==7 ? BLINK : 0);
+      putsVBat(12*FW,y,sub==7 ? ATT_CSR_EDT : 0);
     }
   }
   if(sub==7){
@@ -1754,7 +1751,7 @@ void menuProcTrainer()
 
     for(uint8_t j=1; j<=4;j++){
       uint8_t attr = ATTR(iLog,j);
-      bool    edit = attr == BLINK;
+      bool    edit = attr == ATT_CSR_EDT;
 
       switch(j)
       {
@@ -1790,7 +1787,7 @@ void menuProcTrainer()
   }
   bool edit = (sub==4);
   y    = 6*FH;
-  lcd_putsAtt(  0*FW, y, PSTR("Cal"),(sub==4) ? BLINK : 0);
+  lcd_putsAtt(  0*FW, y, PSTR("Cal"),(sub==4) ? ATT_CSR_EDT : 0);
   if(g_trainerSlaveActiveChns){
     uint8_t x = 7*FW;
     for(uint8_t i=0; i<g_trainerSlaveActiveChns; i++)
@@ -1823,7 +1820,7 @@ void menuProcSetup2()
   int8_t  sub    = mstate2.m_posVert-1 ;
   for(uint8_t i=0; i<5; i++){
     uint8_t y=i*FH+1*FH;
-    uint8_t attr = sub==i ? BLINK : 0; 
+    uint8_t attr = sub==i ? ATT_CSR_EDT : 0; 
     lcd_putsmAtt( FW*5,y,PSTR("  THR pos\t"
                               "  Switches\t"
                               "  Mem free\t"
@@ -1875,7 +1872,7 @@ void menuProcSetup1()
 
   uint8_t y=2*FH;
   for(uint8_t i=0; i<5; i++,y += FH){
-    uint8_t attr = sub==i ? BLINK : 0; 
+    uint8_t attr = sub==i ? ATT_CSR_EDT : 0; 
     lcd_putsmAtt( FW*6,y,PSTR(
 			      "  Inst Trim\t"
                               "s  setup dly\t"
@@ -1924,7 +1921,7 @@ void menuProcSetup0()
   uint8_t y=1*FH;
   for(uint8_t i=0; i<5; i++,y += FH){
     
-    uint8_t attr = sub==i ? BLINK : 0; 
+    uint8_t attr = sub==i ? ATT_CSR_EDT : 0; 
     lcd_putsmAtt( FW*8,y,PSTR("Contrast\t"
 			      "AdcFilt.\t"
 			      "Light\t"
@@ -2580,7 +2577,7 @@ void perOut(int16_t *chanOut)
 
   memcpy(anas2,anas,sizeof(anas2));//values before expo, to ensure same expo base when multiple expo lines are used
 
-  //Expotab   anas[hw4] -> anas[hw4]
+  //Expotab   anas[log4] -> anas[log4]
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
     ExpoData_r171 &ed = g_model.expoTab[i];
     if(ed.mode3==0) break; //end of list
@@ -2598,7 +2595,7 @@ void perOut(int16_t *chanOut)
     }
   }
 
-  //Trainer,   anas[hw4] -> anas[hw4]
+  //Trainer,   anas[log4] -> anas[log4]
   //Trace THR
   //Trim
   for(uint8_t iLog=0;iLog<4;iLog++){        // calc Sticks
@@ -2633,7 +2630,7 @@ void perOut(int16_t *chanOut)
   }
   // In anas stehen jetzt die Werte mit Trimmung -512..511
 
-  //Instant trim anas[hw4] -> anas[hw4]
+  //Instant trim anas[log4] -> anas[log4]
   if(g_istTrimState!=IST_OFF){
     static bool     s_istInitKey;
     static uint16_t s_istTmr;
@@ -2674,8 +2671,6 @@ void perOut(int16_t *chanOut)
   }
 
   // virtual switches
-  //bool resTmp[8];
-  //memset(resTmp,1,sizeof(resTmp)); //prepare for AND-operation
 
   int8_t lastSw = -1;
   int8_t lastOp =  0;
@@ -2720,32 +2715,18 @@ void perOut(int16_t *chanOut)
 
   } // virtual switches
 
-  //Mixer loop anas[hw7] -> chanSum32[]
-  //   for(uint8_t stage=1; stage<=2; stage++){
+  //Mixer loop anas[log7] -> chanSum32[]
   int8_t currSeen = -1;
-  //memset(chanSum32,0,sizeof(chanSum32));// Alle Ausgaenge auf 0
-  for(uint8_t i=0;i<MAX_MIXERS;i++){
-    MixData_r192 &md = g_model.mixData[i];
+  for(uint8_t i=0;i<=MAX_MIXERS;i++){
+    MixData_r192 &md = g_model.mixData[i]; //!! i geht bis 1 hinter listenende
+    uint8_t destCh   = i<MAX_MIXERS ? md.destCh-1 : 0xff; //am ende 0xff (destCh==0)
 
-    static uint8_t timer[MAX_MIXERS];
-    static int16_t act  [MAX_MIXERS];
-    uint8_t destCh = md.destCh-1;
-
-    //       if(stage==1){
-    //         if(destCh<=NUM_CHNOUT) continue; //im ersten durchlauf alle intermediates X1-X4
-    //       }else{
-    //         if(destCh>NUM_CHNOUT) break;     //im zweiten Durchlauf alle outputs CH1-CH8
-    //       }
-    int8_t destCh2 = destCh;
-    if(destCh==0xff) destCh2=NUM_XCHNOUT-1;
+    int8_t destCh2   = destCh;
+    if(destCh==0xff) destCh2=NUM_XCHNOUT-1;//am listende restl. chans loeschen
     while(currSeen < destCh2 ){
-      chanSum32[++currSeen] = 0;
+      chanSum32[++currSeen] = 0;//loeschen wenn erstmals in liste auftaucht
     }
     if(destCh==0xff) break;
-//     if(!chanSeen[destCh]){
-//       chanSum32[destCh]    = 0;   //allow usage of the last values of higher
-//       chanSeen[destCh] = true;//numbered chans in switches or in mixlines
-//     }
 
     int16_t v=0;
     if(getSwitch(md.swtch,1)){
@@ -2760,6 +2741,8 @@ void perOut(int16_t *chanOut)
 
     if (md.speedUp || md.speedDown)
     {
+      static uint8_t timer[MAX_MIXERS];
+      static int16_t act  [MAX_MIXERS];
       int16_t     diff     = v - act[i];
       if(diff){
         uint8_t   speed    = (diff > 0) ? md.speedUp : md.speedDown;
@@ -2787,7 +2770,10 @@ void perOut(int16_t *chanOut)
     }// if speedUp||speedDown
     if(md.curve) v = intpol(md.curveNeg ? -v : v, md.curve - 1);
     
-    if(1){
+    if(destCh<8 && g_model.limitData[destCh].binSwtch){
+      //Binary Switch
+      chanSum32[destCh] += (0x80u >> md.weight); //swmode==0, no src, speed, curve
+    }else{
       int32_t dv=(int32_t)v*md.weight; // 10+1 Bit + 7 = 17+1
       if(currMixerLine==i){
         currMixerVal=dv; //for mixer debug
@@ -2814,26 +2800,32 @@ void perOut(int16_t *chanOut)
     }
       
   }
-  //   }
 
   //limit + revert loop
   calcLimitCache();
   for(uint8_t i=0;i<NUM_CHNOUT;i++){
     int32_t v32 = chanSum32[i];
     int16_t v   = 0;
-    if(g_model.limitData[i].scale){
-      if(v32>0)      v =  v32 * s_cacheLimitsMax[i] / 51200;
-      else if(v32<0) v = -v32 * s_cacheLimitsMin[i] / 51200;
+    if(g_model.limitData[i].binSwtch){
+      if(g_pulseLoopCnt&1){
+	v=(v32<<2)-512; //range -256 - +256
+      }else{
+	v=(g_pulseLoopCnt&2) ? +600 : -600; // max vals for calib 
+      }
     }else{
-      if(v32) v = (v32 + (v32 > 0 ? 100/2 : -100/2)) / 100;
+      if(g_model.limitData[i].scale){
+	if(v32>0)      v =  v32 * s_cacheLimitsMax[i] / 51200;
+	else if(v32<0) v = -v32 * s_cacheLimitsMin[i] / 51200;
+      }else{
+	if(v32) v = (v32 + (v32 > 0 ? 100/2 : -100/2)) / 100;
+      }
+      v = max(s_cacheLimitsMin[i],v);
+      v = min(s_cacheLimitsMax[i],v);
+
+      if(g_model.limitData[i].revert) v=-v;
+      //offset after limit -> 
+      v+=g_model.limitData[i].offset*5; // 512/100  //issue 40
     }
-
-    v = max(s_cacheLimitsMin[i],v);
-    v = min(s_cacheLimitsMax[i],v);
-
-    if(g_model.limitData[i].revert) v=-v;
-    //offset after limit -> 
-    v+=g_model.limitData[i].offset*5; // 512/100  //issue 40
 
 #ifndef SIM
     asm(""::"r"(v)); //enforce calc of v before cli
