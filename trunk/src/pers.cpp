@@ -131,7 +131,7 @@ prog_char* modelMixerDefaultName(uint8_t typ)
 {
   switch(typ)
   {
-    case 0: return PSTR("Empty");
+    case 0: return PSTR("select!");
     case 1: return PSTR("Simple 4-Ch");
     case 2: return PSTR("V-Tail");
     case 3: return PSTR("Elevon/Delta");
@@ -197,6 +197,7 @@ void modelMixerDefault(uint8_t typ)
         md++;
       }
       break;
+      // Servotest
     case 6:
         md->destCh = 1;     md->srcRaw = 10;/*MAX*/       md->weight = 100; 
         md->swtch  = 1+9;   //SW1
@@ -341,7 +342,7 @@ void eeLoadModel(uint8_t id)
       if(hlpExp[i].expNorm || hlpExp[i].expNormWeight){
         model171->expoTab[j].drSw    = hlpExp[i].drSw ? -hlpExp[i].drSw : 0;
         model171->expoTab[j].chn     = convertMode(i);
-        model171->expoTab[j].mode3   = 3;
+        model171->expoTab[j].mode3   = EM_BOTH;
         model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expNorm);
         model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expNormWeight+100);
         j++;
@@ -350,7 +351,7 @@ void eeLoadModel(uint8_t id)
       if(hlpExp[i].drSw && (hlpExp[i].expDr || hlpExp[i].expSwWeight)){
 	model171->expoTab[j].drSw    = hlpExp[i].drSw;
 	model171->expoTab[j].chn     = convertMode(i);
-	model171->expoTab[j].mode3   = 3;
+	model171->expoTab[j].mode3   = EM_BOTH;
 	model171->expoTab[j].exp5    = val2idx15_100(hlpExp[i].expDr);
 	model171->expoTab[j].weight6 =val2idx30_100(hlpExp[i].expSwWeight+100);
         j++;

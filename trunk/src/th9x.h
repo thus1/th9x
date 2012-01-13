@@ -539,7 +539,8 @@ extern uint8_t            g_sumAna;
 extern uint8_t            g_trainerSlaveActiveChns;
 extern uint16_t           g_lightAct1s;
 extern uint16_t           g_actTime1s;
-extern uint16_t g_badAdc,g_allAdc;
+extern uint16_t           g_badAdc,g_allAdc;
+
 #ifdef WITH_ADC_STAT
 extern uint16_t g_rawVals[7];
 extern uint8_t  g_rawPos;
@@ -553,6 +554,9 @@ extern const char stamp2[];
 extern const char stamp3[];
 extern const char stamp4[];
 #include "myeeprom.h"
+int8_t getTrimRaw(uint8_t iLog);
+int8_t getTrimRawMode(uint8_t iLog);
+void   setTrimRaw(uint8_t iLog,int8_t ival);
 
 inline void _beep(uint8_t b) {
   g_nextBeep=b;
