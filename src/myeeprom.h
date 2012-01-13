@@ -168,9 +168,15 @@ typedef struct t_ExpoData_r84 {
   int8_t  expSwWeight;
 } __attribute__((packed)) ExpoData_r84; //5*4=20
 
+
+#define EM_POS      1
+#define EM_NEG      2
+#define EM_BOTH     3
+#define EM_TRIM_INV 4
+#define EM_ALT_TRIM 5
 typedef struct t_ExpoData_r171 {
   int8_t  exp5:5;
-  uint8_t mode3:3; //0=end 1=pos 2=neg 3=both 4=trimNeg
+  uint8_t mode3:3; //0=end 1=pos 2=neg 3=both 4=trimNeg 5=alt trim
 
   int8_t  weight6:6;
   uint8_t chn:2;  //

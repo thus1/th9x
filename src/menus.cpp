@@ -459,11 +459,37 @@ void menuProcLimits()
   }
 }
 
+t_ExpoData_r171 *g_altTrim[4]; //=0, not used by default
+int8_t getTrimRawMode(uint8_t iLog)
+{
+  if(g_altTrim[iLog]){
+    return g_altTrim[iLog]->exp5;
+  }else{
+    return g_model.trimData[iLog].tmode;
+  }
+}
+int8_t getTrimRaw(uint8_t iLog)
+{
+  if(g_altTrim[iLog]){
+    return g_altTrim[iLog]->weight6;
+  }else{
+    return g_model.trimData[iLog].itrim;
+  }
+}
+void   setTrimRaw(uint8_t iLog,int8_t ival)
+{
+  if(g_altTrim[iLog]){
+    g_altTrim[iLog]->weight6 = ival;
+  }else{
+    g_model.trimData[iLog].itrim = ival;
+  }
+}
 
 int16_t trimVal(uint8_t iLog)
 {
-  int8_t  itrim = g_model.trimData[iLog].itrim;
-  int16_t ret   = trimExpMu(abs(itrim),g_model.trimData[iLog].tmode);
+  int8_t  itrim = getTrimRaw(iLog);
+  int8_t  tmode = getTrimRawMode(iLog);
+  int16_t ret   = trimExpMu(abs(itrim),tmode);
   return  itrim <0 ? -ret : ret;
 }
 
@@ -509,7 +535,7 @@ void menuProcTrim()
 
         case 1:
 	  //uint8_t attr = sub==iLog ? INVERS : 0; 
-	  lcd_outdezAtt( 9*FW, y, trimVal(iLog)*2, attr|PREC1 );
+	  lcd_outdezAtt(10*FW, y, trimVal(iLog)*2, attr|PREC1 );
 	  if(edit && outHelp[iLog] && BLINK_ON_PHASE) lcd_outdezAtt(14*FW, y, outHelp[iLog]   , outHelp[iLog]   ? ATT_CSR_EDT|SIGN : 0);
 	  else           lcd_outdezAtt(14*FW, y, g_model.limitData[iLog].offset , 0);
 	  
@@ -1066,35 +1092,44 @@ void editExpoVals(uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
   bool     edit    = mEdit==1;
   uint8_t  editAtt = mEdit ? (edit ? ATT_CSR_EDT : ATT_CSR_MV ) : 0;
   ExpoData_r171 &ed = g_model.expoTab[idt];
- 
+  if(ed.mode3==EM_ALT_TRIM){
+    ed.curve=0;
+    ed.exp5&=3;
+  }
+
   switch(which)
   {
     case 0:
-      //x+=4*FW;
-      lcd_outdezAtt(x, y, idx2val15_100(ed.exp5), editAtt);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.exp5,-15, 15);
-      break; 
-    case 1:
-      //x+=1*FW;
+      //x+=2*FW;
       x-=2*FW;
-      lcd_putsmAtt( x, y,PSTR(CURV_STR),ed.curve,editAtt);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF(  ed.curve, 0,7); //!! bitfield
-      //if(mEdit && ed.curve>=1 && g_event==EVT_KEY_FIRST(KEY_MENU)){//_LONG
-      if(mEdit && ed.curve>=1 && g_event==EVT_KEY_LONG(KEY_MENU)){//_LONG
-	s_curveChan = ed.curve-1;
-	killEvents();
-	pushMenu(menuProcCurveOne);
-        return;
-      }
+      lcd_putsmAtt( x, y,PSTR("\t" "<0\t" ">0\t" "  \t" "T-\t" "AT"),ed.mode3,editAtt);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.mode3, EM_POS, EM_ALT_TRIM);
       break;
+    case 1:
+      //x+=4*FW;
+      if(ed.mode3==EM_ALT_TRIM){
+        lcd_putsmAtt( x-2*FW, y, PSTR("D1\tD2\tD4\tD8"),ed.exp5,editAtt);
+        if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.exp5, 0, 3);
+      }else{
+        lcd_outdezAtt(x, y, idx2val15_100(ed.exp5), editAtt);
+        if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.exp5,-15, 15);
+      }
+      break; 
     case 2:
       //x+=4*FW;
-      lcd_outdezAtt(x, y, idx2val30_100(ed.weight6), editAtt);
+      if(ed.mode3==EM_ALT_TRIM){
+        int8_t  itrim = ed.weight6;  
+        int16_t vtrim = trimExpMu(abs(itrim),ed.exp5)*2; //promille
+
+        lcd_outdezAtt(x, y, itrim <0 ? -vtrim : vtrim, editAtt|PREC1);
+      }else{
+        lcd_outdezAtt(x, y, idx2val30_100(ed.weight6), editAtt);
+      }
       if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.weight6,-30,30);
       break; 
     case 3:
       {
-	x-=4*FW;
+	x-=4*FW-1;
 	putsDrSwitches(x,y,ed.drSw,editAtt);
 	int8_t sw=ed.drSw; if(sw<MIN_DRSWITCH) sw+=32;
 	if(edit) {
@@ -1113,10 +1148,17 @@ void editExpoVals(uint8_t which,uint8_t mEdit,uint8_t x, uint8_t y, uint8_t idt)
       }
       break; 
     case 4:
-      //x+=2*FW;
+      //x+=1*FW;
       x-=2*FW;
-      lcd_putsmAtt( x, y,PSTR("\t" "<0\t" ">0\t" "  \t" "T-"),ed.mode3,editAtt);
-      if(edit) CHECK_INCDEC_H_MODELVAR_BF(ed.mode3, 1,4);
+      lcd_putsmAtt( x, y,PSTR(CURV_STR),ed.curve,editAtt);
+      if(edit) CHECK_INCDEC_H_MODELVAR_BF(  ed.curve, 0,7); //!! bitfield
+      //if(mEdit && ed.curve>=1 && g_event==EVT_KEY_FIRST(KEY_MENU)){//_LONG
+      if(mEdit && ed.curve>=1 && g_event==EVT_KEY_LONG(KEY_MENU)){//_LONG
+	s_curveChan = ed.curve-1;
+	killEvents();
+	pushMenu(menuProcCurveOne);
+        return;
+      }
       break;
     case 5:
       //x-=2*FW;
@@ -1145,12 +1187,14 @@ void menuProcExpoOne()
   uint8_t  y = FH*2;
 
   for(uint8_t i=0;i<6;i++){
-    lcd_putsm_P(0,y,PSTR("Expo\t""Crv\t""Weight\t""DrSw\t""Mode\t""RM"),i);
-    //editExpoVals(i,sub==i,5*FW, y,FL_INST.currIDT());
+    lcd_putsm_P(0,y,ed.mode3==EM_ALT_TRIM?
+                PSTR("Mode\t""TScale\t""Trim\t""DrSw\t""\t""RM"):
+                PSTR("Mode\t""Expo\t""Weight\t""DrSw\t""Crv\t""RM")
+                ,i);
     editExpoVals(i,sub==i,9*FW, y,FL_INST.editIDT());
     y+=FH;
   }
-
+  if(ed.mode3==EM_ALT_TRIM) return;
   int8_t   kView = idx2val15_100(ed.exp5);
   int8_t   wView = idx2val30_100(ed.weight6);
   uint8_t  mode3  = ed.mode3;
@@ -1164,7 +1208,7 @@ void menuProcExpoOne()
     if(ed.curve) yv = intpol(yv, ed.curve - 1);
     yv /= (RESX/WCHART);
     yv  = (yv * wView)/100;
-    if((xv<0 && mode3==1)||(xv>0 && mode3==2)||(mode3>=3)) lcd_plot(X0+xv, Y0-yv);
+    if((xv<0 && mode3==EM_POS)||(xv>0 && mode3==EM_NEG)||(mode3>=EM_BOTH)) lcd_plot(X0+xv, Y0-yv);
   }
   lcd_vline(X0,Y0-WCHART,WCHART*2);
   lcd_hline(X0-WCHART,Y0,WCHART*2);
@@ -1216,7 +1260,7 @@ void menuProcExpoAll()
 
 
 
-  static prog_uint8_t APM colPos[]={6*FW,10*FW-3,13*FW-3,17*FW,20*FW,127};
+  static prog_uint8_t APM colPos[]={6*FW,9*FW,12*FW+3,16*FW+2,20*FW-3,127};
   uint8_t y = 1*FH;
   for(FoldedList::Line* line=FL_INST.firstLine();
       line;
@@ -1224,7 +1268,7 @@ void menuProcExpoAll()
       )
   {
     if(line->showHeader){
-      lcd_puts_P( 3*FW+2, y, PSTR("exp crv % sw mod "ARR_N_S));
+      lcd_puts_P( 2*FW+2, y, PSTR("mod exp  % sw crv "ARR_N_S));
     }  
     if(line->showCh){  
       putsChnRaw( 0, y,line->chId-1,FL_INST.isSelectedCh()?ATT_CSR_MV:0);
@@ -1255,7 +1299,7 @@ void menuProcExpoAll()
       {
         ExpoData_r171  *ed = &g_model.expoTab[FL_INST.editIDT()];
         ed->chn         = FL_INST.currDestCh()-1; //-s_mixTab[sub];
-        ed->mode3       = 3; //both neg+pos
+        ed->mode3       = EM_BOTH; //both neg+pos
         //ed->exp5        = 0;
         ed->weight6     = 30;
         //ed->drSw        = 0; //no switch
@@ -1294,30 +1338,35 @@ char idx2char(uint8_t idx)
   return ' ';
 }
 
-#define UNIFIED 
+//#define UNIFIED 
 void menuProcModel()
 {
   static MState2 mstate2;
   uint8_t x=TITLE("SETUP ");  
   lcd_outdezNAtt(x+2*FW,0,g_eeGeneral.currModel+1,INVERS+LEADING0,2); 
-#ifdef UNIFIED
+  //#ifdef UNIFIED
   MSTATE_TAB = { 1,sizeof(g_model.name),4,2,1,1};
   MSTATE_CHECK_VxH(2,menuTabModel,5+1);
   uint8_t subHor = mstate2.m_posHorz+1;
-#else
-  MSTATE_TAB = { 1,(int8_t)-sizeof(g_model.name),-4,-2,1,1};
-  MSTATE_CHECK_VxH(2,menuTabModel,5+1);
-  uint8_t subHor = mstate2.m_posHorz;//+1;
-#endif
+  //#else
+  //  MSTATE_TAB = { 1,(int8_t)-sizeof(g_model.name),-4,-2,1,1};
+  //  MSTATE_CHECK_VxH(2,menuTabModel,5+1);
+  //  uint8_t subHor = mstate2.m_posHorz;//+1;
+  //#endif
   int8_t  sub    = mstate2.m_posVert-1;
 
   static uint8_t s_type;
   switch(g_event){
     case EVT_ENTRY:
+      s_type=0;
       if(g_eeGeneral.currModel==0) s_type = 1; //beim ersten Modell solls shon mal funktionieren
       break;
     case EVT_EXIT: 
-      if(! g_model.mdVers )  modelMixerDefault(s_type);
+      //(! g_model.mdVers && s_type)  {
+      if (s_type)  {
+        modelMixerDefault(s_type);
+        eeDirty(EE_MODEL);
+      }
       return;
   }
 
@@ -1325,80 +1374,80 @@ void menuProcModel()
   for(uint8_t i=0; i<5; i++)
   {
     y+=FH;
-#ifdef UNIFIED
+    //#ifdef UNIFIED
     uint8_t attr = sub==i ? (mstate2.m_valEdit ? ATT_CSR_EDT : ATT_CSR_MV) : 0; 
-#else
-    uint8_t attr = sub==i ? ATT_CSR_EDT  : 0; 
-#endif
-    if(i<3)
-      lcd_putsmAtt(  0,    y,    PSTR("Name\t""Timer\t""Proto"),i,(subHor==0 && attr) ? INVERS : 0);
-    else        
-      lcd_putsm_P(  0,    y,    PSTR("Type\t""RM"),i-3);
+    //#else
+    //    uint8_t attr = sub==i ? ATT_CSR_EDT  : 0; 
+    //#endif
+    //if(i<3)
+    lcd_putsmAtt(  0,    y,    PSTR("Name\t""Timer\t""Proto\t""Preset\t""RM"),i,0);//(subHor==0 && attr) ? INVERS : 0);
+    //else        
+    //  lcd_putsm_P(  0,    y,    PSTR("Type\t""RM"),i-3);
     switch(i){
       case 0:    
-        lcd_putsnAtt(   6*FW, y, g_model.name ,sizeof(g_model.name),BSS_NO_INV);
+        lcd_putsnAtt(   8*FW, y, g_model.name ,sizeof(g_model.name),BSS_NO_INV);
         if(attr && subHor) {
           char v = char2idx(g_model.name[subHor-1]);
-#ifdef UNIFIED
+          //#ifdef UNIFIED
           if(attr == ATT_CSR_EDT){
             CHECK_INCDEC_H_MODELVAR_BF( v ,0,NUMCHARS-1);
           }
-#else
-          CHECK_INCDEC_V_MODELVAR_BF( v ,0,NUMCHARS-1);
-#endif
+          //#else
+          //          CHECK_INCDEC_V_MODELVAR_BF( v ,0,NUMCHARS-1);
+          //#endif
           v = idx2char(v);
           g_model.name[subHor-1]=v;
-          lcd_putcAtt((6+subHor-1)*FW, y, v,attr);
+          lcd_putcAtt((8+subHor-1)*FW, y, v,attr);
         }
         break;
       case 1:
-        putsTime(       5*FW-2, y, g_model.tmrVal,
+        putsTime(       7*FW-2, y, g_model.tmrVal,
                         ( subHor==1 ? attr:0),
                         ( subHor==2 ? attr:0) );
-        lcd_putsmAtt(  12*FW, y, PSTR("OFF\tABS\tTHR\tTHR%"),g_model.tmrMode,
+        lcd_putsmAtt(  14*FW, y, PSTR("OFF\tABS\tTHR\tTHR%"),g_model.tmrMode,
                        ( subHor==3 ? attr:0));
-        putsDrSwitches(15*FW, y, g_model.tmrSw , ( subHor==4 ? attr:0));
+        putsDrSwitches(17*FW, y, g_model.tmrSw , ( subHor==4 ? attr:0));
 
         if(attr==ATT_CSR_EDT) switch(subHor) 
         {
           case 1:
             {
               int8_t min=g_model.tmrVal/60;
-#ifdef UNIFIED
+              //#ifdef UNIFIED
               CHECK_INCDEC_H_MODELVAR_BF( min ,0,59);
-#else
-              CHECK_INCDEC_V_MODELVAR_BF( min ,0,59);
-#endif
+              //#else
+              //              CHECK_INCDEC_V_MODELVAR_BF( min ,0,59);
+              //#endif
               g_model.tmrVal = g_model.tmrVal%60 + min*60;
               break;
             }
           case 2:
             {
               int8_t sec=g_model.tmrVal%60;
-#ifdef UNIFIED
+              //#ifdef UNIFIED
               sec -= checkIncDec_hm( sec+2 ,1,62)-2;
-#else
-              sec -= checkIncDec_vm( sec+2 ,1,62)-2;
-#endif
+              //#else
+              //              sec -= checkIncDec_vm( sec+2 ,1,62)-2;
+              //#endif
               g_model.tmrVal -= sec ;
               if((int16_t)g_model.tmrVal < 0) g_model.tmrVal=0;
               break;
             }
           case 3:
-#ifdef UNIFIED
+            //#ifdef UNIFIED
             CHECK_INCDEC_H_MODELVAR_BF( g_model.tmrMode ,0,3);
-#else
-            CHECK_INCDEC_V_MODELVAR_BF( g_model.tmrMode ,0,3);
-#endif
+            //#else
+            //            CHECK_INCDEC_V_MODELVAR_BF( g_model.tmrMode ,0,3);
+            //#endif
             break;
           case 4:
             {
               int8_t sw = g_model.tmrSw; if(sw<MIN_DRSWITCH) sw+=32;
-#ifdef UNIFIED
+              //#ifdef UNIFIED
               CHECK_INCDEC_H_MODELVAR_BF( sw, MIN_DRSWITCH, MAX_DRSWITCH);
-#else
-              CHECK_INCDEC_V_MODELVAR_BF( sw, MIN_DRSWITCH, MAX_DRSWITCH);
-#endif
+              //#else
+              //              CHECK_INCDEC_V_MODELVAR_BF( sw, MIN_DRSWITCH, MAX_DRSWITCH);
+              //#endif
               g_model.tmrSw = sw;
             }
             break;
@@ -1417,33 +1466,33 @@ void menuProcModel()
           static prog_charp APM protTab[]  ={p0,p1,p2,p3,p4,p5};
 	  const prog_char* p = (const prog_char*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
 
-	  lcd_putsmAtt(   6*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
-	  lcd_putsmAtt(   12*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
+	  lcd_putsmAtt(   8*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
+	  lcd_putsmAtt(   14*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
 	  if(attr==ATT_CSR_EDT) switch(subHor)    {
-#ifdef UNIFIED
+            //#ifdef UNIFIED
 	  case 1: CHECK_INCDEC_H_MODELVAR_BF(g_model.protocol,0,PROT_MAX);	    break;
 	  case 2: CHECK_INCDEC_H_MODELVAR_BF(g_model.protocolPar,0,pgm_read_byte(p));break;
-#else
-	  case 1: CHECK_INCDEC_V_MODELVAR_BF(g_model.protocol,0,PROT_MAX);	    break;
-	  case 2: CHECK_INCDEC_V_MODELVAR_BF(g_model.protocolPar,0,pgm_read_byte(p));break;
-#endif
+            //#else
+            //	  case 1: CHECK_INCDEC_V_MODELVAR_BF(g_model.protocol,0,PROT_MAX);	    break;
+            //	  case 2: CHECK_INCDEC_V_MODELVAR_BF(g_model.protocolPar,0,pgm_read_byte(p));break;
+            //#endif
 	  }
         }
 	break;
       case 3:
         if(! g_model.mdVers ){
-          lcd_putsAtt(  FW*6, y, modelMixerDefaultName(s_type),attr);
+          lcd_putsAtt(  FW*8, y, modelMixerDefaultName(s_type),attr);
           if(attr){
             checkIncDecGen2( &s_type, 0, modelMixerDefaults-1, 0);
           }
         }else{
-          lcd_putsAtt(  FW*6, y, PSTR("modif."),attr?INVERS:0);
+          lcd_putsAtt(  FW*8, y, PSTR("modif."),attr?INVERS:0);
         }
         y+=FH;
         break;
       case 4:
         //lcd_putsAtt(    0, (7)*FH, PSTR("RM"),attr);
-        lcd_putsAtt(  FW*6, y, PSTR("[MENU LONG]"),attr);
+        lcd_putsAtt(  FW*8, y, PSTR("[MENU LONG]"),attr);
         if(attr){
           if(g_event==EVT_KEY_LONG(KEY_MENU)){ //rm mit LONG??
             killEvents();
@@ -1944,7 +1993,9 @@ void menuProcSetup0()
         if(g_eeGeneral.lightSw<=MAX_DRSWITCH_R){
           putsDrSwitches(2*FW,y,g_eeGeneral.lightSw,attr);
         }else{
-          lcd_outdezAtt(6*FW,y,(g_eeGeneral.lightSw-MAX_DRSWITCH_R)*5,(attr)|PREC1);
+          uint8_t sec6=(g_eeGeneral.lightSw-MAX_DRSWITCH_R);
+          if(sec6>10) sec6=5*(sec6-8);
+          lcd_outdezAtt(6*FW,y,sec6,(attr)|PREC1);
           lcd_puts_P( 6*FW,y, PSTR("m"));
         }
         if(attr){
@@ -2362,21 +2413,22 @@ void menuProc0()
     static uint8_t vert[4] = {0,1,1,0};
     uint8_t xm,ym;
     xm=x[i];
-    int8_t val = max((int8_t)-(TL+1),min((int8_t)(TL+1),g_model.trimData[convertMode(i)].itrim));
+    int8_t itrim = getTrimRaw( convertMode(i));
+    itrim = max((int8_t)-(TL+1),min((int8_t)(TL+1),itrim) );
     if(vert[i]){
       ym=31;
       lcd_vline(xm,   ym-TL, TL*2);
       lcd_vline(xm-1, ym-1,  3);
       lcd_vline(xm+1, ym-1,  3);
       //lcd_hline(xm-1, ym,     3);
-      ym -= val;
+      ym -= itrim;//val;
     }else{
       ym=60;
       lcd_hline(xm-TL,ym,    TL*2);
       lcd_hline(xm-1, ym-1,  3);
       lcd_hline(xm-1, ym+1,  3);
       //lcd_vline(xm,   ym-1,     3);
-      xm += val;
+      xm += itrim;//val;
     }
 
     //value marker
@@ -2577,14 +2629,21 @@ void perOut(int16_t *chanOut)
 
   memcpy(anas2,anas,sizeof(anas2));//values before expo, to ensure same expo base when multiple expo lines are used
 
+  memset(g_altTrim,0,sizeof(g_altTrim));//
   //Expotab   anas[log4] -> anas[log4]
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
     ExpoData_r171 &ed = g_model.expoTab[i];
     if(ed.mode3==0) break; //end of list
-    if(ed.mode3==4) trimAssym[ed.chn]=true;
+    if(ed.mode3==EM_ALT_TRIM) { //alternative trim
+      if(getSwitch(ed.drSw,0)) {
+        g_altTrim[ed.chn] = &ed;
+      }
+      continue;
+    }
+    if(ed.mode3==EM_TRIM_INV) trimAssym[ed.chn]=true;
     if(getSwitch(ed.drSw,1)) {
       int16_t v = anas[ed.chn];
-      if(ed.mode3>=3 || (ed.mode3==1 && v<0) || (ed.mode3==2 && v>0)){
+      if(ed.mode3>=EM_BOTH || (ed.mode3==EM_POS && v<0) || (ed.mode3==EM_NEG && v>0)){
         //      if((v<0 && ed.mode3&1) || (v>0 && ed.mode3&2)){
         int16_t k=idx2val15_100(ed.exp5);
         v = expo2(anas2[ed.chn],v,k);
@@ -2660,8 +2719,9 @@ void perOut(int16_t *chanOut)
           g_istTrimState = IST_CHECKKEY;
           s_istTmr=0;
           for(uint8_t i=0; i<4;i++){
-            if(!trimAssym[i])
-              g_model.trimData[i].itrim = trimRevertM(s_istAnas[i]-anas2[i],g_model.trimData[i].tmode);
+            if(!trimAssym[i]){
+              setTrimRaw(i,trimRevertM(s_istAnas[i]-anas2[i],getTrimRawMode(i)));
+            }
           }
         }else{
           memcpy(anas,s_istAnas,sizeof(s_istAnas));

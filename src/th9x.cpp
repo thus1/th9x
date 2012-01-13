@@ -42,6 +42,7 @@ todo
 - signalton als output issue59
 - issue111 backlight auto off mit keys statt sticks 
 - issue111 backlight time shorter, option on
+- bfue alt trim mode, binSwitch mode
 
 + use receiver instead of trainer-cable
 - convert old models
@@ -207,11 +208,13 @@ mode4 ail thr ele rud
 
 
 
-EEGeneral_TOP g_eeGeneral;
-ModelData_TOP g_model;
-uint16_t       s_trainerLast10ms;
-uint8_t        g_trainerSlaveActiveChns;
-uint16_t  g_badAdc,g_allAdc;
+EEGeneral_TOP    g_eeGeneral;
+ModelData_TOP    g_model;
+uint16_t         s_trainerLast10ms;
+uint8_t          g_trainerSlaveActiveChns;
+uint16_t         g_badAdc,g_allAdc;
+
+
 #ifdef WITH_ADC_STAT
 uint16_t  g_rawVals[7];
 uint8_t   g_rawPos;
@@ -234,7 +237,7 @@ uint8_t convertMode(uint8_t srcChn)
 }
 
 
-int8_t trimRevert2(int16_t val)
+int8_t trimRevert2(int16_t val) //old version without mode
 {
   uint8_t idx = 0;
   bool    neg = val<0; val=abs(val);
@@ -270,6 +273,7 @@ int8_t trimRevertM(int16_t val, uint8_t tmode)
   }
   return neg ? -idx : idx;
 }
+
 
 int8_t idx2val15_100(int8_t idx)
 {
@@ -533,8 +537,9 @@ uint8_t checkTrim()
     //LH_DWN LH_UP LV_DWN LV_UP RV_DWN RV_UP RH_DWN RH_UP
     uint8_t idx = k/2;
     bool    up  = k&1;
-    t_TrimData_r143 &ptrim = g_model.trimData[convertMode(idx)];
-    int8_t itrim=ptrim.itrim;
+    //t_TrimData_r143 &ptrim = g_model.trimData[convertMode(idx)];
+    uint8_t iLog  = convertMode(idx);
+    int8_t  itrim = getTrimRaw(iLog);
     if(up){
       if(itrim >= 0){
         slowEvents(g_event);
@@ -554,7 +559,8 @@ uint8_t checkTrim()
         beepTrim();
       }
     }
-    ptrim.itrim = itrim;
+    setTrimRaw(iLog,itrim);
+    
     if(itrim==0) {
       //killEvents();
       pauseEvents(g_event);
@@ -786,7 +792,7 @@ void   perChecks() //ca 10ms
         if( abs(g_sumAna - s_sumAnaLast) > 50)
         {
           s_sumAnaLast = g_sumAna;
-          g_lightAct1s  = g_tmr1s; //retrigger light
+          //g_lightAct1s  = g_tmr1s; //retrigger light
           g_actTime1s  = g_tmr1s; //retrigger inativity alarm
         }
         if(g_eeGeneral.inactivityMin)
@@ -800,16 +806,20 @@ void   perChecks() //ca 10ms
       break;
     case 1:
       {
-        int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH_R;
-        if(mins <= 0){
+        //int8_t mins = g_eeGeneral.lightSw-MAX_DRSWITCH_R;
+        int16_t sec6=(g_eeGeneral.lightSw-MAX_DRSWITCH_R);
+        if(sec6 <= 0){
           if( getSwitch(g_eeGeneral.lightSw,0)) PORTB |=  (1<<OUT_B_LIGHT);
           else                                  PORTB &= ~(1<<OUT_B_LIGHT);
         }else{
-          if((g_tmr1s-g_lightAct1s) < (uint16_t)30*mins) {
+          if(sec6>10) sec6=5*(sec6-8);
+          sec6*=6;
+
+          if((g_tmr1s-g_lightAct1s) < (uint16_t)sec6) {
             PORTB |=  (1<<OUT_B_LIGHT);
           }else{
             PORTB &= ~(1<<OUT_B_LIGHT);
-            g_lightAct1s = g_tmr1s-30*mins;
+            g_lightAct1s = g_tmr1s-sec6;
           }
         }
         break;
