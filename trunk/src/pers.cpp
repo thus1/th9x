@@ -224,7 +224,7 @@ void modelMixerDefault(uint8_t typ)
 void modelDefault(uint8_t id)
 {
   memset(&g_model,0,sizeof(g_model));
-  strcpy_P(g_model.name,PSTR("MODEL     "));
+  strncpy_P(g_model.name,PSTR("MODEL     "), 10);
   g_model.name[5]='0'+(id+1)/10;
   g_model.name[6]='0'+(id+1)%10;
   g_model.mdVers = 0; //MDVERS143;
@@ -500,7 +500,7 @@ void eeCheck(bool immediately)
     {   
       EFile::swap(FILE_GENERAL,FILE_TMP);
     }else{
-      if(theFile.errno()==ERR_TMO){
+      if(theFile.write_errno()==ERR_TMO){
         s_eeDirtyMsk |= EE_GENERAL; //try again
         s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
         printf("writing aborted GENERAL\n");
@@ -518,7 +518,7 @@ void eeCheck(bool immediately)
     {
       EFile::swap(FILE_MODEL(g_eeGeneral.currModel),FILE_TMP);
     }else{
-      if(theFile.errno()==ERR_TMO){
+      if(theFile.write_errno()==ERR_TMO){
         s_eeDirtyMsk |= EE_MODEL; //try again
         s_eeDirtyTime10ms = g_tmr10ms - WRITE_DELAY_10MS;
         printf("writing aborted MODEL\n");

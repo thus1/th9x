@@ -519,13 +519,13 @@ bool alert(const prog_char * s, uint8_t mode )
   lcd_puts_P(64-6*FW,7*FH,PSTR("press any Key"));  
   refreshDiplay();
   do {
+#ifdef SIM
+    if (!main_thread_running) return false;
+#endif
     perChecks(); //check light switch in timerint, issue 51
 
     if(IS_KEY_BREAK(getEvent()))   return false;  //wait for key release
-#ifdef SIM
-void doFxEvents();
-    doFxEvents();
-#endif    
+
   } while(! (mode&1));
   return true;
 }

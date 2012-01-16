@@ -18,7 +18,9 @@
 
 
 #ifdef SIM
-uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W]; 
+uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W];
+bool lcd_refresh = true;
+uint8_t lcd_buf[DISPLAY_W*DISPLAY_H/8];
 #else
 uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8]; 
 #endif
@@ -63,7 +65,7 @@ void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode)
 {
   uint8_t   *p  = &displayBuf[ y / 8 * DISPLAY_W + x ];
   bool     inv  = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
-  uint8_t     i = min(DISPLAY_END-p,(int)w);
+  uint8_t     i = min((int)(DISPLAY_END-p),(int)w);
   if(inv)  for(; i!=0; i--){
     assert(p<DISPLAY_END);
     *p++ ^= 0xff;
@@ -121,7 +123,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
       }
     }
   }else{
-    uint8_t i = min(DISPLAY_END-p,5);
+    uint8_t i = min((int)(DISPLAY_END-p),(int)5);
     if(inv) for(; i!=0; i--) *p++ = ~pgm_read_byte(q++);
     else    for(; i!=0; i--) *p++ =  pgm_read_byte(q++);
     if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
@@ -389,6 +391,10 @@ void lcdSetRefVolt(uint8_t val)
 
 void refreshDiplay()
 {
+#ifdef SIM
+  memcpy(lcd_buf, displayBuf, sizeof(lcd_buf));
+  lcd_refresh = true;
+#else
   uint8_t *p=displayBuf; 
   for(uint8_t y=0; y < 8; y++) {
     lcdSendCtl(0x04);
@@ -399,4 +405,5 @@ void refreshDiplay()
       p++;
     }
   }
+#endif
 }
