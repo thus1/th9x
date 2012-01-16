@@ -441,6 +441,10 @@ extern bool    checkIncDec_Ret;//global helper vars
 /// liefert Dimension eines Arrays
 #define DIM(arr) (sizeof((arr))/sizeof((arr)[0]))
 
+#ifndef NOINLINE
+#define NOINLINE __attribute__ ((noinline))
+#endif
+
 /// liefert Betrag des Arguments
 template<class t> inline t abs(t a){ return a >  0 ? a : (t)-a; }
 /// liefert das Minimum der Argumente

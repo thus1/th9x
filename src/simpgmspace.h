@@ -12,9 +12,48 @@
 
  */
 
+#ifndef simpgmspace_h
+#define simpgmspace_h
+
+#ifdef SIMU_EXCEPTIONS
+extern char * main_thread_error;
+#include <stdlib.h>
+#include <stdio.h>
+#include <signal.h>
+#if defined(WIN32) || !defined(__GNUC__)
+#define write_backtrace(output)
+#else
+#include <execinfo.h>
+#include <string.h>
+inline void write_backtrace(char *output)
+{
+
+  void *buf[16];
+  char **s;
+  int n = backtrace(buf,16);
+  s = backtrace_symbols(buf, n);
+  if (s) {
+    for(int i=0; i<n; i++)
+      sprintf(output+strlen(output), "%02i: %s\n",i,s[i]);
+  }
+}
+#endif
+void sig(int sgn)
+{
+  main_thread_error = (char *)malloc(2048);
+  sprintf(main_thread_error,"Signal %d caught\n", sgn);
+  write_backtrace(main_thread_error);
+  throw std::exception();
+}
+#define assert(x) do { if (!(x)) { main_thread_error = (char *)malloc(2048); sprintf(main_thread_error, "Assert failed, %s:%d: %s\n", __FILE__, __LINE__, #x); write_backtrace(main_thread_error); throw std::exception(); } } while(0)
+#else
 #include <assert.h>
+#endif
+
 #include <inttypes.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 typedef unsigned char prog_uchar;
 typedef const char prog_char;
@@ -35,6 +74,7 @@ typedef const int8_t prog_int8_t;
 #define cli()
 #define sei()
 #define strcpy_P strcpy
+#define strncpy_P strncpy
 #define memcpy_P memcpy
 
 #define PORTA dummyport
@@ -53,8 +93,18 @@ typedef const int8_t prog_int8_t;
 #define PING  ~ping
 #define EEMEM
 
-extern volatile unsigned char pinb,portb,pinc,pind,pine,ping;
+extern volatile unsigned char pinb,pinc,pind,pine,ping;
+extern uint8_t portb;
 extern unsigned char dummyport;
+extern uint8_t main_thread_running;
+
+extern void setSwitch(int8_t swtch);
+
+void StartMainThread(bool tests=true);
+void StartEepromThread(const char *filename="eeprom.bin");
+
+extern const char *eepromFile;
+
 //extern uint16_t anaIn(uint8_t chan);
 //void eeprom_write_block (const void *pointer_ram,
 //                    void *pointer_eeprom,
@@ -62,5 +112,8 @@ extern unsigned char dummyport;
 void eeprom_read_block (void *pointer_ram,
                    const void *pointer_eeprom,
                         size_t size);
+#undef offsetof
 #define offsetof(st, m) ((size_t) ( (char *)&((st *)(0))->m - (char *)0 ))
 #define wdt_reset()
+
+#endif

@@ -14,6 +14,7 @@
 #ifndef file_h
 #define file_h
 
+#define EESIZE   2048
 
 /// fileId of general file
 #define FILE_GENERAL   0
@@ -80,7 +81,7 @@ public:
     return readRlc12(buf,i_len,true);
   }
   ///deliver current errno, this is reset in open
-  uint8_t errno(){return m_err;}
+  uint8_t write_errno(){return m_err;}
 };
 
 #endif

@@ -215,9 +215,7 @@ static void _send_2(uint16_t t0,uint16_t t1)
 #define BITS  10
 #define BITS2 (BITS-1)
 
-uint8_t reduce7u(int16_t v, uint8_t sfr)
-__attribute__ ((noinline)); 
-uint8_t reduce7u(int16_t v, uint8_t sfr)
+NOINLINE uint8_t reduce7u(int16_t v, uint8_t sfr)
 {
   v += (1<<BITS2);
   if(v <  0) v=0;
@@ -225,9 +223,7 @@ uint8_t reduce7u(int16_t v, uint8_t sfr)
   return v>>sfr;
 }
 
-int8_t reduce7s(int16_t v, uint8_t sfr, uint8_t sf2, int8_t ofs2)
-__attribute__ ((noinline)); 
-int8_t reduce7s(int16_t v, uint8_t sfr, uint8_t sf2, int8_t ofs2)
+NOINLINE int8_t reduce7s(int16_t v, uint8_t sfr, uint8_t sf2, int8_t ofs2)
 {
   v += (1<<BITS2)+sf2;
   if(v&(1<<BITS)) v = (1<<BITS)-1; //no overflow

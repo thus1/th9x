@@ -51,6 +51,13 @@
 #define ARR_SW        "\x7b"
 #define ARR_N_S       "\x24"
 
+#ifdef SIM
+extern uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W];
+extern bool lcd_refresh;
+extern uint8_t lcd_buf[DISPLAY_W*DISPLAY_H/8];
+#else
+extern uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8];
+#endif
 
 //extern unsigned char font_5x8_x20_x7f[];
 extern void lcd_barAtt(uint8_t x,uint8_t y,uint8_t w,uint8_t mode);

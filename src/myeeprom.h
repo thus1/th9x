@@ -22,27 +22,29 @@
 #define MAX_SWITCHES 16
 #define MAX_EXPOS  15
 
+#ifndef PACK
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
 
-
-typedef struct t_TrainerData1_r0 {
+PACK(typedef struct t_TrainerData1_r0 {
   uint8_t srcChn:3; //0-7 = ch1-8
   int8_t  swtch:5;
   int8_t  studWeight:6;
   uint8_t mode:2;   //off,add-mode,subst-mode
-} __attribute__((packed)) TrainerData1_r0; //
+}) TrainerData1_r0; //
 
-typedef struct t_TrainerData_r0 {
+PACK(typedef struct t_TrainerData_r0 {
   int16_t       calib[4];
   TrainerData1_r0  chanMix[4];
-} __attribute__((packed)) TrainerData_r0; //
+}) TrainerData_r0; //
 
-typedef struct t_TrainerData_r192 {
+PACK(typedef struct t_TrainerData_r192 {
   int16_t       calib[8]; //192: 4->8
   TrainerData1_r0  chanMix[4];
-} __attribute__((packed)) TrainerData_r192; //
+}) TrainerData_r192; //
 
 #define GENVERS0 1
-typedef struct t_EEGeneral_r0 {  //<r119
+PACK(typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   myVers;
   int16_t   calibMid[4];
   int16_t   calibSpan[4];
@@ -56,10 +58,10 @@ typedef struct t_EEGeneral_r0 {  //<r119
   uint8_t   view;     //index of subview in main scrren
   uint8_t   warnOpts; //bitset for several warnings
   uint8_t   stickMode;   // 1
-} __attribute__((packed)) EEGeneral_r0;//<r119;
+}) EEGeneral_r0;//<r119;
 #define GENVERS119   2
 #define GENVERS119_3 3
-typedef struct t_EEGeneral_r119 {
+PACK(typedef struct t_EEGeneral_r119 {
   uint8_t   myVers;
   int16_t   calibMid[4];
   int16_t   calibSpanNeg[4]; //ge119
@@ -74,18 +76,14 @@ typedef struct t_EEGeneral_r119 {
   uint8_t   adcFilt:2;     // was view in earlier versions
   uint8_t   reserve:2;     // was view in earlier versions
   uint8_t   thr0pos:4;     // was view in earlier versions
-#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
-#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
-#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VOL ( g_eeGeneral.beepVol )
   uint8_t   warnOpts:3; //bitset for several warnings
   uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
-} __attribute__((packed)) EEGeneral_r119;
+}) EEGeneral_r119;
 #define GENVERS150   4
 #define GENVERS150_5 5
-typedef struct t_EEGeneral_r150 {
+PACK(typedef struct t_EEGeneral_r150 {
   uint8_t   myVers;
   int16_t   calibMid[7];             //ge150 4->7
   int16_t   calibSpanNeg[7]; //ge119 //ge150 4->7
@@ -102,18 +100,19 @@ typedef struct t_EEGeneral_r150 {
   uint8_t   adcFilt:2;     // was view in earlier versions
   uint8_t   reserve:2;     // was view in earlier versions
   uint8_t   thr0pos:4;     // was view in earlier versions
-#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
-#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
-#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VOL ( g_eeGeneral.beepVol )
   uint8_t   warnOpts:3; //bitset for several warnings
   uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
   uint8_t   stickMode;   // 1
-} __attribute__((packed)) EEGeneral_r150;
+}) EEGeneral_r150;
 
 #define GENVERS192   6
-typedef struct t_EEGeneral_r192 {
+#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
+#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
+#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
+#define BEEP_VOL ( g_eeGeneral.beepVol )
+#define NAVI_ADVANCED (g_eeGeneral.naviMode&1)
+PACK(typedef struct t_EEGeneral_r192 {
   uint8_t   myVers;
   int16_t   calibMid[7];             //ge150 4->7
   int16_t   calibSpanNeg[7]; //ge119 //ge150 4->7
@@ -132,18 +131,13 @@ typedef struct t_EEGeneral_r192 {
   uint8_t   adcFilt:2;     // was view in earlier versions
   uint8_t   keySpeed:2;     // was view in earlier versions
   uint8_t   thr0pos:4;     // was view in earlier versions
-#define WARN_THR (!(g_eeGeneral.warnOpts & 0x01))
-#define WARN_SW  (!(g_eeGeneral.warnOpts & 0x02))
-#define WARN_MEM (!(g_eeGeneral.warnOpts & 0x04))
-#define BEEP_VOL ( g_eeGeneral.beepVol )
   uint8_t   warnOpts:3; //bitset for several warnings
   uint8_t   beepVol:2;  //
   uint8_t   view:3;     //index of subview in main screen
 
   uint8_t   stickMode:2;// 
   uint8_t   naviMode:2; //
-#define NAVI_ADVANCED (g_eeGeneral.naviMode&1)
-} __attribute__((packed)) EEGeneral_r192;
+}) EEGeneral_r192;
 #define EEGeneral_TOP EEGeneral_r192
 #define GENVERS_TOP GENVERS192
 
@@ -153,20 +147,20 @@ typedef struct t_EEGeneral_r192 {
 /////////////////////////////////////////////////////////////////////////////
 
 
-typedef struct t_SwitchData_r204 {
+PACK(typedef struct t_SwitchData_r204 {
   uint8_t sw:3; //0..7
   uint8_t opCmp:2; //< & | ^
   uint8_t opRes:3; //0 => 1=> 0=> !=> & | ^
   int8_t val1; //
   int8_t val2; //
-} __attribute__((packed)) SwitchData_r204; //
-typedef struct t_ExpoData_r84 {
+}) SwitchData_r204; //
+PACK(typedef struct t_ExpoData_r84 {
   int8_t  expNorm;
   int8_t  expDr;
   int8_t  drSw;
   int8_t  expNormWeight;
   int8_t  expSwWeight;
-} __attribute__((packed)) ExpoData_r84; //5*4=20
+}) ExpoData_r84; //5*4=20
 
 
 #define EM_POS      1
@@ -174,7 +168,7 @@ typedef struct t_ExpoData_r84 {
 #define EM_BOTH     3
 #define EM_TRIM_INV 4
 #define EM_ALT_TRIM 5
-typedef struct t_ExpoData_r171 {
+PACK(typedef struct t_ExpoData_r171 {
   int8_t  exp5:5;
   uint8_t mode3:3; //0=end 1=pos 2=neg 3=both 4=trimNeg 5=alt trim
 
@@ -183,36 +177,36 @@ typedef struct t_ExpoData_r171 {
 
   int8_t  drSw:5;
   uint8_t curve:3; //
-} __attribute__((packed)) ExpoData_r171; //3*15=45
+}) ExpoData_r171; //3*15=45
 
 
-typedef struct t_TrimData_r0 {
+PACK(typedef struct t_TrimData_r0 {
   int8_t  trim;    //quadratisch
   int16_t trimDef_lt133;
-} __attribute__((packed)) TrimData_r0;//<r143
+}) TrimData_r0;//<r143
 
-typedef struct t_TrimData_r143 {
+PACK(typedef struct t_TrimData_r143 {
   int8_t  itrim:6; //trim index
   uint8_t tmode:2;
-} __attribute__((packed)) TrimData_r143;
+}) TrimData_r143;
 
 
-typedef struct t_LimitData_r84 {
+PACK(typedef struct t_LimitData_r84 {
   int8_t  min;
   int8_t  max; 
   bool    revert:1;
   int8_t  offset:7;
-} __attribute__((packed)) LimitData_r84;
-typedef struct t_LimitData_r167 {
+}) LimitData_r84;
+PACK(typedef struct t_LimitData_r167 {
   int8_t  min:7;
   bool    scale:1;
   int8_t  max:7; 
   bool    binSwtch:1; //resv
   bool    revert:1;
   int8_t  offset:7;
-} __attribute__((packed)) LimitData_r167;
+}) LimitData_r167;
 
-typedef struct t_MixData_r0 {
+PACK(typedef struct t_MixData_r0 {
   uint8_t destCh:4; //0=end   1..NUM_CHNOUT,X1-X4
   uint8_t srcRaw:4; //0=off   S1-4,P1-3,max,ful ,X1-X4
   int8_t  weight;
@@ -220,7 +214,7 @@ typedef struct t_MixData_r0 {
   uint8_t curve:3; //0=off 1..7=cv1..7
   uint8_t speedUp:4;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
   uint8_t speedDown:4;      // 0 nichts
-} __attribute__((packed)) MixData_r0;
+}) MixData_r0;
 //more data:
 // destCh 12 -> 16                                     4+1?
 // srcRaw 14 -> S1-4,P1-3,ful,s1-4,p1-3,max,ch1-16 32  4+1
@@ -230,7 +224,7 @@ typedef struct t_MixData_r0 {
 // sw-mode -100,0,disable                              0+2
 // mix-mode + * = 1?                                    0+2
 //
-typedef struct t_MixData_r192 {
+PACK(typedef struct t_MixData_r192 {
   uint8_t destCh:4;    // 1..NUM_CHNOUT,X1-X4
   uint8_t mixMode:2;   // + * =
   uint8_t dmy1:2;   //
@@ -246,12 +240,12 @@ typedef struct t_MixData_r192 {
 
   uint8_t speedUp:4;         // Servogeschwindigkeit aus Tabelle (10ms Cycle)
   uint8_t speedDown:4;      // 0 nichts
-} __attribute__((packed)) MixData_r192; //210
+}) MixData_r192; //210
 
 
 
 #define MDVERS84 1
-typedef struct t_ModelData_r84 {
+PACK(typedef struct t_ModelData_r84 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
@@ -264,10 +258,10 @@ typedef struct t_ModelData_r84 {
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r0  trimData[4];          // 3*4
-} __attribute__((packed)) ModelData_r84; //202
+}) ModelData_r84; //202
 
 #define MDVERS143 2
-typedef struct t_ModelData_r143 {
+PACK(typedef struct t_ModelData_r143 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
@@ -281,10 +275,10 @@ typedef struct t_ModelData_r143 {
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r143; //203
+}) ModelData_r143; //203
 
 #define MDVERS167 3
-typedef struct t_ModelData_r167 {
+PACK(typedef struct t_ModelData_r167 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
@@ -298,10 +292,10 @@ typedef struct t_ModelData_r167 {
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r167; //203
+}) ModelData_r167; //203
 
 #define MDVERS171 4
-typedef struct t_ModelData_r171 {
+PACK(typedef struct t_ModelData_r171 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
@@ -315,10 +309,10 @@ typedef struct t_ModelData_r171 {
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r171; //228
+}) ModelData_r171; //228
 
 #define MDVERS192 5
-typedef struct t_ModelData_r192 {
+PACK(typedef struct t_ModelData_r192 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode;              // 1
@@ -332,10 +326,10 @@ typedef struct t_ModelData_r192 {
   int8_t    curves5[2][5];        // 10
   int8_t    curves9[2][9];        // 18
   TrimData_r143  trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r192; //253
+}) ModelData_r192; //253
 
 #define MDVERS204 6
-typedef struct t_ModelData_r204 {
+PACK(typedef struct t_ModelData_r204 {
   char      name[10];             // 10 must be first for eeLoadModelName
   uint8_t   mdVers;               // 1
   uint8_t   tmrMode:3;            // 1
@@ -352,7 +346,7 @@ typedef struct t_ModelData_r204 {
   int8_t    curves9[2][9];        // 18
   SwitchData_r204 switchTab[MAX_SWITCHES];//
   TrimData_r143   trimData[4];    // 3*4 -> 1*4
-} __attribute__((packed)) ModelData_r204; //253
+}) ModelData_r204; //253
 #define MDVERS_TOP    MDVERS204
 #define ModelData_TOP ModelData_r204
 

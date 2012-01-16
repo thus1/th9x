@@ -2613,11 +2613,14 @@ void perOut(int16_t *chanOut)
   for(uint8_t iHw=0;iHw<7;iHw++){        // calc Sticks
     int16_t v= anaIn(iHw);
     g_sumAna += (uint8_t)v;
+
+#ifndef SIM
     v -= g_eeGeneral.calibMid[iHw];
     v  =  v * (int32_t)RESX /  (max((int16_t)100,
                                     (v>0 ? 
                                      g_eeGeneral.calibSpanPos[iHw] : 
                                      g_eeGeneral.calibSpanNeg[iHw])));
+#endif
 
     if(v <= -RESX) v = -RESX;
     if(v >=  RESX) v =  RESX;
@@ -2832,7 +2835,7 @@ void perOut(int16_t *chanOut)
     
     if(destCh<8 && g_model.limitData[destCh].binSwtch){
       //Binary Switch
-      chanSum32[destCh] += (0x80u >> md.weight); //swmode==0, no src, speed, curve
+      chanSum32[destCh] += (0x01u << md.weight); //swmode==0, no src, speed, curve
     }else{
       int32_t dv=(int32_t)v*md.weight; // 10+1 Bit + 7 = 17+1
       if(currMixerLine==i){

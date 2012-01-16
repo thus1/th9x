@@ -17,103 +17,18 @@
 #include "FXPNGImage.h"
 #include <unistd.h>
 #include "simpgmspace.h"
-#include "lcd.h"
 #include "fxkeys.h"
 #include "th9x.h"
 #include <time.h>
 #include <ctype.h>
 
-
-volatile unsigned char pinb,portb,pinc,pind,pine,ping;
-unsigned char dummyport;
-char g_title[80];
-const char *eepromFile = "eeprom.bin";
-
-extern unsigned char displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W];
-
-void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
-{
-  
-  prog_uchar  buf[1000];
-  FILE *fp=fopen("../th9x-orig/flash.bin", "r");
-  fseek(fp,ofs,SEEK_SET);
-  fread(buf,1,i_h/8*i_w,fp);
-  fclose(fp);
-  prog_uchar  *q = buf;//+0x10e*3+0x10;
-  int h=i_h;
-  while(h>0){
-    int w=i_w;
-    unsigned char *p = &displayBuf[ y / 8 * DISPLAY_W + x ];
-    while(w>0){
-      *p = pgm_read_byte(q); p++; q++;
-      w--;
-    }
-    h-=8;
-    y+=8;
-  }
-}
-
-
-FILE *fp = 0;
-
-void eeWriteBlockCmp(const void *i_pointer_ram, void *pointer_eeprom, size_t size)
-{
-  if(!fp) fp = fopen(eepromFile, "r+");
-  long ofs = (long) pointer_eeprom;
-  const char* pointer_ram= (const char*)i_pointer_ram;
-  //printf("eeWr p=%10p blk%3d ofs=%2d l=%d",pointer_ram,
-  //       (int)pointer_eeprom/16,
-  //       (int)pointer_eeprom%16,
-  //       (int)size);
-  while(size){
-    if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
-    char buf[1];
-    fread(buf, 1, 1,fp);
-
-    if(buf[0] !=  pointer_ram[0]){
-      //printf("X");
-      g_tmr10ms++;
-      if(fseek(fp, ofs , SEEK_SET)==-1) perror("error in seek");
-      fwrite(pointer_ram, 1, 1,fp);
-    }else{
-      //printf(".");
-    }
-
-    size--;
-    ofs++;
-    (const char*)pointer_ram++;
-  }
-  //fclose(fp);
-  //puts("");
-}
-void eeprom_write_blockxx (const void *pointer_ram,
-                    void *pointer_eeprom,
-                    size_t size)
-{
-  printf("eeprom_write_block p=%p ofs=%d l=%2d\n",pointer_ram,(int)pointer_eeprom,(int)size);
-  //  FILE *fp=fopen(eepromFile, "r+");
-  if(!fp) fp = fopen(eepromFile, "r+");
-  if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
-  fwrite(pointer_ram, size, 1,fp);
-  //fclose(fp);
-}
-
-void eeprom_read_block (void *pointer_ram,
-                   const void *pointer_eeprom,
-                   size_t size)
-{
-  //FILE *fp=fopen(eepromFile, "r");
-  if(!fp) fp = fopen(eepromFile, "r+");
-  if(fseek(fp, (long) pointer_eeprom, SEEK_SET)==-1) perror("error in seek");
-  fread(pointer_ram, size, 1, fp);
-  //fclose(fp);
-}
-
-
 #define W  DISPLAY_W
 #define H  DISPLAY_H
 #define W2 W*2
 #define H2 H*2
+
+char g_title[80];
+
 class Th9xSim: public FXMainWindow
 {
   FXDECLARE(Th9xSim)
@@ -122,12 +37,10 @@ public:
   Th9xSim(FXApp* a);
   long onKeypress(FXObject*,FXSelector,void*);
   long onArrowPress(FXObject*,FXSelector,void*);
-  long onChore(FXObject*,FXSelector,void*);
   long onTimeout(FXObject*,FXSelector,void*);
   void makeSnapshot(const FXDrawable* drawable);
   void doEvents();
-  void refreshDiplay();
-  void init2();
+  void refreshDisplay();
 private:
 
 
@@ -148,7 +61,6 @@ public:
 FXDEFMAP(Th9xSim) Th9xSimMap[]={
 
   //________Message_Type_________ID_____________________Message_Handler_______
-  FXMAPFUNC(SEL_CHORE,     1,    Th9xSim::onChore),
   FXMAPFUNC(SEL_TIMEOUT,   2,    Th9xSim::onTimeout),
   FXMAPFUNC(SEL_COMMAND,   1000,    Th9xSim::onArrowPress),
   FXMAPFUNC(SEL_KEYPRESS,  0,    Th9xSim::onKeypress),
@@ -295,15 +207,6 @@ long Th9xSim::onKeypress(FXObject*,FXSelector,void*v)
   return 0;
 }
 
-
-void Th9xSim::init2()
-{
-  init();
-  // eeReadAll();
-  // checkMem();
-  // checkTHR();
-  // checkSwitches();
-}
 extern uint16_t       s_trainerLast10ms;
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
@@ -319,11 +222,11 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
   }
 
   per10ms();
-  getApp()->addChore(this,1);
+  refreshDisplay();
   getApp()->addTimeout(this,2,10);
   return 0;
 }
-void Th9xSim::refreshDiplay()
+void Th9xSim::refreshDisplay()
 {
   //lcd_img_f(0x7d3,0,0,0x6b,0x18);
   //lcd_img_f(,0,0,,);
@@ -335,7 +238,7 @@ void Th9xSim::refreshDiplay()
     for(int y=0;y<H;y++)
     {
       int o2 = x/4 + y*W*2*2/8;
-      if( displayBuf[x+(y/8)*W] & (1<<(y%8))) {
+      if( lcd_buf[x+(y/8)*W] & (1<<(y%8))) {
         buf2[o2]      |=   3<<(x%4*2);
         buf2[o2+W2/8] |=   3<<(x%4*2);
       }
@@ -431,27 +334,18 @@ void Th9xSim::refreshDiplay()
 
 
 }
-long Th9xSim::onChore(FXObject*,FXSelector,void*)
-{
-  refreshDiplay();
-  perMain();
-  return 0;
-}
 
 Th9xSim *th9xSim;
 void doFxEvents()
 {
   //puts("doFxEvents");
   th9xSim->getApp()->runOneEvent(false);
-  th9xSim->refreshDiplay();
+  th9xSim->refreshDisplay();
 }
 
 int main(int argc,char **argv)
 {
-  
-  if(argc>=2){
-    eepromFile = argv[1];
-  }
+  eepromFile = (argc>=2 ? argv[1] : "eeprom.bin");
   printf("eeprom = %s\n",eepromFile);
 
   pine = 0xff & ~(1<<INP_E_ID2);// & ~(1<<INP_E_ElevDR);
@@ -482,8 +376,13 @@ int main(int argc,char **argv)
 
   // Pretty self-explanatory:- this shows the window, and places it in the
   // middle of the screen.
+#ifndef __APPLE__
   th9xSim->show(PLACEMENT_SCREEN);
-  th9xSim->init2();
+#else
+  th9xSim->show(); // Otherwise the main window gets centred across my two monitors, split down the middle.
+#endif
+
+  StartMainThread();
 
   return application.run();
 }
