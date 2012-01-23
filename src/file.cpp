@@ -153,6 +153,10 @@ int8_t EeFsck()
 }
 void EeFsFormat()
 {
+  if(sizeof(eeFs) != RESV){
+    extern void eeprom_RESV_mismatch();
+    eeprom_RESV_mismatch();
+  }
   memset(&eeFs,0, sizeof(eeFs));
   eeFs.version  = EEFS_VERS;
   eeFs.mySize   = sizeof(eeFs);
