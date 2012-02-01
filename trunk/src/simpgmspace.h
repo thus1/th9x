@@ -116,4 +116,13 @@ void eeprom_read_block (void *pointer_ram,
 #define offsetof(st, m) ((size_t) ( (char *)&((st *)(0))->m - (char *)0 ))
 #define wdt_reset()
 
+
+#ifndef __GNUC__
+#include <windows.h>
+#define sleep(x) Sleep(x)
+#else
+#include <unistd.h>
+#define sleep(x) usleep(1000*x)
+#endif
+
 #endif

@@ -510,16 +510,6 @@ void checkTHR()
 // mode = 2 : no beep
 // mode = 4 : no clear
 
-#ifdef SIM
-#ifndef __GNUC__
-#include <windows.h>
-#define sleep(x) Sleep(x)
-#else
-#include <unistd.h>
-#define sleep(x) usleep(1000*x)
-#endif
-#endif
-
 bool alert(const prog_char * s, uint8_t mode )
 {
   if(! (mode&2)) beepErr();
