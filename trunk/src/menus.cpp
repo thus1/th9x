@@ -1359,7 +1359,8 @@ void menuProcModel()
   switch(g_event){
     case EVT_ENTRY:
       s_type=0;
-      if(g_eeGeneral.currModel==0) s_type = 1; //beim ersten Modell solls shon mal funktionieren
+      if(g_eeGeneral.currModel==0 && !g_model.mdVers)
+        s_type = 1; //beim ersten Modell solls shon mal funktionieren
       break;
     case EVT_EXIT: 
       //(! g_model.mdVers && s_type)  {
@@ -1480,14 +1481,16 @@ void menuProcModel()
         }
 	break;
       case 3:
-        if(! g_model.mdVers ){
+        if(g_model.mdVers && s_type==0)
+          lcd_putsAtt(  FW*8, y, PSTR("modif!"),attr?INVERS:0);
+        else
           lcd_putsAtt(  FW*8, y, modelMixerDefaultName(s_type),attr);
-          if(attr){
-            checkIncDecGen2( &s_type, 0, modelMixerDefaults-1, 0);
-          }
-        }else{
-          lcd_putsAtt(  FW*8, y, PSTR("modif."),attr?INVERS:0);
+        if(attr){
+          checkIncDecGen2( &s_type, 0, modelMixerDefaults-1, 0);
         }
+        //}else{
+        //lcd_putsAtt(  FW*8, y, PSTR("modif."),attr?INVERS:0);
+        //}
         y+=FH;
         break;
       case 4:
@@ -2231,6 +2234,11 @@ void menuProcStatistic()
 extern volatile uint16_t captureRing[16];
 
 
+#define MAX_VIEWS  4
+#define VIEW_NUM   0
+#define VIEW_GRAPH 1
+#define VIEW_SWTCH 2
+#define VIEW_TRIM  3
 uint8_t g_istTrimState;
 void menuProc0()
 {
@@ -2242,7 +2250,7 @@ void menuProc0()
   static MenuFuncP s_lastPopMenu[2];
   static uint8_t   view;
 
-  if(view==2){
+  if(view==VIEW_SWTCH){
     switch(g_event){
       static bool s_autoBack;
     case EVT_KEY_BREAK(KEY_RIGHT):
@@ -2330,8 +2338,6 @@ void menuProc0()
       killEvents();
       return;
       break;
-#define MAX_VIEWS 4
-#define VIEW_TRIM 3
       //states of instant trim
 #define IST_OFF      0
 #define IST_CHECKKEY 1
@@ -2441,7 +2447,7 @@ void menuProc0()
   uint8_t x0,y0;
   switch(view)
     {
-    case 0:
+    case VIEW_NUM:
       for(uint8_t i=0; i<NUM_CHNOUT; i++) {
 	x0 = (i%4*9+3)*FW/2;
 	y0 = i/4*FH+40;
@@ -2449,7 +2455,7 @@ void menuProc0()
 	lcd_outdezAtt( x0+4*FW , y0, g_chans512[i]*2-g_chans512[i]/21,PREC1 );
       }
       break;
-    case 1:
+    case VIEW_GRAPH:
 #define WBAR2 (50/2)
       for(uint8_t i=0; i<NUM_CHNOUT; i++) {
 	x0       = i<4 ? 128/4+4 : 128*3/4-4;
@@ -2466,7 +2472,7 @@ void menuProc0()
 	lcd_hline(x0,y0-1,l);
       }
       break;
-    case 2:
+    case VIEW_SWTCH:
       showSwitches(subSw);
       break;
     case VIEW_TRIM:
@@ -2614,7 +2620,7 @@ void perOut(int16_t *chanOut)
     int16_t v= anaIn(iHw);
     g_sumAna += (uint8_t)v;
 
-#ifndef SIM
+#ifndef COMPANION9X
     v -= g_eeGeneral.calibMid[iHw];
     v  =  v * (int32_t)RESX /  (max((int16_t)100,
                                     (v>0 ? 
