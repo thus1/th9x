@@ -325,12 +325,12 @@ class Builder
       vers=$1.to_i + 1
 #<url>https://th9x.googlecode.com/svn/trunk</url>
       info=`svn info --xml ..`
-      if info=~/\.com\/svn\/(.*)<\/url>/
-        svnvers += $1
-      end
+      #if info=~/\.com\/svn\/(.*)<\/url>/
+      #  svnvers += $1
+      #end
 #   revision="77">
       if info=~/revision="(\d+)"/
-        svnvers += "-r"+($1.to_i+1).to_s
+        svnvers = "th9x-r"+($1.to_i+1).to_s
       end
     rescue
     end
