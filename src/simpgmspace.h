@@ -120,6 +120,8 @@ void eeprom_read_block (void *pointer_ram,
 #ifndef __GNUC__
 #include <windows.h>
 #define sleep(x) Sleep(x)
+#undef min
+#undef max
 #else
 #include <unistd.h>
 #define sleep(x) usleep(1000*x)
