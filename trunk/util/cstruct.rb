@@ -10,22 +10,27 @@ ruby methods.
   $Id: cstruct.rb,v 1.4 2002/03/18 23:39:31 thus Exp $
 
 == Example
-  require 'cstruct'
+require 'cstruct'
 
-  CStruct.defStruct "TheCType",<<-"END_TYP"
-    uint16_t 	elt1;
-    uint8_t 	elt2;
-    uint8_t 	elt3[2];
-    END_TYP
+CStruct.alignment=1
 
-  cVar        = CStruct::TheCType.new
-  cVar.elt1   = 0x4548
-  cVar.elt2   = 0x4c
-  cVar.elt3[0]= 0x4c
-  cVar.elt3[1]= 0x4f
-  puts          cVar
-  puts          cVar.toBin
-  File.open("test","w"){|f| cVar.write(f)}
+CStruct.defStruct "TheCType",<<-"END_TYP"
+  uint8_t 	elt1[2];
+  uint8_t 	elt2:3;
+  uint8_t 	elt3:4;
+  uint16_t 	elt4;
+END_TYP
+
+cVar        = CStruct::TheCType.new
+cVar.elt1[0]= 0x48
+cVar.elt1[1]= 0x45
+cVar.elt2   = 0x4
+cVar.elt3   = 0xd
+cVar.elt4   = 0x4f4c #0x4548
+
+puts          cVar
+p             cVar.toBin
+File.open("test","w"){|f| cVar.write(f)}
 
 == CStruct module
 CStruct provides some methods which let you define some data structures
@@ -64,6 +69,8 @@ then dummy members are generated automatically.
     Define a structured type with means of an ascii-string.
     Line by line.
 
+--- CStruct.alignment=
+    Set alignment of whole structure definitions
 
 === methods of generated c-type-classes
 
@@ -100,7 +107,6 @@ then dummy members are generated automatically.
 
 
 == Todo
-  * bitfields
   * support 'strict alignMent'
   * support big and little endianess
   * float-support
@@ -155,18 +161,28 @@ module CStruct
   end
 
   class BitFld < CStructBase
-    def initialize(refobj,bits,pos,typ)
+    def initialize(refobj,bits,pos,signed)#typ)
       super(refobj.offset)
+      #printf "signed = #{signed.inspect}\n"
+      #raise
       @refobj,@bits,@pos = refobj,bits,pos
-      @signed =  typ !~ /^u/
+      @signed =  signed #typ !~ /^u/
     end
     def each()                                   end
     def to_sInternal(ofs,nest=0) 
       [sprintf("0x%x %d (%s.%d:%d)\n",get(),get(),@refobj.class.to_s[9..-1],@pos,@bits),ofs]         
     end
-    def set(v)   raise "todo";                   end
+    def set(v)   
+      #raise "todo";                   
+      msk=((1<<@bits)-1)
+      x = @refobj.get()
+      #printf "msk=%x old x=%x #{@signed}\n",msk,x
+      x = (x & ~(msk << @pos)) | ((v & msk) << @pos)
+      @refobj.set(x)
+    end
     def get()    
-      ret  = (@refobj.get()>>@pos) & ((1<<@bits)-1)
+      msk=((1<<@bits)-1)
+      ret  = (@refobj.get()>>@pos) & msk
       ret -= (1<<@bits)  if @signed and (ret & ((1<<@bits-1)) != 0)
       ret
     end
@@ -211,6 +227,7 @@ module CStruct
     class #{name} < BaseT
       def initialize(offset) @offset=offset; @value=0                        end
       def each()                                                          end
+      def #{name}.signed()    #{signed}                                   end
       def #{name}.sizeof()    #{sizeof}                                   end
       def #{name}.granu()     #{sizeof}                                   end
       def to_sInternal(ofs,nest=0) 
@@ -226,7 +243,7 @@ module CStruct
       end
     end
     END
-    CStruct.module_eval d
+    CStruct.module_eval d,__FILE__+" #1",0
   end
   def CStruct.defStruct(tname,cdef)  DefStruct.new(tname,cdef)            end
   class DefStruct
@@ -284,7 +301,7 @@ module CStruct
       end
       END
       #puts d
-      CStruct.module_eval d
+      CStruct.module_eval d,__FILE__+" #1",0
       #puts "#{tname}.sizeof() = #{@pos}"
     end
 
@@ -351,9 +368,10 @@ module CStruct
         @membv["#{refname}"].hide()
       END
       @bitFld.each{|name,bits,pos,typ|
+        signed= CStruct.module_eval("#{typ}.signed")
         @init += <<-"END"
           @membn.push "#{name}"
-          @membv["#{name}"]=BitFld.new(@membv["#{refname}"],#{bits},#{pos},"#{typ}")
+          @membv["#{name}"]=BitFld.new(@membv["#{refname}"],#{bits},#{pos},#{signed})
         END
         @defs += <<-"END"
          def #{name}= (v)  @membv["#{name}"].set(v)    end
@@ -365,6 +383,7 @@ module CStruct
     end
     def addBitFld(typ,n,bits)
       #puts "def addBitFld(#{typ},#{n},#{bits})"
+      CStruct.cT2rbT(typ)
 
       #fehlt: byte-überlappende felder, signed,unsigned
       finBitFld if @bitFld and (pos=@bitFld[0][0])+bits > 8
