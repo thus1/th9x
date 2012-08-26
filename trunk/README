@@ -1,0 +1,30 @@
+
+
+Ubersetzen der th9x unter Kubuntu-12.4
+----------------------
+
+
+Voraussetzungen
+----------------
+
+Notwendige Pakete unter Kubuntu-12.4 (vermutlich auch ubuntu und andere)
+
+- binutils-avr
+- gcc-avr
+- avr-libc
+- ruby (nur fuer make.rb)
+
+> sudo apt-get install binutils-avr gcc-avr avr-libc ruby
+
+
+
+Download der Sources
+--------------------
+> cd ~/
+> svn checkout http://th9x.googlecode.com/svn/trunk/ th9x-read-only
+
+
+Compilieren
+-----------
+> cd th9x-read-only
+> make.rb
