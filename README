@@ -36,3 +36,17 @@ Compilieren der simulation
 > cd ~/th9x-read-only
 > make
 
+Start der Simulation
+--------------------
+> ./simu
+
+Bedienung der Simulation
+------------------------
+Cursor links     =  -
+Cursor rechts    =  +
+Cursor oben      =  up
+Cursor unten     =  down
+Enter            =  Menu
+Backspace        =  Exit
+
+
