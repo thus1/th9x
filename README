@@ -12,9 +12,11 @@ Notwendige Pakete unter Kubuntu-12.4 (vermutlich auch ubuntu und andere)
 - binutils-avr
 - gcc-avr
 - avr-libc
-- ruby (nur fuer make.rb)
+- ruby         (nur fuer make.rb)
+- subversion
+- libfox-1.6-0 (nur fuer simulation)
 
-> sudo apt-get install binutils-avr gcc-avr avr-libc ruby
+> sudo apt-get install binutils-avr gcc-avr avr-libc ruby subversion libfox-1.6-0
 
 
 
@@ -26,5 +28,11 @@ Download der Sources
 
 Compilieren
 -----------
-> cd th9x-read-only
-> make.rb
+> cd ~/th9x-read-only
+> ./make.rb
+
+Compilieren der simulation
+--------------------------
+> cd ~/th9x-read-only
+> make
+
