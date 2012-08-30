@@ -15,8 +15,9 @@ Notwendige Pakete unter Kubuntu-12.4 (vermutlich auch ubuntu und andere)
 - ruby         (nur fuer make.rb)
 - subversion
 - libfox-1.6-0 (nur fuer simulation)
+- libfox-1.6-dev
 
-> sudo apt-get install binutils-avr gcc-avr avr-libc ruby subversion libfox-1.6-0
+> sudo apt-get install binutils-avr gcc-avr avr-libc ruby subversion libfox-1.6-0 libfox-1.6-dev
 
 
 
