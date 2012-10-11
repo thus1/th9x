@@ -511,7 +511,8 @@ void menuProcStatistic();
 void menuProc0();
 void menuProcDisplayTest();
 
-extern "C" uint8_t* setupPulses();
+//extern "C" uint8_t* setupPulses();
+extern "C" void setupPulses();
 extern uint8_t  g_pulseLoopCnt; //only in ppm-mode
 
 extern int16_t intpol(int16_t, uint8_t);
