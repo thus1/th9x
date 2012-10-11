@@ -49,21 +49,6 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
 
   PORTB ^= (1<<OUT_B_PPM);
 
-  /*
-  OCR1A       = *pulsePtr++;
-     a70:	a0 91 00 01 	lds	r26, 0x0100
-     a74:	b0 91 01 01 	lds	r27, 0x0101
-     a78:	fd 01       	movw	r30, r26
-     a7a:	81 91       	ld	r24, Z+
-     a7c:	91 91       	ld	r25, Z+
-     a7e:	9b bd       	out	0x2b, r25	; 43
-     a80:	8a bd       	out	0x2a, r24	; 42
-     a82:	f0 93 01 01 	sts	0x0101, r31
-     a86:	e0 93 00 01 	sts	0x0100, r30
-  //OCR1A = pulses2MHz[pulseIdx++];
-  */
-  //uint16_t next;
-
   //
   // format of control-stream
   // 
@@ -108,15 +93,6 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     , [ocr1a]   "I"(_SFR_IO_ADDR(OCR1A))
 	    //    : "r30", "r31"
   );
-  // if( ctrl < 0 ) {
-  //   uint8_t cnt=*pulsePtr++;
-  //   if(--cnt){
-  //     *--pulsePtr   = cnt;
-  //     pulsePtr     += ctrl;
-  //   }else{
-  //     ctrl=*pulsePtr++;
-  //   }
-  // }
   if( ctrl == 0) {
     //TIMSK &= ~(1<<OCIE1A); //stop reentrance 
     //sei();
@@ -132,8 +108,8 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
       " push   r26              \n\t"
       " push   r27              \n\t"
       " call   setupPulses      \n\t"
-      " sts    %A[pulsePtr],r24 \n\t"
-      " sts    %B[pulsePtr],r25 \n\t"
+      //" sts    %[pulsePtr],r24 \n\t"
+      //" sts    %[pulsePtr]+1,r25 \n\t"
       " pop    r27              \n\t"
       " pop    r26              \n\t"
       " pop    r23              \n\t"
@@ -142,10 +118,12 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
       " pop    r20              \n\t"
       " pop    r19              \n\t"
       " pop    r18              \n\t"
-      : [pulsePtr]"=m"(pulsePtr)
-      :
-      : "r24","r25"
+      //: [pulsePtr]"=m"(pulsePtr)
+      //:
+      //: "r24","r25"
     );
+    pulsePtr = pulses2MHz;
+    
     //uint16_t ret=*pulsePtr;
     
     //cli();
@@ -692,7 +670,7 @@ static void setupPulsesPiccoZ(uint8_t chn)
 
 
 
-uint8_t* setupPulses() 
+void setupPulses() 
 {
   uint8_t  stbyLevel     = 1; //default
   pulses2MHzPtr = pulses2MHz;
@@ -763,7 +741,7 @@ uint8_t* setupPulses()
     PORTB &= ~(1<<OUT_B_PPM);
   }
 
-  return pulses2MHz;
+  //return pulses2MHz;
 }
 
 
