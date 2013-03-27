@@ -97,9 +97,9 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
  # Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux Benutzer benötigen meist keinen Treiber.
  # AVRdude installieren:
   * Windows Benutzer laden sich am besten [http://sourceforge.net/projects/winavr/files/ WinAVR], welches AVRdude beinhaltet.
-  * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode von der Mac OS installer DVD vorraus). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
+  * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode vom Mac App Store vorraus, kostenloser download). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
-  * Die aktuelle Version von AVRdude ist 5.10
+  * Die aktuelle Version von AVRdude ist 5.11
  # Optionale GUI’s (Grafische Benutzeroberflächen) gibt es für AVRdude sowohl für für Windows (z.B. [http://sourceforge.net/projects/avrdude-gui/files/avrdude-gui/avrdude-gui_0.2.0/avrdude-gui_v0.2.0.zip/download avrdude-gui_v0.2.0]), Windows & Mac OS (z.B. [http://avr8-burn-o-mat.aaabbb.de/ AVR Burn-O-Mat], [http://www.vonnieda.org/software/avrfuses AVRFuses]) oder Windows & Linux (z.B. [http://www.soft-land.de/ AVRBurner])
  # Benötigte Parameter für avrdude:
   * `-c xxxx` -> xxxx steht für den verwendeten Programmer, siehe [http://www.nongnu.org/avrdude/user-manual/avrdude_4.html Liste]
