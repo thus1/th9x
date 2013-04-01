@@ -96,7 +96,7 @@ Start -> ausführen -> `cmd` ein, in Mac OS öffnet man Anwendungen/Dienstprogra
 
  # Für Windows den mitgelieferten Treiber des Programmers installieren, Mac OS und Linux Benutzer benötigen meist keinen Treiber.
  # AVRdude installieren:
-  * Windows Benutzer laden sich am besten [http://sourceforge.net/projects/winavr/files/ WinAVR], welches AVRdude beinhaltet.
+  * Windows Benutzer laden sich am besten [http://winavr.sourceforge.net/ WinAVR], welches AVRdude beinhaltet.
   * Mac OS Nutzer installieren [http://www.macports.org/install.php MacPorts] (setzt Xcode vom Mac App Store vorraus, kostenloser download). Dann ein Terminal Fenster öffnen und folgenden Befehl eintippen: `sudo port install avrdude` jetzt kann man einen Kaffee trinken und warten bis MacPorts AVRdude und alles was es dazu benötigt installiert.
   * Linux user wissen sicher wie sie an die aktuelle Version von AVRdude herankommen :)
   * Die aktuelle Version von AVRdude ist 5.11
