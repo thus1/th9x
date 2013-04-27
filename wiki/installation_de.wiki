@@ -161,6 +161,5 @@ Es gibt immer etwas was schiefgehen kann, bis jetzt ist aber noch kein Fall beka
  * Tutorial zu AVR allgemein: http://www.mikrocontroller.net/articles/AVR-Tutorial    
  * Elektronik Einführung (auch SMD löten): http://www.mikrocontroller.net/articles/Elektronik_Allgemein    
  * Thread auf [http://www.rclineforum.de/forum/thread.php?threadid=239048&sid=&threadview=0&hilight=&hilightuser=&page=50 rclineforum.de]    
- * Threads auf [http://www.rcgroups.com/forums/showthread.php?t=1266162 rcgroups.com],
-; [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 rcgroups.com]    
+ * Threads auf [http://www.rcgroups.com/forums/showthread.php?t=1266162 #1 rcgroups.com], [http://www.rcgroups.com/forums/showthread.php?t=1035575&page=172 #2 rcgroups.com]    
  * Alternative Firmware: http://radioclone.org/; http://sourceforge.net/projects/radioclone/
