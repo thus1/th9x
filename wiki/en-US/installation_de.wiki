@@ -37,7 +37,7 @@ You probably prefer a USB programmer over its LPT pendant. However, apart from t
 
 The pins of the programmer have to be connected to the microcontroller in the Tx (ATmega64). Atmel has two standard connectors, a 6- or 10pin connector. Every AVR programmer has the one or the other. The standard pin assignments look as follows:
 
-<img src="http://th9x.googlecode.com/svn/wiki/atmel_6-10pin.png" width=600>
+<img src="http://th9x.googlecode.com/svn/wiki/atmel_6-10pin_new.png" width=600>
 
 these have to be connected to the Tx as shown in the following picture. The Turnigy 9ch Tx is available in two versions. Depicted is v1, if you got v2 please notice that the SCK pin now has a pad for easier soldering (red circle).
 
