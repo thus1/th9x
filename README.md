@@ -2,10 +2,10 @@
 This project is an alternative firmware for the 9 channel rc-control FS-TH9X manufactured by FlySky (other brand names: Turnigy 9X / Eurgle 9X / iMax 9X)
 
 # Documentation #
-  * [Documentation (engl)](http://th9x.googlecode.com/svn/trunk/doc/th9x-en.pdf)
-  * [Dokumentation (deutsch)](http://th9x.googlecode.com/svn/trunk/doc/th9x.pdf)
-  * [atmega64A.pdf](http://th9x.googlecode.com/svn/trunk/doc/atmega64A.pdf)
-  * [th9x-schaltplan.pdf](http://th9x.googlecode.com/svn/trunk/doc/schaltplan-transmitter.pdf)
+  * [Documentation (engl)](https://github.com/thus1/th9x/blob/master/doc/th9x-en.pdf)
+  * [Dokumentation (deutsch)](https://github.com/thus1/th9x/blob/master/doc/th9x.pdf)
+  * [atmega64A.pdf](https://github.com/thus1/th9x/blob/master/doc/atmega64A.pdf)
+  * [th9x-schaltplan.pdf](https://github.com/thus1/th9x/blob/master/doc/schaltplan-transmitter.pdf)
 
 # Installation Instructions #
   * [Installationsanleitung/Installation Instructions](installation_de.md)
