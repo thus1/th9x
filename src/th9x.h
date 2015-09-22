@@ -14,7 +14,7 @@
 #define th9x_h
 
 
-// #define WITH_ADC_STAT
+//#define WITH_ADC_STAT //attention bad cannel
 
 #define VERS 1
 
@@ -43,8 +43,18 @@
 
   //#define __ATTR_PROGMEM__   
   #include <avr/pgmspace.h>
+// see http://www.tuxgraphics.org/electronics/201207/prog_char.shtml
+//-Wno-deprecated-declarations -D__PROG_TYPES_COMPAT__
+// const char str_pstr[] PROGMEM = "FLASH STRING";
+// lcd_puts_p(PSTR("tuxgraphics"));
+// typedef const char          prog_char;
+// typedef const unsigned char prog_uchar;
+// typedef const uint8_t       prog_uint8_t;
+// typedef const int8_t        prog_int8_t;
+
   #ifdef __cplusplus
     #define APM __attribute__(( section(".progmem.data") ))
+//#define APM __attribute__((progmem))
     #undef PSTR
     #define PSTR(s) (__extension__({static prog_char APM __c[] = (s);&__c[0];}))
   #endif
@@ -64,14 +74,13 @@
 //                  elev                        thr 
 //                   LV                         RV
 //                 2 ^                        4 ^
-//                   1                          2
+//                  A1                         A2
 //                   |     rudd                 |     aile
-//              <----X--3-> LH             <----X--0-> RH
+//              <----X-A3-> LH             <----X-A0-> RH
 //              6    |    7                1    |    0
 //                   |                          |
 //                 3 v                        5 v
 //
-
 
 //PORTA  7      6       5       4       3       2       1       0
 //       O      O       O       O       O       O       O       O
@@ -100,6 +109,11 @@
 //PORTG  7      6       5       4       3       2       1       0
 //       -      -       -       O       i               i       i
 //                            SIM_CTL  ID1      NC      RF_POW RuddDR
+
+#define ANA_CHANS      9 //
+// chan 0..3  Sticks STCK_LH STCK_LV STCK_RV STCK_RH
+// chan 4..6  Potis
+// chan 7,8   vbat, vref
 
 #define PORTA_LCD_DAT  PORTA
 #define OUT_B_LIGHT   7
@@ -483,7 +497,7 @@ void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
 /// Schreibt [CH1 CH2 CH3 CH4 CH5 CH6 CH7 CH8] aufs lcd
 void putsChn(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att);
 /// Schreibt die Batteriespannung aufs lcd
-void putsVBat(uint8_t x,uint8_t y,uint8_t att);
+void putsV100mv(uint8_t volt,uint8_t x,uint8_t y,uint8_t att);
 void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2);
 
 
@@ -517,7 +531,6 @@ extern uint8_t  g_pulseLoopCnt; //only in ppm-mode
 
 extern int16_t intpol(int16_t, uint8_t);
 
-//extern uint16_t s_ana[8];
 extern uint16_t anaIn(uint8_t chan);
 
 
@@ -526,6 +539,7 @@ extern uint16_t anaIn(uint8_t chan);
 //extern TrainerData g_trainer;
 //extern uint16_t           g_anaIns[8];
 extern uint8_t            g_vbat100mV;
+inline void putsVBat(uint8_t x,uint8_t y,uint8_t att){  putsV100mv(g_vbat100mV, x, y, att);}
 extern volatile uint16_t  g_tmr10ms;
 extern volatile uint16_t  g_tmr1s;
 extern volatile uint8_t   g_blinkTmr10ms;

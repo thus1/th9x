@@ -29,7 +29,7 @@
 #define INVERS        0x01
 #define BLINK         0x02
 #define BLINKF        (BLINK|INVERS)
-#define ATT_CSR_MV    INVERS
+#define ATT_CSR_MV    BLINKF //INVERS
 #define ATT_CSR_EDT   BLINK
 
 
@@ -91,7 +91,7 @@ extern void lcd_init();
 extern void lcd_clear();
 extern void refreshDiplay();
 extern void lcdSetRefVolt(unsigned char val);
-#define BLINK_ON_PHASE (g_blinkTmr10ms & (1<<6))
+#define BLINK_ON_PHASE (g_blinkTmr10ms & 0x28)
 #define BLINK_SYNC      g_blinkTmr10ms = (0x40-10)
 #endif
 /*eof*/

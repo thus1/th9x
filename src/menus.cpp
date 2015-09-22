@@ -41,9 +41,10 @@ uint8_t g_virtSw[8];
 
 void menuProcSwitches();
 
-typedef PROGMEM void (*MenuFuncP_PROGMEM)();
+// typedef PROGMEM void (*MenuFuncP_PROGMEM)();
+//typedef MenuFuncP_PROGMEMx const MenuFuncP_PROGMEM;
 
-MenuFuncP_PROGMEM APM menuTabModel[] = {
+const MenuFuncP APM  menuTabModel[] = {
   menuProcModelSelect,
   menuProcModel, 
   menuProcExpoAll, 
@@ -54,7 +55,7 @@ MenuFuncP_PROGMEM APM menuTabModel[] = {
   menuProcCurve
 };
 
-MenuFuncP_PROGMEM APM menuTabDiag[] = {
+const MenuFuncP APM menuTabDiag[] = {
   menuProcSetup0,
   menuProcSetup1,
   menuProcSetup2,
@@ -80,8 +81,8 @@ struct MState2
   void init(){m_posVert=0;m_valEdit=0;};
   prog_uint8_t *m_tab;
   //  static uint8_t g_event;
-  void check_v(uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, uint8_t maxrow);
-  void check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_int8_t*subTab,uint8_t subTabMax,uint8_t maxrow);
+  void check_v(uint8_t curr,const MenuFuncP *menuTab, uint8_t menuTabSize, uint8_t maxrow);
+  void check( uint8_t curr,const MenuFuncP *menuTab, uint8_t menuTabSize, prog_int8_t*subTab,uint8_t subTabMax,uint8_t maxrow);
 };
 #define MSTATE_TAB  static prog_int8_t APM mstate_tab[]
 
@@ -99,11 +100,11 @@ struct MState2
 #define MSTATE_CHECK_VxH(curr,menuTab,numRows) mstate2.check(curr,menuTab,DIM(menuTab),mstate_tab,DIM(mstate_tab)-1,numRows-1)
 #define MSTATE_CHECK_V(curr,menuTab,numRows)   mstate2.check_v(curr,menuTab,DIM(menuTab),numRows-1)
 
-void MState2::check_v( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, uint8_t maxrow)
+void MState2::check_v( uint8_t curr,MenuFuncP const *menuTab, uint8_t menuTabSize, uint8_t maxrow)
 { 
   check(  curr, menuTab, menuTabSize, 0, 0, maxrow);
 }
-void MState2::check( uint8_t curr,MenuFuncP *menuTab, uint8_t menuTabSize, prog_int8_t*horTab,uint8_t horTabMax,uint8_t maxrow)
+void MState2::check( uint8_t curr,MenuFuncP const *menuTab, uint8_t menuTabSize, prog_int8_t*horTab,uint8_t horTabMax,uint8_t maxrow)
 {
   m_posVertChg=0;
   m_posHorzChg=0;
@@ -1456,7 +1457,7 @@ void menuProcModel()
         break;
       case 2:  
         {
-          typedef PROGMEM const char* prog_charp;
+          //typedef PROGMEM const char* prog_charp;
           static const prog_char APM p0[]="\x00""-";
           static const prog_char APM p1[]="\x02""A\tB\tC\t";
           static const prog_char APM p2[]="\x00""-";
@@ -1464,7 +1465,7 @@ void menuProcModel()
           static const prog_char APM p4[]="\x05""A\tB\tC\tA=\tB=\tC=\t";
           static const prog_char APM p5[]="\x00""-";
           //static const prog_char* protTab[]  ={p0,p1,p2,p3,p4,p5};
-          static prog_charp APM protTab[]  ={p0,p1,p2,p3,p4,p5};
+          static  char const * const APM protTab[]  ={p0,p1,p2,p3,p4,p5};
 	  const prog_char* p = (const prog_char*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
 
 	  lcd_putsmAtt(   8*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
@@ -1688,10 +1689,10 @@ void menuProcDiagAna()
   for(uint8_t i=0; i<8; i++)
   {
     uint8_t y=i*FH;
-    lcd_putsnAtt( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2,sub==i ? INVERS : 0);  
     //lcd_outhex4( 8*FW, y,g_anaIns[i]);
-    lcd_outhex4( 7*FW, y,anaIn(i));
     if(i<7){
+      lcd_putsnAtt( 4*FW, y,PSTR("A1A2A3A4A5A6A7A8")+2*i,2,sub==i ? INVERS : 0);  
+      lcd_outhex4( 7*FW, y,anaIn(i));
       //int16_t v = g_anaIns[i];
       int16_t v = anaIn(i) - g_eeGeneral.calibMid[i];
       v =  v*50/max(1, (v > 0 ? g_eeGeneral.calibSpanPos[i] :  g_eeGeneral.calibSpanNeg[i])/2);
@@ -1699,7 +1700,13 @@ void menuProcDiagAna()
         //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
-      putsVBat(12*FW,y,sub==7 ? ATT_CSR_EDT : 0);
+      lcd_outhex4( 0*FW, y,anaIn(8));
+      putsV100mv(anaIn(8)*2/41,3*FW-3,y, 0); //50/1024 = 2/42
+
+      lcd_outhex4( 7*FW, y,anaIn(7));
+      putsV100mv(anaIn(7)*2/41,10*FW-3,y, 0); //50/1024 = 2/42
+
+      putsVBat(13*FW,y,sub==7 ? ATT_CSR_EDT : 0);
     }
   }
   if(sub==7){

@@ -50,10 +50,10 @@ PACK(struct EeFs{
   DirEnt   files[MAXFILES]; //20*3
 }) eeFs; //64
 
-
+#define EEPROM_ADR(adr) (&((char*)0)[adr]) //64-bit and 32-bit aware
 static uint8_t EeFsRead(uint8_t blk,uint8_t ofs){
   uint8_t ret;
-  eeprom_read_block(&ret,(const void*)(blk*BS+ofs),1);
+  eeprom_read_block(&ret, EEPROM_ADR(blk*BS+ofs), 1);
   return ret;
 }
 // static void EeFsWrite(uint8_t blk,uint8_t ofs,uint8_t val){
@@ -65,13 +65,13 @@ static uint8_t EeFsGetLink(uint8_t blk){
 }
 static void EeFsSetLink(uint8_t blk,uint8_t val){
   //  EeFsWrite( blk,0,val);
-  eeWriteBlockCmp(&val, (void*)(blk*BS+0), 1);
+  eeWriteBlockCmp(&val, EEPROM_ADR(blk*BS+0), 1);
 }
 static uint8_t EeFsGetDat(uint8_t blk,uint8_t ofs){
   return EeFsRead( blk,ofs+1);
 }
 static void EeFsSetDat(uint8_t blk,uint8_t ofs,uint8_t*buf,uint8_t len){
-  eeWriteBlockCmp(buf, (void*)(blk*BS+ofs+1), len);
+  eeWriteBlockCmp(buf, EEPROM_ADR(blk*BS+ofs+1), len);
 }
 static void EeFsFlushFreelist()
 {

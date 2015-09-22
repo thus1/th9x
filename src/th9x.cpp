@@ -223,11 +223,16 @@ uint8_t   g_rawChan;
 
 
 
-const prog_char APM modn12x3[]=
-  "\x0" "\x1" "\x2" "\x3"
-  "\x0" "\x2" "\x1" "\x3"
-  "\x3" "\x1" "\x2" "\x0"
-  "\x3" "\x2" "\x1" "\x0";
+const prog_char APM modn12x3[]={
+  0, 1, 2, 3,
+  0, 2, 1, 3,
+  3, 1, 2, 0,
+  3, 2, 1, 0
+};
+//   "\x0" "\x1" "\x2" "\x3"
+//   "\x0" "\x2" "\x1" "\x3"
+//   "\x3" "\x1" "\x2" "\x0"
+//   "\x3" "\x2" "\x1" "\x0";
 
 
 uint8_t convertMode(uint8_t srcChn)
@@ -382,12 +387,14 @@ void putsTime(uint8_t x,uint8_t y,int16_t tme,uint8_t att,uint8_t att2)
   x2+= (att&DBLSIZE) ? FWNUM*5-1 : FWNUM*3-3;
   lcd_outdezNAtt(x2, y, abs(tme)%60,LEADING0+att2,2);
 }
-void putsVBat(uint8_t x,uint8_t y,uint8_t att)
+
+void putsV100mv(uint8_t v100mv,uint8_t x,uint8_t y,uint8_t att)
 {
   //att |= g_vbat100mV < g_eeGeneral.vBatWarn ? BLINK : 0;
-  lcd_outdezAtt( x+ 3*FW,   y,    g_vbat100mV,att|PREC1);
+  lcd_outdezAtt( x+ 3*FW,   y,    v100mv,att|PREC1);
   lcd_putcAtt(   x+ 3*FW,   y,    'V',att);
 }
+
 void putsChnRaw(uint8_t x,uint8_t y,uint8_t idx1,uint8_t att)
 {
   if((idx1 < NUM_XCHNRAW)) 
@@ -793,7 +800,7 @@ void   perChecks() //ca 10ms
         if( abs(g_sumAna - s_sumAnaLast) > 50)
         {
           s_sumAnaLast = g_sumAna;
-          //g_lightAct1s  = g_tmr1s; //retrigger light
+          g_lightAct1s = g_tmr1s; //retrigger light
           g_actTime1s  = g_tmr1s; //retrigger inativity alarm
         }
         if(g_eeGeneral.inactivityMin)
@@ -863,7 +870,14 @@ void   perChecks() //ca 10ms
             // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
             //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
             uint16_t ab = anaIn(7);
-            g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256; 
+            //g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256;
+
+            // K    = 0.357 Spannungsteiler
+            // Uref = 1.22V
+            //Ub100mv = 10/K * Uref * anaBat(7)/anaRef(8)
+            g_vbat100mV = (ab*34 + ab / 4 * g_eeGeneral.vBatCalib) / anaIn(8);
+            
+
             break;
           }     
       } //2.5s
@@ -916,54 +930,86 @@ public:
   };
 };
 
-static uint16_t s_anaFilt[8];
-uint16_t anaIn(uint8_t chan)
+//static uint16_t s_anaFilt[ANA_CHANS];
+// chan 0..3  Sticks STCK_LH STCK_LV STCK_RV STCK_RH
+// chan 4..6  Potis
+// chan 7,8   vbat, vref
+static uint8_t  s_filtBuf[ANA_CHANS*4*2];
+
+uint16_t anaIn(uint8_t chan) 
 {
-  //                     ana-in:   3 1 2 0 4 5 6 7          
-  //static prog_char APM crossAna[]={4,2,3,1,5,6,7,0}; // wenn schon Tabelle, dann muss sich auch lohnen
-  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7};
+  //PORTF  7      6       5       4       3       2       1       0
+  //       ai     ai      ai      ai      ai      ai      ai      ai 
+  // ANA_ BAT   PITT_TRM HOV_THR HOV_PIT  STCK_LH STCK_RV STCK_LV STCK_RH
+  
+  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7,8};
+#if 0
   volatile uint16_t *p = &s_anaFilt[pgm_read_byte(crossAna+chan)];
   AutoLock autoLock;
   return *p;
+
+#else
+  uint8_t filtLev = g_eeGeneral.adcFilt;
+  uint8_t ofs     = pgm_read_byte(crossAna+chan)*4+filtLev;
+  ofs*=2;
+  volatile uint16_t *p = (uint16_t*)(s_filtBuf + ofs);
+  uint16_t ret;
+ {      
+   AutoLock autoLock;
+   ret =*p;
+ }
+ return ret >> (uint8_t)(filtLev+1);
+#endif
 }
 
 
 ISR(ADC_vect, ISR_NOBLOCK)
 {
-  static uint16_t lastVal[8];
-  static uint8_t  chan;
-  //static uint16_t s_ana[8];
-  static uint8_t s_filtBuf[8*4*2];
+  static uint8_t  s_chan;
 
   ADCSRA  = 0; //reset adconv, 13>25 cycles
-
-  // s_anaFilt[chan] = s_ana[chan] / 16;
-  // s_ana[chan]    += ADC - s_anaFilt[chan]; //
 
   uint16_t v=ADC;
 #ifdef WITH_ADC_STAT
   if(g_rawPos<DIM(g_rawVals)){
-    if(chan==g_rawChan){ g_rawVals[g_rawPos++] = v;}
+    if(s_chan==g_rawChan){ g_rawVals[g_rawPos++] = v;}
   }
 #endif
+
+#if 0
+  static uint16_t s_lastVal[ANA_CHANS];
   g_allAdc++;
-  if( (v-lastVal[chan]+1)<=2 ){
-    lastVal[chan]=v;
+  if( (v-s_lastVal[s_chan]+1)<=2 ){
+    s_lastVal[s_chan]=v;
     
-    uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(chan*4*2));
+    uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
     for(uint8_t i=g_eeGeneral.adcFilt; i>0; i--,filt++){
       uint16_t vn = *filt / 4; //0,16,23,28 vals to 99%
       *filt += v - vn; // *3/4
       v=vn;
     }
     asm("":::"memory"); //barrier saves 6 asm-instructions
-    s_anaFilt[chan] = v;
-    chan    = (chan + 1) & 0x7;
+    s_anaFilt[s_chan] = v;
+    //    = (s_chan + 1) & 0x7;
+    if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
   }else{
-    lastVal[chan]=v;
+    s_lastVal[s_chan]=v;
     g_badAdc++;
   }
-  ADMUX   =  chan | (1<<REFS0);  // Multiplexer stellen
+#else
+  uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
+  filt[3] = filt[3] / 2 + filt[2];
+  filt[2] = filt[2] / 2 + filt[1];
+  filt[1] = filt[1] / 2 + filt[0];
+  filt[0] = filt[0] / 2 + v      ;
+  //s_anaFilt[s_chan] = filt[g_eeGeneral.adcFilt];
+  if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
+#endif
+
+
+  // Multiplexer stellen
+  if(s_chan==8)  ADMUX   =  0x1e   | (1<<REFS0);  // vref
+  else           ADMUX   =  s_chan | (1<<REFS0);  // 0..7
   STARTADCONV;                  //16MHz/128/25 = 5000 Conv/sec
 }
 

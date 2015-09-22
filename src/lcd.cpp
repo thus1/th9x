@@ -129,7 +129,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
     if(p<DISPLAY_END) *p++ = inv ? ~0 : 0;
   }
   assert(p<=DISPLAY_END);
-  if(blinkf && BLINK_ON_PHASE){
+  if(blinkf && !BLINK_ON_PHASE){
     lcd_rect(x,y,FW,FH);
   }
 }
@@ -155,7 +155,7 @@ uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
     lcd_putcAtt(x,y,c,mode);
     x+=FW;    if(mode&DBLSIZE) x+=FW-2;
   }
-  if(blinkf && BLINK_ON_PHASE){
+  if(blinkf && !BLINK_ON_PHASE){
     lcd_rect(x0,y,x-x0,8);
   }
   return x;
@@ -175,7 +175,7 @@ void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mo
     x+=FW;    if(mode&DBLSIZE) x+=FW-2;
     len--;
   }
-  if(blinkf && BLINK_ON_PHASE){
+  if(blinkf && !BLINK_ON_PHASE){
     lcd_rect(x0,y,x-x0,8);
   }
 }
@@ -252,8 +252,8 @@ void lcd_outdezNAtt(uint8_t x,uint8_t y,int16_t val,uint8_t mode,uint8_t len)
   if(neg) lcd_putcAtt((x-=fw),y,'-',mode);
   else  if((mode & SIGN)) lcd_putcAtt((x-=fw),y,'+',mode);
 
-  if(blinkf && BLINK_ON_PHASE){
-    lcd_rect(x,y,x0-x,8); //!!! no dblsize
+  if(blinkf && !BLINK_ON_PHASE){
+    lcd_rect(x,y,x0-x+1,8); //!!! no dblsize
   }
 }
 
@@ -353,7 +353,7 @@ void lcdSendDat(uint8_t val)
 }
 
 #define delay_1us() _delay_us(1)
-void delay_1_5us(int ms)
+void delay_us(int ms)
 {
   for(int i=0; i<ms; i++) delay_1us();
 }
@@ -368,7 +368,7 @@ void lcd_init()
   delay_1us();
   delay_1us();//    f520	call	0xf4ce	delay_1us() ; 0x0xf4ce
   PORTC_LCD_CTRL |= (1<<OUT_C_LCD_RES); //  f524	sbi	0x15, 2	IOADR-PORTC_LCD_CTRL; 21           1
-  delay_1_5us(1500);
+  delay_us(1500);
   lcdSendCtl(0xe2); //Initialize the internal functions
   lcdSendCtl(0xae); //DON = 0: display OFF
   lcdSendCtl(0xa1); //ADC = 1: reverse direction(SEG132->SEG1)

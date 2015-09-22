@@ -51,8 +51,8 @@ private:
 
 public:
   FXSlider      *sliders[8];
-  FXKnob        *knobs[8];
-  FXKnob        *knobsppm[8];
+  FXKnob        *knobs[ANA_CHANS];
+  FXKnob        *knobsppm[8]; //sim trainer port
   FXArrowButton *arrow[3];
   FXArrowButton *arrow2[3];
   FXToggleButton *togButPpm;
@@ -78,6 +78,7 @@ Th9xSim::Th9xSim(FXApp* a)
   for(int i=0; i<(W2*H2/8); i++) buf2[i]=0;//rand();
   bmp = new FXBitmap(a,&buf2,BITMAP_KEEP,W2,H2);
 
+  FXHorizontalFrame *hf001=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   FXHorizontalFrame *hf00=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   FXHorizontalFrame *hf01=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
   FXHorizontalFrame *hf02=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
@@ -114,18 +115,20 @@ Th9xSim::Th9xSim(FXApp* a)
   arrow[0]= new FXArrowButton(hf10,this,1000,ARROW_LEFT);
   arrow[1]= new FXArrowButton(hf10,this,1000,ARROW_UP);
   arrow[2]= new FXArrowButton(hf10,this,1000,ARROW_RIGHT);
-  for(int i=4; i<8; i++){
+  for(int i=4; i<ANA_CHANS; i++){
     knobs[i]= new FXKnob(hf11,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
   }
-  
+
+  new FXLabel(hf001,"Trainer");
   arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
   arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_UP);
   arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
   togButPpm = new FXToggleButton(hf00,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
   for(int i=0; i<8; i++){
-    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+     knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    //    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     knobsppm[i]->setRange(1000,2000);
     knobsppm[i]->setValue(1500+i*20);
   }
@@ -389,8 +392,10 @@ int main(int argc,char **argv)
 
 uint16_t anaIn(uint8_t chan)
 {
-  if(chan<4)  return th9xSim->sliders[chan]->getValue();
-  return th9xSim->knobs[chan]->getValue();
+  uint16_t ret;
+  if(chan<4)  ret = th9xSim->sliders[chan]->getValue();
+  else        ret = th9xSim->knobs[chan]->getValue();
+  return ret + (rand()&0x7) - 3;
   //return 512 -  512*10*chan/100;
   //return (rand() & 0x1f) + 0x2f8;
 }
