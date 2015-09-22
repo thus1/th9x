@@ -1,6 +1,14 @@
 #! /usr/bin/env ruby
-require 'gnuplot-thus'
+require 'gnuplot'
 
+#  class Array # contains n-tuples [x,y],[x,y],[x,y]
+#    def to_gplot
+#      collect { |a| a.join(" ") }.join("\n") + "\ne"
+#    end
+#    def to_gsplot
+#      raise
+#    end
+#  end
 =begin
 ISR(ADC_vect, ISR_NOBLOCK)
 {
@@ -36,17 +44,24 @@ class Main
   def init
     @temp=[0]*100
   end
-  def filter141(val,sft)
+  def filter141(val,sft) # gleitender mw  sum + val - sum / 2**sft
     out=@temp[0] >> sft
     @temp[0] += val-out
     out
   end
-  def filterErez(val)
-    out= @temp[0] = (@temp[0]+@temp[1]) / 2
-    @temp[1] = (@temp[1]+@temp[2]) / 2
-    @temp[2] = (@temp[2]+@temp[3]) / 2
-    @temp[3] = (@temp[3]+val) / 2
-    out
+  def filterErez(val,sel=0)
+    @temp[3] = (@temp[3] / 2 + @temp[2])
+    @temp[2] = (@temp[2] / 2 + @temp[1])
+    @temp[1] = (@temp[1] / 2 + @temp[0])
+    @temp[0] = (@temp[0] / 2 + val) 
+    @temp[sel] >> (sel+1)
+  end
+  def filterErez_orig(val,sel=0)
+    @temp[3] = (@temp[3]+@temp[2]) / 2
+    @temp[2] = (@temp[2]+@temp[1]) / 2
+    @temp[1] = (@temp[1]+@temp[0]) / 2
+    @temp[0] = (@temp[0]+val)      / 2
+    @temp[sel]
   end
   def filter3(val,sft)
     sft/=2
@@ -58,7 +73,7 @@ class Main
   end
   def filterR143(val,rep)
     rep.times{|i|
-      valn=@temp[i]/4
+      valn=@temp[i] / 4
       @temp[i] +=  val - valn
       val=valn
     }
@@ -85,32 +100,45 @@ class Main
   H=100
   HM=5
   HP=5
-  def plotSet(yin)
-    d=0#10
+  def plotSet(yin,d=5)
     @curves=[]
-    addCurve("stimulation",yin){|y| y }
-    addCurve("f141" ,yin){|y| filter141(y,4)-d*1}
-    addCurve("ferez",yin){|y| filterErez(y)-d*2}
-    addCurve("f143_1",yin){|y| filterR143(y,1)-d*3}
-    addCurve("f143_2",yin){|y| filterR143(y,2)-d*3}
-    addCurve("f143_3",yin){|y| filterR143(y,3)-d*3}
-    addCurve("f143_4",yin){|y| filterR143(y,4)-d*3}
+    dy=0
+    addCurve("stimulation",yin){|y| y-dy }; dy+=d
+     #addCurve("f141-4" ,yin){|y| filter141(y,4)-dy}; dy+=d
+     #addCurve("f141-3" ,yin){|y| filter141(y,3)-dy}; dy+=d
+     #addCurve("f141-2" ,yin){|y| filter141(y,2)-dy}; dy+=d
+     #addCurve("f141-1" ,yin){|y| filter141(y,1)-dy}; dy+=d
+     addCurve("ferez-2",yin){|y| filterErez(y,3)-dy}; dy+=d
+     addCurve("ferez-3",yin){|y| filterErez(y,2)-dy}; dy+=d
+     addCurve("ferez-2-orig",yin){|y| filterErez_orig(y,2)-dy}; dy+=d
+     addCurve("ferez-3-orig",yin){|y| filterErez_orig(y,3)-dy}; dy+=d
+     #addCurve("ferez-2",yin){|y| filterErez(y,2)-dy}; dy+=d
+     #addCurve("ferez-3",yin){|y| filterErez(y,3)-dy}; dy+=d
+     addCurve("f143_1",yin){|y| filterR143(y,1)-dy}; dy+=d
+     addCurve("f143_2",yin){|y| filterR143(y,2)-dy}; dy+=d
+     addCurve("f143_3",yin){|y| filterR143(y,3)-dy}; dy+=d
+     addCurve("f143_4",yin){|y| filterR143(y,4)-dy}; dy+=d
   end
 
   def initialize
+  end
+  def plot
     x=(-WM...(W)).to_a
     
     grade = 4
-    noise = 1#0
+    noise = 3#5
     @y0=[0]*WM + [H]*W
     @y1=[0]*WM + [40,0]*(W/2)
-    #@y2=[0]*11 + ([0]*W).map{rand(noise)+100-noise/2}
-    @y2=[0]*11 + [100] + [0]*(W-1)
+    @y0=[0]*11 + ([0]*W).map{(rand(0)*noise).to_i+100-noise/2}
+    # @y2=[0]*11 + [100] + [0]*(W-1)
     @y2=[0]*11; 
-    y=0
-10.times{|i| @y2 +=  ([y]*5); y+=1}
-10.times{|i| @y2 +=  ([y]*5); y-=1}
-    #@y2=@y0
+    y=80
+    10.times{|i| @y2 +=  ([y]*5); y+=1}
+    10.times{|i| @y2 +=  ([y]*5); y-=1}
+
+    @y2=@y2.map{|y|y+(rand(0)*noise).to_i-noise/2}
+    
+    ##@y2=@y0
 
     #addCurve("y0",@y0)     {|y| y           }
 
@@ -133,7 +161,7 @@ class Main
         
         plot.xrange "[-#{WM}:#{W+WP}]"
         plot.yrange "[-#{HM}:#{H+HP}]"
-        plotSet(@y0)     
+        plotSet(@y2,0)     
         plot.data = @curves.map{|name,ya|
           Gnuplot::DataSet.new( [x,ya] ) { |ds|
             ds.with = "lines"
@@ -149,27 +177,57 @@ class Main
     }
     #Thread.new{
     Gnuplot.open { |gp|
+      #File.open( "gnuplot.dat", "wb") { |gp|
       Gnuplot::Plot.new( gp ) { |plot|
         
         plot.xrange "[-#{WM}:#{W+WP}]"
         plot.yrange "[-#{HM}:#{H+HP}]"
         
         plotSet(@y2)     
-        plot.data = @curves.map{|name,ya|
-          Gnuplot::DataSet.new( [x,ya] ) { |ds|
+#p @curves
+        #plot.data = @curves.map{|name,ya|
+        @curves.each{|name,ya|
+          #p name,x.zip(ya)
+          #plot.data << Gnuplot::DataSet.new( x.zip(ya) ) { |ds|
+          plot.data << Gnuplot::DataSet.new( [x,ya] ) { |ds|
             ds.with = "lines"
             ds.title = "#{name}"
             ds.linewidth = 2
           }
         }
       }
-      #gp.puts
+      gp.puts
       #gp.puts "pause 100"
-      sleep 100
+      #sleep 100
     }
     #}
   end
+  def loop
+    system('stty raw -echo') # => Raw mode, no echo
+    at_exit{
+      system('stty -raw echo') # => Reset terminal mode
+    }
+    @temp=[0]*4
+    y=10
+    1000.times {
+      #char = (STDIN.read_nonblock(1).ord rescue nil)
+      char = STDIN.read(1)
+      case char
+        when "q","\003"; exit
+        when /\d/; y=100*(char.ord-"0".ord)
+        when "+"; y+=1
+        when "-"; y-=1
+      end
+      #ret=filterR143(y,3) 
+      ret=filterErez(y,2)
+      #ret=filterErez_orig(y,3)
+      p [y]+@temp+[ret]
+      print "\r"
+    }
+  end
 end
 
-Main.new
+Main.new.loop
+
+
   

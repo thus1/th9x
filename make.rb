@@ -6,7 +6,7 @@ require "pp"
 # avrdude -c usbtiny -p m64 -U hfuse:w:0x81:m
 # avrdude -c usbtiny -p m64 -U lfuse:w:0x0e:m
 # avrdude -c usbtiny -p m64 -U efuse:w:0xff:m
-#avrdude -c usbasp -p m64 -U hfuse:r:-:h -U lfuse:r:-:h -U efuse:r:-:h
+#avrdude -c usbasp -p m64 -B20 -U hfuse:r:-:h -U lfuse:r:-:h -U efuse:r:-:h
 
 
 PARDEF={}
@@ -26,10 +26,11 @@ TC_PAR1=%w(
   AVR_PATH=/opt/cross
   USBPROG=usbprog.rb
   AVRDUDE=avrdude
-  AVRDUDEC=usbasp
   OBJCOPY=avr-objcopy
   CC=avr-gcc
-)
+)+[
+  "AVRDUDEC=usbasp -B11"
+  ]
 
 
 class McuParReader
@@ -50,13 +51,13 @@ class McuParReader
         m=~/desc\s*=\s*\"(.+?)\"/m; desc=$1
         m=~/flash.*?\bsize\s*=\s*(\d+);/m; flash_size=$1
         m=~/eeprom.*?\bsize\s*=\s*(\d+);/m; eeprom_size=$1
-        mp[desc.downcase.to_sym] = {:id,id,:flashsize,flash_size, :eepromsize,eeprom_size}
+        mp[desc.downcase.to_sym] = {:id=>id,:flashsize=>flash_size, :eepromsize=>eeprom_size}
       }
       #pp mp
     rescue
       puts "WARNING fallback MCU_PAR"
       mp={
-        :atmega64 => {:flashsize,0x10000, :eepromsize,0x800},
+        :atmega64 => {:flashsize=>0x10000, :eepromsize=>0x800},
       }
     end
     mp
@@ -233,7 +234,7 @@ class Builder
     #zuerst alle user specs eintragen, einschl TC
     TGT.each{|expr|
       case expr
-      when /(.+?)+=(.*)/
+      when /(.+?)\+=(.*)/
         sym=$1.to_sym
         @pars[sym]+=$2
       when /(.+?)=(.*)/
@@ -311,7 +312,7 @@ class Builder
       $opt_v += v.length if v =~ /^v+$/
     }
     $opt_n  = nil
-    opts.on("-n",          "do nothing")   { |$opt_n|  }
+    opts.on("-n",          "do nothing")   { |x|$opt_n=x  }
     opts.parse!
     @dt=Time.new.strftime("%y%m%d_%H%M%S")
     setup()

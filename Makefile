@@ -8,13 +8,16 @@ TGT_SRC= th9x.cpp menus.cpp foldedlist.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp
 all:  tgt_bin simu
 
 
-INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6 \
-    -I$(FOXPATH)/include
+#INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6 \
+#    -I$(FOXPATH)/include
+INC=-I/usr/local/include/fox-1.6 -I/usr/include/fox-1.6 
 
 LIB=-L/usr/local/lib \
-    -L$(FOXPATH)/src/.libs \
-    -lFOX-1.6 \
-    -Wl,-rpath,$(FOXPATH)/src/.libs
+    -lFOX-1.6 -lpthread -lstdc++\
+
+
+#    -L$(FOXPATH)/src/.libs \
+#    -Wl,-rpath,$(FOXPATH)/src/.libs
 
 
 
