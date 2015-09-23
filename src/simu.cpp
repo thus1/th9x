@@ -15,6 +15,7 @@
 #include "fx.h"
 #include "FXExpression.h"
 #include "FXPNGImage.h"
+#include "FXPNGIcon.h"
 #include <unistd.h>
 #include "simpgmspace.h"
 #include "fxkeys.h"
@@ -69,6 +70,7 @@ FXDEFMAP(Th9xSim) Th9xSimMap[]={
 FXIMPLEMENT(Th9xSim,FXMainWindow,Th9xSimMap,ARRAYNUMBER(Th9xSimMap))
 
 
+
 Th9xSim::Th9xSim(FXApp* a)
 :FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL,0,0,0,0)
 {
@@ -77,15 +79,27 @@ Th9xSim::Th9xSim(FXApp* a)
   for(int i=0; i<(W*H/8); i++) displayBuf[i]=0;//rand();
   for(int i=0; i<(W2*H2/8); i++) buf2[i]=0;//rand();
   bmp = new FXBitmap(a,&buf2,BITMAP_KEEP,W2,H2);
+  FXFileStream fs;
+  bool ret=fs.open("PNG/fernkompl.png",FX::FXStreamLoad);
+  assert(ret);
+  FXIcon  *icon_fern = new FXPNGIcon(a);
+  icon_fern->loadPixels(fs);
+  fs.close();
 
-  FXHorizontalFrame *hf001=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf00=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf01=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf02=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
+  FXImageFrame *th=new FXImageFrame(this,icon_fern, FRAME_NONE,0,0,800,800);
+  FXVerticalFrame  *vf=new FXVerticalFrame(this,
+       LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_WIDTH,
+                                           250,100,200,500, 0,0,0,0, 0,0
+  );
+
+  FXHorizontalFrame *hf001=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf00=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf01=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf02=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
   //FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  FXHorizontalFrame *hf10=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf11=new FXHorizontalFrame(this,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FILL_X);
+  FXHorizontalFrame *hf10=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf11=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
+  FXHorizontalFrame *hf1=new FXHorizontalFrame(vf,LAYOUT_FILL_X);
 
   //rh lv rv lh
   for(int i=0; i<4; i++){
@@ -134,7 +148,7 @@ Th9xSim::Th9xSim(FXApp* a)
   }
 
 
-  bmf = new FXBitmapFrame(this,bmp,0,0,0,0,0,0,0,0,0);
+  bmf = new FXBitmapFrame(this,bmp, LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_WIDTH,235,660,256,128,0,0,0,0);
   bmf->setOnColor(FXRGB(0,0,0));
 
   //getApp()->addChore(this,1);
