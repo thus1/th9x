@@ -127,7 +127,7 @@ bool eeLoadGeneral()
 
 
 uint8_t modelMixerDefaults=7;
-prog_char* modelMixerDefaultName(uint8_t typ)
+char_p* modelMixerDefaultName(uint8_t typ)
 {
   switch(typ)
   {

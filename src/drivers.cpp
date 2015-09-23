@@ -276,7 +276,7 @@ void per10ms()
       ++enuk;
     }
   }
-  static  prog_uchar  APM crossTrim[]={
+  static  uchar_p  APM crossTrim[]={
     1<<INP_D_TRM_LH_DWN,
     1<<INP_D_TRM_LH_UP,
     1<<INP_D_TRM_LV_DWN,
@@ -298,7 +298,7 @@ void per10ms()
   static uint8_t s_beepState;
   static uint8_t s_beepCnt;
   if(s_beepCnt) s_beepCnt--;
-  static prog_uint8_t APM beepTab[]= {
+  static uint8_p APM beepTab[]= {
     /* volumes: 
        Key        Tmr     Trim0,   Err 
        Store      Bat     TmrLong

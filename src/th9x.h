@@ -47,16 +47,16 @@
 //-Wno-deprecated-declarations -D__PROG_TYPES_COMPAT__
 // const char str_pstr[] PROGMEM = "FLASH STRING";
 // lcd_puts_p(PSTR("tuxgraphics"));
-// typedef const char          prog_char;
-// typedef const unsigned char prog_uchar;
-// typedef const uint8_t       prog_uint8_t;
-// typedef const int8_t        prog_int8_t;
+  typedef const char          char_p;
+  typedef const unsigned char uchar_p;
+  typedef const uint8_t       uint8_p;
+  typedef const int8_t        int8_p;
 
   #ifdef __cplusplus
     #define APM __attribute__(( section(".progmem.data") ))
 //#define APM __attribute__((progmem))
     #undef PSTR
-    #define PSTR(s) (__extension__({static prog_char APM __c[] = (s);&__c[0];}))
+    #define PSTR(s) (__extension__({static char_p APM __c[] = (s);&__c[0];}))
   #endif
 
   #include <avr/eeprom.h>
@@ -339,7 +339,7 @@ void    popMenu(bool uppermost=false);
 /// mode==2:
 /// Tastendruck wird geprüft. :
 /// return: false wenn Taste gedrückt wurde.
-bool    alert(const prog_char * s, uint8_t mode=0);
+bool    alert(const char_p * s, uint8_t mode=0);
 
 ///common init for simu and target
 void    init();
@@ -598,7 +598,7 @@ inline void _beep(uint8_t b) {
 
 
 extern uint8_t modelMixerDefaults;
-prog_char* modelMixerDefaultName(uint8_t typ);
+char_p* modelMixerDefaultName(uint8_t typ);
 void modelMixerDefault(uint8_t typ);
 
 

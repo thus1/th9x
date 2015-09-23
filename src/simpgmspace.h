@@ -55,12 +55,12 @@ void sig(int sgn)
 #include <pthread.h>
 #include <semaphore.h>
 
-typedef unsigned char prog_uchar;
-typedef const char prog_char;
-typedef const uint16_t prog_uint16_t;
-typedef const uint8_t prog_uint8_t;
-typedef const int16_t prog_int16_t;
-typedef const int8_t prog_int8_t;
+typedef unsigned char uchar_p;
+typedef const char char_p;
+typedef const uint16_t uint16_p;
+typedef const uint8_t uint8_p;
+typedef const int16_t int16_p;
+typedef const int8_t int8_p;
 
 
 
