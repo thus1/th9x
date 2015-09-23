@@ -223,7 +223,7 @@ uint8_t   g_rawChan;
 
 
 
-const prog_char APM modn12x3[]={
+const char_p APM modn12x3[]={
   0, 1, 2, 3,
   0, 2, 1, 3,
   3, 1, 2, 0,
@@ -517,7 +517,7 @@ void checkTHR()
 // mode = 2 : no beep
 // mode = 4 : no clear
 
-bool alert(const prog_char * s, uint8_t mode )
+bool alert(const char_p * s, uint8_t mode )
 {
   if(! (mode&2)) beepErr();
   if(! (mode&4)) lcd_clear();
@@ -834,7 +834,7 @@ void   perChecks() //ca 10ms
       }
     case 2:
       {
-//         static prog_uint8_t APM beepTab[]= {
+//         static uint8_p APM beepTab[]= {
 //           0,0, 0,  0, //quiet
 //           0,1,30,100, //silent
 //           1,1,30,100, //normal
@@ -942,7 +942,7 @@ uint16_t anaIn(uint8_t chan)
   //       ai     ai      ai      ai      ai      ai      ai      ai 
   // ANA_ BAT   PITT_TRM HOV_THR HOV_PIT  STCK_LH STCK_RV STCK_LV STCK_RH
   
-  static prog_char APM crossAna[]={3,1,2,0,4,5,6,7,8};
+  static char_p APM crossAna[]={3,1,2,0,4,5,6,7,8};
 #if 0
   volatile uint16_t *p = &s_anaFilt[pgm_read_byte(crossAna+chan)];
   AutoLock autoLock;

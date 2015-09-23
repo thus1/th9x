@@ -69,7 +69,7 @@ const MenuFuncP APM menuTabDiag[] = {
 #endif
 };
 
-//#define PARR8(args...) (__extension__({static prog_uint8_t APM __c[] = args;&__c[0];}))
+//#define PARR8(args...) (__extension__({static uint8_p APM __c[] = args;&__c[0];}))
 struct MState2
 {
   uint8_t m_posVert;
@@ -79,12 +79,12 @@ struct MState2
   int8_t  m_posHorzChg:2;
   //void init(){m_posVert=m_posHorz=0;};
   void init(){m_posVert=0;m_valEdit=0;};
-  prog_uint8_t *m_tab;
+  uint8_p *m_tab;
   //  static uint8_t g_event;
   void check_v(uint8_t curr,const MenuFuncP *menuTab, uint8_t menuTabSize, uint8_t maxrow);
-  void check( uint8_t curr,const MenuFuncP *menuTab, uint8_t menuTabSize, prog_int8_t*subTab,uint8_t subTabMax,uint8_t maxrow);
+  void check( uint8_t curr,const MenuFuncP *menuTab, uint8_t menuTabSize, int8_p*subTab,uint8_t subTabMax,uint8_t maxrow);
 };
-#define MSTATE_TAB  static prog_int8_t APM mstate_tab[]
+#define MSTATE_TAB  static int8_p APM mstate_tab[]
 
 
 /*
@@ -104,7 +104,7 @@ void MState2::check_v( uint8_t curr,MenuFuncP const *menuTab, uint8_t menuTabSiz
 { 
   check(  curr, menuTab, menuTabSize, 0, 0, maxrow);
 }
-void MState2::check( uint8_t curr,MenuFuncP const *menuTab, uint8_t menuTabSize, prog_int8_t*horTab,uint8_t horTabMax,uint8_t maxrow)
+void MState2::check( uint8_t curr,MenuFuncP const *menuTab, uint8_t menuTabSize, int8_p*horTab,uint8_t horTabMax,uint8_t maxrow)
 {
   m_posVertChg=0;
   m_posHorzChg=0;
@@ -730,7 +730,7 @@ void menuProcSwitchesCom( bool nested)
 
 
 
-  static prog_uint8_t APM colPos[]={8*FW,11*FW,15*FW,20*FW,127};
+  static uint8_p APM colPos[]={8*FW,11*FW,15*FW,20*FW,127};
 
   if(s_swNested ){
     mstate2.m_posVert = FL_INST.findChn(s_swNested)-1; //+1 in init seq
@@ -952,7 +952,7 @@ void menuProcMix()
 
 
 
-  static prog_uint8_t APM colPos[]={3*FW,7*FW-2,11*FW-3,14*FW-4,18*FW-4,20*FW-3,127};
+  static uint8_p APM colPos[]={3*FW,7*FW-2,11*FW-3,14*FW-4,18*FW-4,20*FW-3,127};
   uint8_t y = 1*FH;
   for(FoldedList::Line* line=FL_INST.firstLine();
       line;
@@ -985,7 +985,7 @@ void menuProcMix()
       }        
       for(uint8_t j=0; j<6; j++){
         if(j==0 && line->showCh) continue;
-        static prog_uint8_t APM idx[]={2,0,1,3,4,15};
+        static uint8_p APM idx[]={2,0,1,3,4,15};
 
         editMixVals(pgm_read_byte(&idx[j]),
                     subHor==(j+1) ? sel : 0,
@@ -1261,7 +1261,7 @@ void menuProcExpoAll()
 
 
 
-  static prog_uint8_t APM colPos[]={6*FW,9*FW,12*FW+3,16*FW+2,20*FW-3,127};
+  static uint8_p APM colPos[]={6*FW,9*FW,12*FW+3,16*FW+2,20*FW-3,127};
   uint8_t y = 1*FH;
   for(FoldedList::Line* line=FL_INST.firstLine();
       line;
@@ -1321,7 +1321,7 @@ void menuProcExpoAll()
 
 }
 
-const prog_char APM s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
+const char_p APM s_charTab[]=" ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
 #define NUMCHARS (sizeof(s_charTab)-1)
 
 uint8_t char2idx(char c)
@@ -1457,16 +1457,16 @@ void menuProcModel()
         break;
       case 2:  
         {
-          //typedef PROGMEM const char* prog_charp;
-          static const prog_char APM p0[]="\x00""-";
-          static const prog_char APM p1[]="\x02""A\tB\tC\t";
-          static const prog_char APM p2[]="\x00""-";
-          static const prog_char APM p3[]="\x02""A\tB\tC\t";
-          static const prog_char APM p4[]="\x05""A\tB\tC\tA=\tB=\tC=\t";
-          static const prog_char APM p5[]="\x00""-";
-          //static const prog_char* protTab[]  ={p0,p1,p2,p3,p4,p5};
+          //typedef PROGMEM const char* charp_p;
+          static const char_p APM p0[]="\x00""-";
+          static const char_p APM p1[]="\x02""A\tB\tC\t";
+          static const char_p APM p2[]="\x00""-";
+          static const char_p APM p3[]="\x02""A\tB\tC\t";
+          static const char_p APM p4[]="\x05""A\tB\tC\tA=\tB=\tC=\t";
+          static const char_p APM p5[]="\x00""-";
+          //static const char_p* protTab[]  ={p0,p1,p2,p3,p4,p5};
           static  char const * const APM protTab[]  ={p0,p1,p2,p3,p4,p5};
-	  const prog_char* p = (const prog_char*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
+	  const char_p* p = (const char_p*)pgm_read_adr(&protTab[min<uint8_t>(g_model.protocol,5)]);
 
 	  lcd_putsmAtt(   8*FW, y, PSTR(PROT_STR),g_model.protocol,( subHor==1 ? attr:0));
 	  lcd_putsmAtt(   14*FW, y, p+1,min<uint8_t>(g_model.protocolPar,pgm_read_byte(p)),( subHor==2 ? attr:0));
@@ -1920,8 +1920,8 @@ void menuProcSetup2()
     }
   }
 }
-static prog_uint8_t APM s_istTmrVals1[]={ 0,10,20,40}; 
-static prog_uint8_t APM s_istTmrVals2[]={ 5,10,20,40}; 
+static uint8_p APM s_istTmrVals1[]={ 0,10,20,40}; 
+static uint8_p APM s_istTmrVals2[]={ 5,10,20,40}; 
 void menuProcSetup1()
 {
   static MState2 mstate2;
@@ -2576,8 +2576,8 @@ int16_t intpol(int16_t x, uint8_t idx) // -100, -75, -50, -25, 0 ,25 ,50, 75, 10
 */
 //                                     1  2 3 4 5 6 7 8 9 0 1 2 3 4 5
 //                                                        1 1 1 1 1 1 
-static prog_uint8_t APM s_slopeDlt[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
-static prog_uint8_t APM s_slopeTmr[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
+static uint8_p APM s_slopeDlt[]={18,13,9,6,4,3,2,3,1,2,1,1,1,1,1}; 
+static uint8_p APM s_slopeTmr[]={ 1, 1,1,1,1,1,1,2,1,3,2,3,4,6,9};
 
 uint16_t slopeFull100ms(uint8_t speed) //zeit fuer anstieg von -512 bis 512 in 100ms
 {

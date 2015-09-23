@@ -26,12 +26,12 @@ uint8_t eeprom[EESIZE];
 void lcd_img_f(int ofs,unsigned char x,unsigned char y,int i_w,int i_h)
 {
   
-  prog_uchar  buf[1000];
+  uchar_p  buf[1000];
   FILE *fp=fopen("../th9x-orig/flash.bin", "r");
   fseek(fp,ofs,SEEK_SET);
   fread(buf,1,i_h/8*i_w,fp);
   fclose(fp);
-  prog_uchar  *q = buf;//+0x10e*3+0x10;
+  uchar_p  *q = buf;//+0x10e*3+0x10;
   int h=i_h;
   while(h>0){
     int w=i_w;

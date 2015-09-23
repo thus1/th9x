@@ -43,9 +43,9 @@ void lcd_clear()
 }
 
 
-void lcd_img(uint8_t i_x,uint8_t i_y,const prog_uchar * imgdat,uint8_t idx,uint8_t mode)
+void lcd_img(uint8_t i_x,uint8_t i_y,const uchar_p * imgdat,uint8_t idx,uint8_t mode)
 {
-  const prog_uchar  *q = imgdat;
+  const uchar_p  *q = imgdat;
   uint8_t w    = pgm_read_byte(q++);
   uint8_t hb   = (pgm_read_byte(q++)+7)/8;
   uint8_t sze1 = pgm_read_byte(q++);
@@ -97,7 +97,7 @@ void lcd_putcAtt(uint8_t x,uint8_t y,const char c,uint8_t mode)
 
   uint8_t *p    = &displayBuf[ y / 8 * DISPLAY_W + x ];
   
-  prog_uchar    *q = &font_5x8_x20_x7f[ + ((uint8_t)c-0x20)*5];
+  uchar_p    *q = &font_5x8_x20_x7f[ + ((uint8_t)c-0x20)*5];
   bool         inv = (mode & INVERS) ? true : (mode & BLINK ? BLINK_ON_PHASE : false);
   if(mode&DBLSIZE)
   {
@@ -139,7 +139,7 @@ void lcd_putc(uint8_t x,uint8_t y,const char c)
 }
 
 //print 0(<0x20) - terminated string
-uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
+uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const char_p * s,uint8_t mode)
 {
   uint8_t  x0 = x;
   bool blinkf = false;
@@ -161,7 +161,7 @@ uint8_t lcd_putsAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t mode)
   return x;
 }
 //print n chars string
-void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mode)
+void lcd_putsnAtt(uint8_t x,uint8_t y,const char_p * s,uint8_t len,uint8_t mode)
 {
   uint8_t  x0 = x;
   bool blinkf = false;
@@ -179,7 +179,7 @@ void lcd_putsnAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t len,uint8_t mo
     lcd_rect(x0,y,x-x0,8);
   }
 }
-void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t mode)
+void lcd_putsmAtt(uint8_t x,uint8_t y,const char_p * s,uint8_t skip,uint8_t mode)
 {
   while(skip){
     while(1){
@@ -190,11 +190,11 @@ void lcd_putsmAtt(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip,uint8_t m
   }
   lcd_putsAtt(x,y,s,mode);
 }
-void lcd_putsm_P(uint8_t x,uint8_t y,const prog_char * s,uint8_t skip)
+void lcd_putsm_P(uint8_t x,uint8_t y,const char_p * s,uint8_t skip)
 {
   lcd_putsmAtt( x,y,s,skip,0);
 }
-void lcd_puts_P(uint8_t x,uint8_t y,const prog_char * s)
+void lcd_puts_P(uint8_t x,uint8_t y,const char_p * s)
 {
   lcd_putsAtt( x, y, s, 0);
 }
