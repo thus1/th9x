@@ -48,14 +48,18 @@ This data can be replayed afterwards if anything goes wrong. It can also be anal
 [![](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QSZ3KKDHJFPB6)
 [![](https://www.paypal.com/en_US/i/logo/PayPal_mark_60x38.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QSZ3KKDHJFPB6)
 
-## head: [th9x.bin](http://th9x.googlecode.com/svn/trunk/th9x.bin) - [th9Xplorer-win](http://th9x.googlecode.com/svn/trunk/th9Xplorer.exe) -  [th9Xplorer-linux](http://th9x.googlecode.com/svn/trunk/th9Xplorer) ##
+## head: [th9x.bin](https://github.com/thus1/th9x/raw/master/th9x.bin) 
 This is the newest version with minor changes or fixes or even with incomplete new features.
 ```
-VERS: V1.3075-thus
-DATE: 12.10.2012
-TIME: 22:26:06
-SVN:  th9x-r285
+VERS: V1.3155-thus
+DATE: 24.09.2015
+TIME: 20:09:19
 ```
+  * simulation with device shape
+  * prepared for avr-libc >= 1.8
+  * experimental adc-filter
+  * faster blink-pattern, frame-cursor
+  * calibrated bat-voltage measurement
   * list navigation: insert at end of block, edit-end with menu-key, select-cursor=solid
   * 8-Binary-Switches in one output channel
 
