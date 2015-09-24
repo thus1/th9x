@@ -548,7 +548,7 @@ extern volatile uint8_t   g_nextBeep;
 #define HEART_TIMER2Mhz 1;
 #define HEART_TIMER10ms 2;
 
-extern uint8_t            heartbeat;
+extern volatile uint8_t   g_heartbeat;
 
 
 extern int16_t            g_ppmIns[8];

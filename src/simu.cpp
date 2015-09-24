@@ -390,12 +390,12 @@ int main(int argc,char **argv)
   return application.run();
 }
 
-uint16_t anaIn(uint8_t chan)
+uint16_t simADC(uint8_t chan)
 {
   uint16_t ret;
   if(chan<4)  ret = th9xSim->sliders[chan]->getValue();
   else        ret = th9xSim->knobs[chan]->getValue();
-  return ret + (rand()&0x7) - 3;
+  return ret + (rand()&0x3) - 1;
   //return 512 -  512*10*chan/100;
   //return (rand() & 0x1f) + 0x2f8;
 }

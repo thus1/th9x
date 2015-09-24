@@ -870,12 +870,13 @@ void   perChecks() //ca 10ms
             // g_vbat100mV += g_vbat100mV*g_eeGeneral.vBatCalib/256;
             //g_vbat100mV = (g_anaIns[7]*35+g_anaIns[7]/4*g_eeGeneral.vBatCalib) / 256; 
             uint16_t ab = anaIn(7);
+            uint16_t ar = anaIn(8); 
             //g_vbat100mV = (ab*35 + ab / 4 * g_eeGeneral.vBatCalib) / 256;
 
             // K    = 0.357 Spannungsteiler
             // Uref = 1.22V
             //Ub100mv = 10/K * Uref * anaBat(7)/anaRef(8)
-            g_vbat100mV = (ab*34 + ab / 4 * g_eeGeneral.vBatCalib) / anaIn(8);
+            g_vbat100mV = (ab*34 + ab / 4 * g_eeGeneral.vBatCalib) / (ar?ar:1);
             
 
             break;
@@ -911,25 +912,28 @@ void init() //common init for simu and target
 
 #ifndef SIM
 #include <avr/interrupt.h>
-//#include <avr/wdt.h>
-
-uint8_t heartbeat;
-
-
 class AutoLock
 {
   uint8_t m_saveFlags;
 public:
-  AutoLock(){
-    m_saveFlags = SREG;
-    cli();
-  };
-  ~AutoLock(){
-    //if(m_saveFlags & (1<<SREG_I)) sei();
-    SREG = m_saveFlags;// & (1<<SREG_I)) sei();
-  };
+  AutoLock() {    m_saveFlags = SREG;         cli();  };
+  ~AutoLock(){    SREG        = m_saveFlags;          };
 };
+#define CALL_ADC
 
+#else
+class AutoLock
+{
+public:
+  AutoLock() {  };
+  ~AutoLock(){  };
+};
+#define ISR(name,opts) void name()
+#define CALL_ADC for(int _i=0; _i<9; _i++) ADC_vect()
+void     ADC_vect();
+uint16_t simADC(uint8_t chan);
+
+#endif
 //static uint16_t s_anaFilt[ANA_CHANS];
 // chan 0..3  Sticks STCK_LH STCK_LV STCK_RV STCK_RH
 // chan 4..6  Potis
@@ -941,7 +945,7 @@ uint16_t anaIn(uint8_t chan)
   //PORTF  7      6       5       4       3       2       1       0
   //       ai     ai      ai      ai      ai      ai      ai      ai 
   // ANA_ BAT   PITT_TRM HOV_THR HOV_PIT  STCK_LH STCK_RV STCK_LV STCK_RH
-  
+  CALL_ADC;
   static char_p APM crossAna[]={3,1,2,0,4,5,6,7,8};
 #if 0
   volatile uint16_t *p = &s_anaFilt[pgm_read_byte(crossAna+chan)];
@@ -954,11 +958,16 @@ uint16_t anaIn(uint8_t chan)
   ofs*=2;
   volatile uint16_t *p = (uint16_t*)(s_filtBuf + ofs);
   uint16_t ret;
- {      
-   AutoLock autoLock;
-   ret =*p;
- }
- return ret >> (uint8_t)(filtLev+1);
+  {      
+    AutoLock autoLock;
+    ret =*p;
+  }
+  ret >>= (uint8_t)(filtLev+1);
+#ifdef SIM
+  if(chan==2) printf("%1d                          %3d\n",chan,ret);
+#endif
+
+  return ret;
 #endif
 }
 
@@ -967,9 +976,18 @@ ISR(ADC_vect, ISR_NOBLOCK)
 {
   static uint8_t  s_chan;
 
+#ifndef SIM
   ADCSRA  = 0; //reset adconv, 13>25 cycles
-
   uint16_t v=ADC;
+#else
+  uint16_t v=simADC(s_chan);
+  uint8_t ADMUX;     //dummy
+#define REFS0 7      //dummy
+#undef  STARTADCONV
+#define STARTADCONV  //dummy
+#endif
+
+
 #ifdef WITH_ADC_STAT
   if(g_rawPos<DIM(g_rawVals)){
     if(s_chan==g_rawChan){ g_rawVals[g_rawPos++] = v;}
@@ -998,10 +1016,13 @@ ISR(ADC_vect, ISR_NOBLOCK)
   }
 #else
   uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
-  filt[3] = filt[3] / 2 + filt[2];
-  filt[2] = filt[2] / 2 + filt[1];
-  filt[1] = filt[1] / 2 + filt[0];
   filt[0] = filt[0] / 2 + v      ;
+  filt[1] = filt[1] / 2 + filt[0];
+  filt[2] = filt[2] / 2 + filt[1];
+  filt[3] = filt[3] / 2 + filt[2];
+#ifdef SIM
+  if(s_chan==2) printf("%1d %3d %3d %3d %3d\n",s_chan,filt[0],filt[1],filt[2],filt[3]);
+#endif
   //s_anaFilt[s_chan] = filt[g_eeGeneral.adcFilt];
   if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
 #endif
@@ -1014,9 +1035,10 @@ ISR(ADC_vect, ISR_NOBLOCK)
 }
 
 
-
+#ifndef SIM
 
 volatile uint8_t g_tmr16KHz;
+volatile uint8_t g_heartbeat;
 
 ISR(TIMER0_OVF_vect, ISR_NOBLOCK) //continuous timer 16ms (16MHz/1024)
 {
@@ -1039,7 +1061,7 @@ ISR(TIMER0_COMP_vect, ISR_NOBLOCK) //10ms timer
   sei();
   OCR0 = OCR0 + 156;
   per10ms();
-  heartbeat |= HEART_TIMER10ms;
+  g_heartbeat |= HEART_TIMER10ms;
   cli();
   TIMSK |= (1<<OCIE0);
   sei();
@@ -1143,10 +1165,10 @@ int main(void)
     t0 = getTmr16KHz() - t0;
     g_timeMain = max(g_timeMain,t0);
     while(g_tmr10ms==old10ms) sleep_mode();
-    if(heartbeat == 0x3)
+    if(g_heartbeat == 0x3)
     {
       wdt_reset();
-      heartbeat = 0;
+      g_heartbeat = 0;
     }
   }
 }

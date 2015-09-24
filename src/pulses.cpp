@@ -131,7 +131,7 @@ ISR(TIMER1_COMPA_vect) //2MHz pulse generation
     //for(int j=0; j<600; j++){asm("");  }
 
   }
-  heartbeat |= HEART_TIMER2Mhz;
+  g_heartbeat |= HEART_TIMER2Mhz;
 }
 #endif
 

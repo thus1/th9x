@@ -56,6 +56,13 @@ class Main
     @temp[0] = (@temp[0] / 2 + val) 
     @temp[sel] >> (sel+1)
   end
+  def filterErezInv(val,sel=0)
+    @temp[0] = (@temp[0] / 2 + val) 
+    @temp[1] = (@temp[1] / 2 + @temp[0])
+    @temp[2] = (@temp[2] / 2 + @temp[1])
+    @temp[3] = (@temp[3] / 2 + @temp[2])
+    @temp[sel] >> (sel+1)
+  end
   def filterErez_orig(val,sel=0)
     @temp[3] = (@temp[3]+@temp[2]) / 2
     @temp[2] = (@temp[2]+@temp[1]) / 2
@@ -78,6 +85,14 @@ class Main
       val=valn
     }
     val
+  end
+  def filterR143_x(val,div,rep)
+    val = val*2+1
+    rep.times{|i|
+      @temp[i] =  (val + @temp[i]*(div-1) ) / div
+      val=@temp[i]
+    }
+    val/2
   end
   def filter4(val,sft)
     n=1<<sft
@@ -108,16 +123,21 @@ class Main
      #addCurve("f141-3" ,yin){|y| filter141(y,3)-dy}; dy+=d
      #addCurve("f141-2" ,yin){|y| filter141(y,2)-dy}; dy+=d
      #addCurve("f141-1" ,yin){|y| filter141(y,1)-dy}; dy+=d
-     addCurve("ferez-2",yin){|y| filterErez(y,3)-dy}; dy+=d
-     addCurve("ferez-3",yin){|y| filterErez(y,2)-dy}; dy+=d
-     addCurve("ferez-2-orig",yin){|y| filterErez_orig(y,2)-dy}; dy+=d
+#     addCurve("ferez-2",yin){|y| filterErez(y,3)-dy}; dy+=d
+     addCurve("ferez-0-inv",yin){|y| filterErezInv(y,0)-dy}; dy+=d
+     addCurve("ferez-1-inv",yin){|y| filterErezInv(y,1)-dy}; dy+=d
+     addCurve("ferez-2-inv",yin){|y| filterErezInv(y,2)-dy}; dy+=d
+     addCurve("ferez-3-inv",yin){|y| filterErezInv(y,3)-dy}; dy+=d
+     addCurve("ferez-3",yin){|y| filterErez(y,3)-dy}; dy+=d
+#     addCurve("ferez-2-orig",yin){|y| filterErez_orig(y,2)-dy}; dy+=d
      addCurve("ferez-3-orig",yin){|y| filterErez_orig(y,3)-dy}; dy+=d
      #addCurve("ferez-2",yin){|y| filterErez(y,2)-dy}; dy+=d
      #addCurve("ferez-3",yin){|y| filterErez(y,3)-dy}; dy+=d
-     addCurve("f143_1",yin){|y| filterR143(y,1)-dy}; dy+=d
-     addCurve("f143_2",yin){|y| filterR143(y,2)-dy}; dy+=d
-     addCurve("f143_3",yin){|y| filterR143(y,3)-dy}; dy+=d
-     addCurve("f143_4",yin){|y| filterR143(y,4)-dy}; dy+=d
+#     addCurve("f143_1",yin){|y| filterR143(y,1)-dy}; dy+=d
+#     addCurve("f143_2",yin){|y| filterR143(y,2)-dy}; dy+=d
+#     addCurve("f143_3",yin){|y| filterR143(y,3)-dy}; dy+=d
+     addCurve("f143x_4_2",yin){|y| filterR143_x(y,4,2)-dy}; dy+=d
+     addCurve("f143x_2_4",yin){|y| filterR143_x(y,2,4)-dy}; dy+=d
   end
 
   def initialize
@@ -126,7 +146,7 @@ class Main
     x=(-WM...(W)).to_a
     
     grade = 4
-    noise = 3#5
+    noise = 10
     @y0=[0]*WM + [H]*W
     @y1=[0]*WM + [40,0]*(W/2)
     @y0=[0]*11 + ([0]*W).map{(rand(0)*noise).to_i+100-noise/2}
@@ -227,7 +247,8 @@ class Main
   end
 end
 
-Main.new.loop
+#Main.new.loop
+Main.new.plot
 
 
   
