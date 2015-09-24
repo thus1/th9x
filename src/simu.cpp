@@ -56,6 +56,9 @@ public:
   FXKnob        *knobsppm[8]; //sim trainer port
   FXArrowButton *arrow[3];
   FXArrowButton *arrow2[3];
+  FXButton      *but[8];
+  FXButton      *trim[8];
+  FXCheckButton *swtch[8];
   FXToggleButton *togButPpm;
 };
 // Message Map
@@ -72,7 +75,7 @@ FXIMPLEMENT(Th9xSim,FXMainWindow,Th9xSimMap,ARRAYNUMBER(Th9xSimMap))
 
 
 Th9xSim::Th9xSim(FXApp* a)
-:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL,0,0,0,0)
+:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL|LAYOUT_FIX_HEIGHT,0,0,0,200)
 {
 
   firstTime=true;
@@ -86,66 +89,122 @@ Th9xSim::Th9xSim(FXApp* a)
   icon_fern->loadPixels(fs);
   fs.close();
 
-  FXImageFrame *th=new FXImageFrame(this,icon_fern, FRAME_NONE,0,0,800,800);
-  FXVerticalFrame  *vf=new FXVerticalFrame(this,
-       LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_WIDTH,
-                                           250,100,200,500, 0,0,0,0, 0,0
-  );
+  //FXImageFrame *th=
+  new FXImageFrame(this,icon_fern, FRAME_NONE,0,0,800,800);
+  // FXVerticalFrame  *vf=new FXVerticalFrame(this,
+  //      LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_WIDTH,
+  //                                          250,100,200,500, 0,0,0,0, 0,0
+  // );
 
-  FXHorizontalFrame *hf001=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf00=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf01=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf02=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  //FXHorizontalFrame *hf2=new FXHorizontalFrame(this,LAYOUT_FILL_X);
-  FXHorizontalFrame *hf10=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf11=new FXHorizontalFrame(vf,LAYOUT_CENTER_X);
-  FXHorizontalFrame *hf1=new FXHorizontalFrame(vf,LAYOUT_FILL_X);
+  FXHorizontalFrame *hf0=new FXHorizontalFrame(this,LAYOUT_FIX_X|LAYOUT_FIX_Y,0,0);
+  FXHorizontalFrame *hf1=new FXHorizontalFrame(this,LAYOUT_FIX_X|LAYOUT_FIX_Y,0,50);
+  
 
-  //rh lv rv lh
+  new FXLabel(hf0,"Trainer");
+  togButPpm = new FXToggleButton(hf0,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
+  arrow2[0]= new FXArrowButton(hf0,this,1000,ARROW_LEFT);
+  arrow2[1]= new FXArrowButton(hf0,this,1000,ARROW_UP);
+  arrow2[2]= new FXArrowButton(hf0,this,1000,ARROW_RIGHT);
+  for(int i=0; i<8; i++){
+    knobsppm[i]= new FXKnob(hf0,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    //    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    knobsppm[i]->setRange(1000,2000);
+    knobsppm[i]->setValue(1500+i*20);
+  }
+#define BUT_OPT LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y
+#define BH   30
+#define BW   40
+#define BH2 ((BH)/2)
+#define BW2 ((BW)/2)
+  for(int i=0; i<8; i++){ switch(i) {
+      case 6: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT, 90-BW2, 723-BH2, BW,BH); break;
+      case 5: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,170-BW2, 723-BH2, BW,BH); break;
+      case 4: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,130-BW2, 683-BH2, BW,BH); break;
+      case 3: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,130-BW2, 763-BH2, BW,BH); break;
+      case 1: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,600-BW2, 710-BH2, BW,BH); break;
+      case 2: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,600-BW2, 768-BH2, BW,BH); break;
+      default:but[i] = 0;
+    }
+    if(but[i]){
+      but[i]->setBackColor(fxcolorfromname("gray10"));
+    }
+  }
+#define CH   20
+#define CW   20
+#define CH2 ((CH)/2)
+#define CW2 ((CW)/2)
+  for(int i=0; i<8; i++){ switch(i) {
+      case 0: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT,  40-CW2, 251-CH2, CW,CH); break;
+      case 1: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT,  72-CW2, 240-CH2, CW,CH); break;
+      case 2: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT,  99-CW2, 288-CH2, CW,CH); break;
+      case 3: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT, 563-CW2, 285-CH2, CW,CH); break;
+      case 4: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT, 631-CW2, 295-CH2, CW,CH); break;
+      case 5: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT, 660-CW2, 254-CH2, CW,CH); break;
+      case 6: swtch[i] = new FXCheckButton(this,"",NULL,0,BUT_OPT, 687-CW2, 261-CH2, CW,CH); break;
+      default:swtch[i] = 0;
+    }
+    if(swtch[i]){
+      swtch[i]->setBackColor(fxcolorfromname("gray20"));
+    }
+  }
+#define TH   16
+#define TW   16
+#define TH2 ((CH)/2)
+#define TW2 ((CW)/2)
+  for(int i=0; i<8; i++){ switch(i) {
+      case 6: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,155-TW2,584 -TH2, TW,TH); break;
+      case 7: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,185-TW2,584 -TH2, TW,TH); break;
+      case 2: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,289-TW2,457 -TH2, TW,TH); break;
+      case 3: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,289-TW2,487 -TH2, TW,TH); break;
+      case 4: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,445-TW2,457 -TH2, TW,TH); break;
+      case 5: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,445-TW2,487 -TH2, TW,TH); break;
+      case 1: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,535-TW2,586 -TH2, TW,TH); break;
+      case 0: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,565-TW2,586 -TH2, TW,TH); break;
+    }
+    trim[i]->setBackColor(fxcolorfromname("gray60"));
+  }
+
+
+
+
+#define L LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y
   for(int i=0; i<4; i++){
     switch(i)
     {
-#define L LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y
-#define X0 10
-#define Y0 20
-      case 0:
-        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_HORIZONTAL,X0+0,Y0+120,100,20);
-        break;
-      case 1:
-        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_VERTICAL,X0+100,Y0+20,20,100);
-        break;
-      case 2:
-        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_VERTICAL,X0+120,Y0+20,20,100);
-        break;
-      case 3:
-        sliders[i]=new FXSlider(hf1,NULL,0,L|SLIDER_HORIZONTAL,X0+140,Y0+120,100,20);
-        break;
+#define X0L 150
+#define Y0  450
+#define X0R 588
+      case 3: sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_HORIZONTAL,X0L-50,Y0+50,100,20);  break;
+      case 1: sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_VERTICAL,  X0L+50,Y0-50,20,100);  break;
+      case 2: sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_VERTICAL,  X0R-70,Y0-50,20,100);  break;
+      case 0: sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_HORIZONTAL,X0R-50,Y0+50,100,20);  break;
       default:;
     }
     sliders[i]->setRange(0+i*50,1023);
     sliders[i]->setTickDelta(7);
     sliders[i]->setValue(i==1 ? 200 : 512+i*25);
+    sliders[i]->setBackColor(fxcolorfromname("black"));
+    //sliders[i]->setLineColor(fxcolorfromname("white"));
   }
-  arrow[0]= new FXArrowButton(hf10,this,1000,ARROW_LEFT);
-  arrow[1]= new FXArrowButton(hf10,this,1000,ARROW_UP);
-  arrow[2]= new FXArrowButton(hf10,this,1000,ARROW_RIGHT);
+#define KNOB_OPT KNOB_NEEDLE|LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT
+  new FXLabel(hf1,"Sticks/Potis/Vbat/Vref");
+  arrow[0]= new FXArrowButton(hf1,this,1000,ARROW_LEFT);
+  arrow[1]= new FXArrowButton(hf1,this,1000,ARROW_UP);
+  arrow[2]= new FXArrowButton(hf1,this,1000,ARROW_RIGHT);
   for(int i=4; i<ANA_CHANS; i++){
-    knobs[i]= new FXKnob(hf11,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    switch(i){
+      case 4: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,580-20,198-20,50,50,0,0,0,0); break;
+      case 5: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,140-20,195-20,50,50,0,0,0,0); break;
+      case 6: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,158-20,268-20,50,50,0,0,0,0); break;
+      default:    knobs[i]= new FXKnob(hf1,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
+    }
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
+    knobs[i]->setBackColor(fxcolorfromname("black"));
+    knobs[i]->setLineColor(fxcolorfromname("white"));
   }
 
-  new FXLabel(hf001,"Trainer");
-  arrow2[0]= new FXArrowButton(hf00,this,1000,ARROW_LEFT);
-  arrow2[1]= new FXArrowButton(hf00,this,1000,ARROW_UP);
-  arrow2[2]= new FXArrowButton(hf00,this,1000,ARROW_RIGHT);
-  togButPpm = new FXToggleButton(hf00,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
-  for(int i=0; i<8; i++){
-     knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
-    //    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
-    knobsppm[i]->setRange(1000,2000);
-    knobsppm[i]->setValue(1500+i*20);
-  }
+
 
 
   bmf = new FXBitmapFrame(this,bmp, LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_WIDTH,235,660,256,128,0,0,0,0);
@@ -285,15 +344,22 @@ void Th9xSim::refreshDisplay()
       KEY_Left,      INP_B_KEY_LFT
     };
 
+    //PORTB  7      6       5       4       3       2       1       0
+    //       light  KEY_LFT KEY_RGT KEY_UP  KEY_DWN KEY_EXT KEY_MEN  PPM
     pinb &= ~ 0x7e;
     for(unsigned i=0; i<DIM(keys1);i+=2){
-      if(getApp()->getKeyState(keys1[i]))  pinb |= (1<<keys1[i+1]);
+      FXuint bit=keys1[i+1];
+      if(getApp()->getKeyState(keys1[i]))  pinb |= (1<<bit);
+      if(but[bit]->getState())  pinb |= (1<<bit);
     }
 
+    //PORTD  7      6       5       4       3       2       1       0
+    //     TRM_D_DWN _UP  TRM_C_DWN _UP   TRM_B_DWN _UP   TRM_A_DWN _UP      
     static FXuint keys2[]={KEY_F8, KEY_F7, KEY_F4, KEY_F3, KEY_F6, KEY_F5, KEY_F1, KEY_F2  };
     pind  = 0;
     for(unsigned i=0; i<DIM(keys2);i++){
       if(getApp()->getKeyState(keys2[i])) pind |= (1<<i);
+      if(trim[i]->getState())             pind |= (1<<i);
     }
     
     struct SwitchKey {

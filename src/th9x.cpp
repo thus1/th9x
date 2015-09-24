@@ -963,9 +963,6 @@ uint16_t anaIn(uint8_t chan)
     ret =*p;
   }
   ret >>= (uint8_t)(filtLev+1);
-#ifdef SIM
-  if(chan==2) printf("%1d                          %3d\n",chan,ret);
-#endif
 
   return ret;
 #endif
@@ -1020,9 +1017,6 @@ ISR(ADC_vect, ISR_NOBLOCK)
   filt[1] = filt[1] / 2 + filt[0];
   filt[2] = filt[2] / 2 + filt[1];
   filt[3] = filt[3] / 2 + filt[2];
-#ifdef SIM
-  if(s_chan==2) printf("%1d %3d %3d %3d %3d\n",s_chan,filt[0],filt[1],filt[2],filt[3]);
-#endif
   //s_anaFilt[s_chan] = filt[g_eeGeneral.adcFilt];
   if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
 #endif
