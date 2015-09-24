@@ -75,7 +75,8 @@ FXIMPLEMENT(Th9xSim,FXMainWindow,Th9xSimMap,ARRAYNUMBER(Th9xSimMap))
 
 
 Th9xSim::Th9xSim(FXApp* a)
-:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL|LAYOUT_FIX_HEIGHT,0,0,0,200)
+//:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL|LAYOUT_FIX_HEIGHT,0,0,0,200)
+:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL,0,0,0,0)
 {
 
   firstTime=true;
@@ -287,13 +288,14 @@ extern uint16_t       s_trainerLast10ms;
 long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 {
   if(togButPpm->getState()){
+    g_trainerSlaveActiveChns = 8;
     for(int i=0; i<8; i++){
       g_ppmIns[i]=knobsppm[i]->getValue()-1500;
       if(g_ppmIns[i]<-400){
         g_trainerSlaveActiveChns = i;
-        s_trainerLast10ms    = g_tmr10ms;
 	break;
       }
+      s_trainerLast10ms    = g_tmr10ms;
     }
   }
 
@@ -304,10 +306,8 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 }
 void Th9xSim::refreshDisplay()
 {
-  //lcd_img_f(0x7d3,0,0,0x6b,0x18);
-  //lcd_img_f(,0,0,,);
-  //lcd_img_f(0x008c,0,0,0x40,0x20);
-  if(portb & 1<<OUT_B_LIGHT)  bmf->setOffColor(FXRGB(200,150,152));
+  //  if(portb & 1<<OUT_B_LIGHT)  bmf->setOffColor(FXRGB(200,150,152));
+  if(portb & 1<<OUT_B_LIGHT)  bmf->setOffColor(FXRGB(22,93,197));
   else                        bmf->setOffColor(FXRGB(150,200,152));
 
   for(int x=0;x<W;x++){
@@ -363,26 +363,28 @@ void Th9xSim::refreshDisplay()
     }
     
     struct SwitchKey {
-      FXuint key;
+      FXuint                  key;
       volatile unsigned char& pin;
-      unsigned char shift;
-      unsigned char value;
+      unsigned char           shift;
+      unsigned char           value;
+      FXint                   swtchIdx;
     };
     
     static SwitchKey keys3[] = {
 #if defined(JETI) || defined(FRSKY)
-      { KEY_1, pinc,  INP_C_ThrCt, 0 },
-      { KEY_6, pinc,  INP_C_AileDR, 0 },
+      { KEY_1, pinc,  INP_C_ThrCt,  0, -1 },
+      { KEY_6, pinc,  INP_C_AileDR, 0, -1 },
 #else
-      { KEY_1, pine,  INP_E_ThrCt, 0 },
-      { KEY_6, pine,  INP_E_AileDR, 0 },
+      { KEY_1, pine,  INP_E_ThrCt,  0,  0 },
+      { KEY_6, pine,  INP_E_AileDR, 0,  4 },
 #endif
-      { KEY_2, ping,  INP_G_RuddDR, 0 },
-      { KEY_3, pine,  INP_E_ElevDR, 0 },
+      { KEY_2, ping,  INP_G_RuddDR, 0,  1 },
+      { KEY_3, pine,  INP_E_ElevDR, 0,  2 },
       //KEY_4, ping,  INP_G_ID1,      0,
       //KEY_5, pine,  INP_E_ID2,      0,
-      { KEY_7, pine,  INP_E_Gear, 0 },
-      { KEY_8, pine,  INP_E_Trainer, 0 } };
+      { KEY_7, pine,  INP_E_Gear,   0,  5 },
+      { KEY_8, pine,  INP_E_Trainer,0,  6 } 
+    };
 
     for(unsigned i=0; i<DIM(keys3); i++){
       bool ks = getApp()->getKeyState(keys3[i].key);
@@ -390,6 +392,10 @@ void Th9xSim::refreshDisplay()
         if (ks) keys3[i].pin ^= (1<<keys3[i].shift);
         keys3[i].value = ks;
       }
+      if(keys3[i].swtchIdx>=0){
+        if(swtch[keys3[i].swtchIdx]->getCheck())   keys3[i].pin &= ~(1<<keys3[i].shift);
+        else                                       keys3[i].pin |=  (1<<keys3[i].shift);
+      }   
     }
     
       //     INP_G_ID1 INP_E_ID2
