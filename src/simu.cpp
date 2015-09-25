@@ -56,8 +56,8 @@ public:
   FXKnob        *knobsppm[8]; //sim trainer port
   FXArrowButton *arrow[3];
   FXArrowButton *arrow2[3];
-  FXButton      *but[8];
-  FXButton      *trim[8];
+  FXArrowButton     *but[8];
+  FXArrowButton *trim[8];
   FXCheckButton *swtch[8];
   FXToggleButton *togButPpm;
 };
@@ -75,8 +75,8 @@ FXIMPLEMENT(Th9xSim,FXMainWindow,Th9xSimMap,ARRAYNUMBER(Th9xSimMap))
 
 
 Th9xSim::Th9xSim(FXApp* a)
-//:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL|LAYOUT_FIX_HEIGHT,0,0,0,200)
-:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL,0,0,0,0)
+:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL|LAYOUT_FIX_HEIGHT,0,0,0,200)
+//:FXMainWindow(a,"Th9xSim",NULL,NULL,DECOR_ALL,0,0,0,0)
 {
 
   firstTime=true;
@@ -102,7 +102,7 @@ Th9xSim::Th9xSim(FXApp* a)
   
 
   new FXLabel(hf0,"Trainer");
-  togButPpm = new FXToggleButton(hf0,"on", "off", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
+  togButPpm = new FXToggleButton(hf0,"off", "on", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
   arrow2[0]= new FXArrowButton(hf0,this,1000,ARROW_LEFT);
   arrow2[1]= new FXArrowButton(hf0,this,1000,ARROW_UP);
   arrow2[2]= new FXArrowButton(hf0,this,1000,ARROW_RIGHT);
@@ -118,12 +118,12 @@ Th9xSim::Th9xSim(FXApp* a)
 #define BH2 ((BH)/2)
 #define BW2 ((BW)/2)
   for(int i=0; i<8; i++){ switch(i) {
-      case 6: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT, 90-BW2, 723-BH2, BW,BH); break;
-      case 5: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,170-BW2, 723-BH2, BW,BH); break;
-      case 4: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,130-BW2, 683-BH2, BW,BH); break;
-      case 3: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,130-BW2, 763-BH2, BW,BH); break;
-      case 1: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,600-BW2, 710-BH2, BW,BH); break;
-      case 2: but[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,600-BW2, 768-BH2, BW,BH); break;
+      case 6: but[i] = new FXArrowButton(this,NULL,0,ARROW_LEFT|BUT_OPT, 90-BW2, 723-BH2, BW,BH); break;
+      case 5: but[i] = new FXArrowButton(this,NULL,0,ARROW_RIGHT|BUT_OPT,170-BW2, 723-BH2, BW,BH); break;
+      case 4: but[i] = new FXArrowButton(this,NULL,0,ARROW_UP|BUT_OPT,130-BW2, 683-BH2, BW,BH); break;
+      case 3: but[i] = new FXArrowButton(this,NULL,0,ARROW_DOWN|BUT_OPT,130-BW2, 763-BH2, BW,BH); break;
+      case 1: but[i] = new FXArrowButton(this,NULL,0,ARROW_UP|BUT_OPT,600-BW2, 710-BH2, BW,BH); break;
+      case 2: but[i] = new FXArrowButton(this,NULL,0,ARROW_DOWN|BUT_OPT,600-BW2, 768-BH2, BW,BH); break;
       default:but[i] = 0;
     }
     if(but[i]){
@@ -153,14 +153,14 @@ Th9xSim::Th9xSim(FXApp* a)
 #define TH2 ((CH)/2)
 #define TW2 ((CW)/2)
   for(int i=0; i<8; i++){ switch(i) {
-      case 6: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,155-TW2,584 -TH2, TW,TH); break;
-      case 7: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,185-TW2,584 -TH2, TW,TH); break;
-      case 2: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,289-TW2,457 -TH2, TW,TH); break;
-      case 3: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,289-TW2,487 -TH2, TW,TH); break;
-      case 4: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,445-TW2,457 -TH2, TW,TH); break;
-      case 5: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,445-TW2,487 -TH2, TW,TH); break;
-      case 1: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,535-TW2,586 -TH2, TW,TH); break;
-      case 0: trim[i] = new FXButton(this,"",NULL,NULL,0,BUT_OPT,565-TW2,586 -TH2, TW,TH); break;
+      case 6: trim[i] = new FXArrowButton(this,NULL,0,ARROW_LEFT|BUT_OPT,155-TW2,584 -TH2, TW,TH); break;
+      case 7: trim[i] = new FXArrowButton(this,NULL,0,ARROW_RIGHT|BUT_OPT,185-TW2,584 -TH2, TW,TH); break;
+      case 2: trim[i] = new FXArrowButton(this,NULL,0,ARROW_UP|BUT_OPT,289-TW2,457 -TH2, TW,TH); break;
+      case 3: trim[i] = new FXArrowButton(this,NULL,0,ARROW_DOWN|BUT_OPT,289-TW2,487 -TH2, TW,TH); break;
+      case 4: trim[i] = new FXArrowButton(this,NULL,0,ARROW_UP|BUT_OPT,445-TW2,457 -TH2, TW,TH); break;
+      case 5: trim[i] = new FXArrowButton(this,NULL,0,ARROW_DOWN|BUT_OPT,445-TW2,487 -TH2, TW,TH); break;
+      case 1: trim[i] = new FXArrowButton(this,NULL,0,ARROW_LEFT|BUT_OPT,535-TW2,586 -TH2, TW,TH); break;
+      case 0: trim[i] = new FXArrowButton(this,NULL,0,ARROW_RIGHT|BUT_OPT,565-TW2,586 -TH2, TW,TH); break;
     }
     trim[i]->setBackColor(fxcolorfromname("gray60"));
   }
@@ -194,14 +194,14 @@ Th9xSim::Th9xSim(FXApp* a)
   arrow[2]= new FXArrowButton(hf1,this,1000,ARROW_RIGHT);
   for(int i=4; i<ANA_CHANS; i++){
     switch(i){
-      case 4: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,580-20,198-20,50,50,0,0,0,0); break;
-      case 5: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,140-20,195-20,50,50,0,0,0,0); break;
-      case 6: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,158-20,268-20,50,50,0,0,0,0); break;
+      case 4: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,585-20,208-20,40,40,0,0,0,0); break;
+      case 5: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,144-20,202-20,40,40,0,0,0,0); break;
+      case 6: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,162-20,272-20,40,40,0,0,0,0); break;
       default:    knobs[i]= new FXKnob(hf1,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     }
     knobs[i]->setRange(0,1023);
     knobs[i]->setValue(512);
-    knobs[i]->setBackColor(fxcolorfromname("black"));
+    knobs[i]->setBackColor(fxcolorfromname("gray20"));
     knobs[i]->setLineColor(fxcolorfromname("white"));
   }
 
@@ -402,17 +402,20 @@ void Th9xSim::refreshDisplay()
       // id0    0        1
       // id1    1        1
       // id2    1        0
-    static FXuint id=0,k4st=0,k5st=0;
-    bool ks=getApp()->getKeyState(KEY_4);
-    if(ks != k4st){
-      if(ks && id>0) id--;
-      k4st = ks;
-    }
-    ks=getApp()->getKeyState(KEY_5);
-    if(ks != k5st){
-      if(ks && id<2) id++;
-      k5st = ks;
-    }
+//     static FXuint id=0,k4st=0,k5st=0;
+    FXuint id=0;
+    if(swtch[3]->getCheck()) id=1;
+
+//     bool ks=getApp()->getKeyState(KEY_4);
+//     if(ks != k4st){
+//       if(ks && id>0) id--;
+//       k4st = ks;
+//     }
+//     ks=getApp()->getKeyState(KEY_5);
+//     if(ks != k5st){
+//       if(ks && id<2) id++;
+//       k5st = ks;
+//     }
     switch(id){
       case 0: ping |=  (1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
       case 1: ping &= ~(1<<INP_G_ID1);  pine &= ~(1<<INP_E_ID2); break;
@@ -479,8 +482,12 @@ int main(int argc,char **argv)
 uint16_t simADC(uint8_t chan)
 {
   uint16_t ret;
-  if(chan<4)  ret = th9xSim->sliders[chan]->getValue();
-  else        ret = th9xSim->knobs[chan]->getValue();
+  switch(chan){
+    case 0:    case 1:    case 2:    case 3:      ret = th9xSim->sliders[chan]->getValue(); break;
+    case 4:    case 5:    case 6:    case 7:      ret = th9xSim->knobs[chan]->getValue();   break;
+    case 0x1e:                                    ret = th9xSim->knobs[8]->getValue();      break;
+    default:    assert(0);
+  }
   return ret + (rand()&0x3) - 1;
   //return 512 -  512*10*chan/100;
   //return (rand() & 0x1f) + 0x2f8;
