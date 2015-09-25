@@ -1,3 +1,4 @@
 OBJS/
 eeprom.bin
 simu
+/simu.d
