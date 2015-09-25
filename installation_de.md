@@ -67,14 +67,14 @@ Vermutlich wird ein USB programmer dem LPT pendant bevorzugt. Abgesehen von der 
 Die Anschlüsse des Programmers müssen mit dem Mikrocontroller im Sender (ATmega64) verbunden werden. Atmel hat als Standard einen 6 oder 10 poligen Anschluss. Mindestens einer von beiden ist auf jedem AVR programmer zu finden. Die Atmel Standardbelegung sieht wie folgt aus.
 Achtung!! Blickrichtung auf die Steckerpins. Die Verpolschutzkerbe am Stecker ist bei Pin3 bzw. Pin5.
 
-<img src='http://th9x.googlecode.com/svn/wiki/atmel_6-10pin_new.png' width='600'>
+<img src='https://github.com/thus1/th9x/blob/wiki/atmel_6-10pin_new.png' width='600'>
 
 
 
 diese müssen wie nachfolgend abgebildet mit dem Sender verbunden werden. Den Turnigy Sender gibt es<br>
 in 2 Versionen, abgebildet ist die v1, bei der v2 ist an SCK ein Lötpad (roter Kreis).<br>
 <br>
-<img src='http://th9x.googlecode.com/svn/wiki/turnigy9x_pcb.png' width='600'>
+<img src='https://github.com/thus1/th9x/blob/wiki/turnigy9x_pcb.png' width='600'>
 
 
 Es wird empfohlen dünnes und flexibles Kabel zu benutzen (z.B. die Litze aus einem Netzwerkkabel), da sich ansonsten bei starker Belastung u.U. Leiterbahnen von der Platine lösen könnten. Es ist auch empfehlenswert die Lötstellen mit einer Heißklebepistole zu sichern. Heißkleber ist einfach anwendbar und auch einfach wieder zu entfernen!<br>
