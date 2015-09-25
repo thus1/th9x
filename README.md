@@ -8,7 +8,8 @@ This project is an alternative firmware for the 9 channel rc-control FS-TH9X man
   * [th9x-schaltplan.pdf](https://github.com/thus1/th9x/blob/master/doc/schaltplan-transmitter.pdf)
 
 # Installation Instructions #
-  * [Installationsanleitung/Installation Instructions](installation_de.md)
+  * [Installationsanleitung](https://github.com/thus1/th9x/blob/wiki/installation_de.md)
+  * [Useful Tips](https://github.com/thus1/th9x/blob/wiki/useful_tips.md)
   * http://www.rcgroups.com/forums/showpost.php?p=14901247&postcount=1700
   * http://www.rcgroups.com/forums/showpost.php?p=14909360&postcount=1714
 
