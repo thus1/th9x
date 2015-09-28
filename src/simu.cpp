@@ -181,7 +181,7 @@ Th9xSim::Th9xSim(FXApp* a)
       case 0: sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_HORIZONTAL,X0R-50,Y0+50,100,20);  break;
       default:;
     }
-    sliders[i]->setRange(0+i*50,1023);
+    sliders[i]->setRange(20+i*30,1010-i*15);
     sliders[i]->setTickDelta(7);
     sliders[i]->setValue(i==1 ? 200 : 512+i*25);
     sliders[i]->setBackColor(fxcolorfromname("black"));
@@ -199,7 +199,7 @@ Th9xSim::Th9xSim(FXApp* a)
       case 6: knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,162-20,272-20,40,40,0,0,0,0); break;
       default:    knobs[i]= new FXKnob(hf1,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     }
-    knobs[i]->setRange(0,1023);
+    knobs[i]->setRange(15,1000);
     knobs[i]->setValue(512);
     knobs[i]->setBackColor(fxcolorfromname("gray20"));
     knobs[i]->setLineColor(fxcolorfromname("white"));

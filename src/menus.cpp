@@ -1636,13 +1636,17 @@ void menuProcDiagCalib()
   switch(g_event)
   {
     case EVT_ENTRY:
-      for(uint8_t i=0; i<7; i++) loVals[i] = 15000;
       break;
     case EVT_KEY_BREAK(KEY_DOWN): // !! achtung sub schon umgesetzt
       switch(sub)
       {
         case 2: //get mid
           for(uint8_t i=0; i<4; i++)midVals[i] = anaIn(i);
+          for(uint8_t i=0; i<7; i++) {
+            loVals[i] = 15000;
+            hiVals[i] = 0;
+          }
+
           beepKey();
           break;
         case 3: 
