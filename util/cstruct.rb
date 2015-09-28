@@ -253,7 +253,7 @@ module CStruct
       @pos=0
       @granu=0
       @bitFld=nil; @bitFldCnt=0
-      cdef.each { |l|
+      cdef.each_line { |l|
         l.sub! /(\#|\/\/).*$/,""   #remove comments
         l.sub! /;\s*$/,""          #remove ';' at the end
         l.gsub! /\s*,\s*/,","      #remove space around ','

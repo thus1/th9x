@@ -542,8 +542,8 @@ module Codec
     state0 = true
     i_len  = buf.length
     (i_len+1).times{|i|
-      nst0 = buf[i] == 0
-      nst0 = false if  nst0 && !state0 && buf[i+1]!=0
+      nst0 = buf[i] == ?0
+      nst0 = false if  nst0 && !state0 && buf[i+1] != ?0
       if nst0 != state0 || cnt>=0x7f || i==i_len
         if(state0)
           if cnt>0
@@ -570,7 +570,7 @@ module Codec
     state0 = true
     i_len  = buf.length
     (i_len+1).times{|i|
-      nst0 = buf[i] == 0
+      nst0 = buf[i] == ?0
       # nst0 = false if  nst0 && !state0 && buf[i+1]!=0
       if nst0 != state0 || cnt==0x3f || (cnt2!=0 && cnt==0xf) || i==i_len
         if(state0)
@@ -602,7 +602,7 @@ module Codec
     inbuf=inbuf.dup
     outbuf=""
     while inbuf.length != 0 and len!=0
-      ctrl = inbuf.lcut(1)[0]
+      ctrl = inbuf.lcut(1).unpack("C").first
       if ctrl &0x80 != 0
         ctrl &= 0x7f
         l=[ctrl,len].min
@@ -633,7 +633,7 @@ module Codec
       return outbuf if ctrl!=0
       return outbuf if inbuf.length == 0
 
-      ctrl = inbuf.lcut(1)[0]
+      ctrl = inbuf.lcut(1).unpack("C").first
       if ctrl &0x80 != 0
 	zeros = (ctrl>>4) & 0x7
 	ctrl &= 0x0f
@@ -699,7 +699,7 @@ class Reader_V4
   def chain_each(i,lim=255) # Reader_V4
     cnt=0
     while i!=0
-      nxt=@wholeEEprom[i*16+0]
+      nxt=@wholeEEprom[i*16+0,1].unpack("C").first
       #printf("chain %d -> %d \n",i,nxt)
       if block_given?
         break if ! yield( i,cnt,nxt)
@@ -717,7 +717,7 @@ class Reader_V4
     @eefs.bs=16
     @wholeEEprom = 0.chr*2048
     (5..127).each{|i|
-      @wholeEEprom[i*16]=i-1
+      @wholeEEprom[i*16,1]=(i-1).chr
     }
     @eefs.freeList=127
 #    general=CStruct::EEGeneral_r0.new()
@@ -735,8 +735,8 @@ class Reader_V4
   end
   def freeBlks(i) # Reader_V4
     while i!=0
-      inxt = @wholeEEprom[i*16]
-      @wholeEEprom[i*16] = @eefs.freeList
+      inxt = @wholeEEprom[i*16,1].unpack("C").first
+      @wholeEEprom[i*16,1] = @eefs.freeList.chr
       @eefs.freeList = i
       i=inxt
     end
@@ -744,8 +744,8 @@ class Reader_V4
   def alloc() # Reader_V4
     ret=@eefs.freeList
     ret != 0 or raise "eeprom full"
-    @eefs.freeList=@wholeEEprom[ret*16]
-    @wholeEEprom[ret*16]=0
+    @eefs.freeList=@wholeEEprom[ret*16,1].unpack("C").first
+    @wholeEEprom[ret*16,1]=0.chr
     ret
   end
   def writeFile(fi,typ,buf) # Reader_V4
@@ -756,7 +756,7 @@ class Reader_V4
       ct=buf.lcut(15)
       @wholeEEprom[p*16+1,ct.length] = ct
       if buf.length!=0
-         p=@wholeEEprom[p*16]=alloc
+         p=@wholeEEprom[p*16,1]=alloc.chr
       end
     end
   end
@@ -809,7 +809,7 @@ class Reader_V4
           break
         end
         usedBlks+=1
-        fatInfo[j]=(fi+?a).chr+("%02d "%cnt);
+        fatInfo[j]=(fi+0x61).chr+("%02d "%cnt);
         true
       }
       # @fbuf[fi]    = buf[0,sz]
@@ -956,7 +956,7 @@ class Reader_V4
     fb,typ,sz=readFile(fi)
     cmt,dec,cls = Reader_V4.infoFileTyp(fb)
     fbufdec = (dec==1 ? Codec::decode1(fb) : Codec::decode2(fb))
-    printf("%s  %4d %2d  %3d %s D#{dec}",(fi+?a).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
+    printf("%s  %4d %2d  %3d %s D#{dec}",(fi+0x61).chr,sz,typ,fbufdec ? fbufdec.length : 0,cmt)
     chain_each(bi,10){|j,cnt,nxt|  printf(" %d,",j); true}
     puts
   end
@@ -991,9 +991,9 @@ Options
       $opt_v += v.length if v =~ /^v+$/
     }
     $opt_ee="eeprom.bin"
-    opts.on("-ifile",     "eeprom file (#{$opt_ee})") { |$opt_ee|}
+    opts.on("-ifile",     "eeprom file (#{$opt_ee})") { |x|$opt_ee=x}
     $opt_o="out.bin"
-    opts.on("-ofile",     "output file (#{$opt_o})") { |$opt_o|}
+    opts.on("-ofile",     "output file (#{$opt_o})") { |x|$opt_o=x}
     opts.parse!
     cmd=ARGV.shift || "ls"
     send(cmd)
@@ -1074,7 +1074,7 @@ Options
 #  end
   def read(file) # Main
     File.open(file,"rb"){|f|
-      @vers=f.read(1)[0]
+      @vers=f.read(1).unpack("C").first
       f.seek(0)
       case @vers
       when 1; r=Reader_V1.new; r.readEEprom(f); return r
