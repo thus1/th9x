@@ -70,6 +70,39 @@ class Main
     @temp[0] = (@temp[0]+val)      / 2
     @temp[sel]
   end
+  def filterErez_Hyst(val,par,hyst=nil)
+    @temp[0] = (@temp[0] / 2 + val) 
+    @temp[1] = (@temp[1] / 2 + @temp[0])
+    @temp[2] = (@temp[2] / 2 + @temp[1])
+    @temp[3] = (@temp[3] / 2 + @temp[2])
+    ret=@temp[par] >> (par+1)
+
+    if hyst
+      dh=ret-@temp[4]
+      if(dh > 1 or dh<0)
+        @temp[4] = ret;
+      else
+        ret = @temp[4];
+      end
+    end
+    ret
+  end
+  def filterGw_Hyst(val,par,hyst=nil)
+    ret = @temp[0] >> (2+par)
+    @temp[0] += val - ret
+    @temp[1]  = ret
+
+    if hyst
+      dh=ret-@temp[2] +@temp[3]
+      if(dh > 1 or dh<0)
+        @temp[2] = ret;
+        @temp[3] = dh>0 ? 1 : 0
+      else
+        ret = @temp[2];
+      end
+    end
+    ret
+  end
   def filter3(val,sft)
     sft/=2
     #val=val.to_f
@@ -109,7 +142,7 @@ class Main
     init
     @curves << [name,y0.map{|y| yield y }]
   end
-  W=100
+  W=500
   WM=10
   WP=10
   H=100
@@ -124,11 +157,11 @@ class Main
      #addCurve("f141-2" ,yin){|y| filter141(y,2)-dy}; dy+=d
      #addCurve("f141-1" ,yin){|y| filter141(y,1)-dy}; dy+=d
 #     addCurve("ferez-2",yin){|y| filterErez(y,3)-dy}; dy+=d
-     addCurve("ferez-0-inv",yin){|y| filterErezInv(y,0)-dy}; dy+=d
-     addCurve("ferez-1-inv",yin){|y| filterErezInv(y,1)-dy}; dy+=d
-     addCurve("ferez-2-inv",yin){|y| filterErezInv(y,2)-dy}; dy+=d
-     addCurve("ferez-3-inv",yin){|y| filterErezInv(y,3)-dy}; dy+=d
-     addCurve("ferez-3",yin){|y| filterErez(y,3)-dy}; dy+=d
+#     addCurve("ferez-0-inv",yin){|y| filterErezInv(y,0)-dy}; dy+=d
+#     addCurve("ferez-1-inv",yin){|y| filterErezInv(y,1)-dy}; dy+=d
+#     addCurve("ferez-2-inv",yin){|y| filterErezInv(y,2)-dy}; dy+=d
+#     addCurve("ferez-3-inv",yin){|y| filterErezInv(y,3)-dy}; dy+=d
+#     addCurve("ferez-3",yin){|y| filterErez(y,3)-dy}; dy+=d
 #     addCurve("ferez-2-orig",yin){|y| filterErez_orig(y,2)-dy}; dy+=d
      addCurve("ferez-3-orig",yin){|y| filterErez_orig(y,3)-dy}; dy+=d
      #addCurve("ferez-2",yin){|y| filterErez(y,2)-dy}; dy+=d
@@ -137,7 +170,13 @@ class Main
 #     addCurve("f143_2",yin){|y| filterR143(y,2)-dy}; dy+=d
 #     addCurve("f143_3",yin){|y| filterR143(y,3)-dy}; dy+=d
      addCurve("f143x_4_2",yin){|y| filterR143_x(y,4,2)-dy}; dy+=d
-     addCurve("f143x_2_4",yin){|y| filterR143_x(y,2,4)-dy}; dy+=d
+#     addCurve("f143x_2_4",yin){|y| filterR143_x(y,2,4)-dy}; dy+=d
+     addCurve("fgw0-hyst1",yin){|y| filterGw_Hyst(y,0,1)-dy}; dy+=d
+     addCurve("fgw1-hyst1",yin){|y| filterGw_Hyst(y,1,1)-dy}; dy+=d
+     #addCurve("fgw1-hyst0",yin){|y| filterGw_Hyst(y,1,nil)-dy}; dy+=d
+     addCurve("fgw2-hyst1",yin){|y| filterGw_Hyst(y,2,1)-dy}; dy+=d
+     addCurve("fgw3-hyst1",yin){|y| filterGw_Hyst(y,3,1)-dy}; dy+=d
+     addCurve("fez3-hyst1",yin){|y| filterErez_Hyst(y,3,1)-dy}; dy+=d
   end
 
   def initialize
@@ -152,9 +191,9 @@ class Main
     @y0=[0]*11 + ([0]*W).map{(rand(0)*noise).to_i+100-noise/2}
     # @y2=[0]*11 + [100] + [0]*(W-1)
     @y2=[0]*11; 
-    y=80
-    10.times{|i| @y2 +=  ([y]*5); y+=1}
-    10.times{|i| @y2 +=  ([y]*5); y-=1}
+    y=H*80/100
+    10.times{|i| @y2 +=  ([y]*(W/20)); y+=1}
+    10.times{|i| @y2 +=  ([y]*(W/20)); y-=1}
 
     @y2=@y2.map{|y|y+(rand(0)*noise).to_i-noise/2}
     
@@ -186,7 +225,7 @@ class Main
           Gnuplot::DataSet.new( [x,ya] ) { |ds|
             ds.with = "lines"
             ds.title = "#{name}"
-            ds.linewidth = 2
+            #ds.linewidth = 1
           }
         }
       }
@@ -212,7 +251,7 @@ class Main
           plot.data << Gnuplot::DataSet.new( [x,ya] ) { |ds|
             ds.with = "lines"
             ds.title = "#{name}"
-            ds.linewidth = 2
+            #ds.linewidth = 1
           }
         }
       }

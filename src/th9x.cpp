@@ -929,16 +929,23 @@ public:
   ~AutoLock(){  };
 };
 #define ISR(name,opts) void name()
-#define CALL_ADC for(int _i=0; _i<1; _i++) ADC_vect()
+#define CALL_ADC for(int _i=0; _i<10; _i++) ADC_vect()
 void     ADC_vect();
 uint16_t simADC(uint8_t chan);
 
 #endif
-static uint16_t s_anaFilt[ANA_CHANS];
+//static uint16_t s_anaFilt[ANA_CHANS];
 // chan 0..3  Sticks STCK_LH STCK_LV STCK_RV STCK_RH
 // chan 4..6  Potis
 // chan 7,8   vbat, vref
-static uint8_t  s_filtBuf[ANA_CHANS*4*2];
+struct Filt{
+  uint16_t workGw;  // nur int
+  volatile uint16_t resGw;   // int -> main
+  uint16_t last;    // main
+  uint8_t  hystAdd; // main
+  uint8_t  dummy;   //
+};
+static uint8_t  s_filtBuf[ANA_CHANS*8]; // Filt structs
 
 
 #define F 1
@@ -950,91 +957,30 @@ uint16_t anaIn(uint8_t chan)
   // ANA_ BAT   PITT_TRM HOV_THR HOV_PIT  STCK_LH STCK_RV STCK_LV STCK_RH
   CALL_ADC;
   static char_p APM crossAna[]={3,1,2,0,4,5,6,7,8};
-#if(F==1)
   //volatile uint16_t *p = &s_anaFilt[pgm_read_byte(crossAna+chan)];
-  uint8_t ofs     = pgm_read_byte(crossAna+chan)*4;
-  ofs*=2; //uin16_t array
-  volatile uint16_t *p = (uint16_t*)(s_filtBuf + ofs);
+  uint8_t ofs  = pgm_read_byte(crossAna+chan)*8; //Filt
+  Filt *p      = (Filt*)(s_filtBuf + ofs);
   uint16_t ret;
   {      
     AutoLock autoLock;
-    ret =p[1];
+    ret =p->resGw;
   }
   // p[2] = last  p[3]=hyst-ofs 1,0
-  uint8_t dh = ret-*(uint8_t*)&p[2];// + *(uint8_t*)&p[3];
+  uint8_t dh = ret - *(uint8_t*)&p->last + p->hystAdd;
   if(dh > 1){
-    //*(uint8_t*)&p[3] = dh<128 ? 1 : 0;
-    p[2] = ret;
+    p->hystAdd = dh<128 ? 1 : 0;
+    p->last    = ret;
   }else{
     // 0..1
-    ret = p[2];
+    ret = p->last;
   }
-#ifdef SIM
-//   if(chan==2) printf("%1d                          %3d %d %d\n",chan,ret,s_last[chan],s_up[chan]);
-  if(chan==2) {
-    static int s_cnt;
-    s_cnt++;
-    printf("%1d                          %3d %d %d %d\n",chan,ret,s_cnt,p[2],p[3]);
-  }
-#endif
-  return ret;
-
-
-#elif(F==2)
-  uint8_t filtLev = g_eeGeneral.adcFilt;
-  uint8_t ofs     = pgm_read_byte(crossAna+chan)*4+filtLev;
-  ofs*=2; //uin16_t array
-  volatile uint16_t *p = (uint16_t*)(s_filtBuf + ofs);
-  uint16_t ret;
-  {      
-    AutoLock autoLock;
-    ret =*p;
-  }
-  ret >>= (uint8_t)(filtLev+1);
-
-#elif(F==3)
-  uint8_t ofs     = pgm_read_byte(crossAna+chan)*4 + 2;
-  ofs*=2; //uin16_t array
-  volatile uint16_t *p = (uint16_t*)(s_filtBuf + ofs);
-  uint16_t ret;
-  {      
-    AutoLock autoLock;
-    ret =*p;
-  }
-  ret /= 64;
-
-//   static uint16_t s_last[ANA_CHANS];
-//   if(ret > s_last[chan]){
-//     if(ret == s_last[chan]+1) ret--;
+// #ifdef SIM
+//   if(chan==2) {
+//     static int s_cnt;
+//     s_cnt++;
+//     printf("%1d                          %3d %d %d %d\n",chan,ret,s_cnt,p->last,p->hystAdd);
 //   }
-//   s_last[chan] = ret;
-
-  static uint16_t s_last[ANA_CHANS];
-  static int8_t     s_up[ANA_CHANS];
-  if(chan==2){
-    if(ret > s_last[chan]){
-      if(!s_up[chan]){
-        if(ret == s_last[chan]+1) ret--;
-        else                      s_up[chan]=true;
-      }
-    }else if(ret < s_last[chan]){
-      if(s_up[chan]){
-        if(ret == s_last[chan]-1) ret++;
-        else                      s_up[chan]=false;
-      }
-    }
-    s_last[chan] = ret;
-  }
-
-#endif
-#ifdef SIM
-//   if(chan==2) printf("%1d                          %3d %d %d\n",chan,ret,s_last[chan],s_up[chan]);
-  if(chan==2) {
-    static int s_cnt;
-    s_cnt++;
-    printf("%1d                          %3d %d\n",chan,ret,s_cnt);
-  }
-#endif
+// #endif
   return ret;
 }
 
@@ -1061,52 +1007,15 @@ ISR(ADC_vect, ISR_NOBLOCK)
   }
 #endif
 
-#if(F==1)
-  // static uint16_t s_lastVal[ANA_CHANS];
-  // g_allAdc++;
-  // if( (v-s_lastVal[s_chan]+1)<=2 ){
-  //   s_lastVal[s_chan]=v;
-    
-    uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
-    // for(uint8_t i=g_eeGeneral.adcFilt; i>0; i--,filt++){
-    //   uint16_t vn = *filt / 4; //0,16,23,28 vals to 99%
-    //   *filt += v - vn; // *3/4
-    //   v=vn;
-    // }
-    uint16_t vn = filt[0] >> (2*g_eeGeneral.adcFilt) ;
-    filt[0] += v - vn; // *3/4
-    asm("":::"memory"); //barrier saves 6 asm-instructions
-    filt[1]  = vn;
-    //    = (s_chan + 1) & 0x7;
+  Filt  *filt   = (Filt*)(s_filtBuf + (uint8_t)(s_chan*8));
+  uint16_t vn   = filt->workGw >> (2+g_eeGeneral.adcFilt) ;
+  filt->resGw   = vn;
+  filt->workGw += v - vn;
 #ifdef SIM
-  filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
-  if(s_chan==2) printf("%1d %3d %3d %3d %3d\n",s_chan,filt[0],filt[1],filt[2],filt[3]);
+//   filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
+//   if(s_chan==2) printf("%1d %3d %3d %3d %3d\n",s_chan,filt[0],filt[1],filt[2],filt[3]);
 #endif
-    if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
-  // }else{
-  //   s_lastVal[s_chan]=v;
-  //   g_badAdc++;
-  // }
-#elif(F==2)
-  uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
-  filt[0] = filt[0] / 2 + v      ;
-  filt[1] = filt[1] / 2 + filt[0];
-  filt[2] = filt[2] / 2 + filt[1];
-  filt[3] = filt[3] / 2 + filt[2];
-#ifdef SIM
-  if(s_chan==2) printf("%1d %3d %3d %3d %3d\n",s_chan,filt[0],filt[1],filt[2],filt[3]);
-#endif
-   //s_anaFilt[s_chan] = filt[g_eeGeneral.adcFilt];
   if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
-
-#elif (F==3)
-  uint16_t *filt = (uint16_t*)(s_filtBuf + (uint8_t)(s_chan*4*2));
-  filt[0] += v - filt[0] / 4   ;
-  filt[1] += filt[0] - filt[1] / 4   ;
-  filt[2] += filt[1] - filt[2] / 4   ;
-
-  if(++s_chan >= ANA_CHANS) s_chan=0; //wrap around
-#endif
 
 
   // Multiplexer stellen

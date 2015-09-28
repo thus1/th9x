@@ -482,13 +482,13 @@ int main(int argc,char **argv)
 uint16_t simADC(uint8_t chan)
 {
   uint16_t ret;
-  switch(chan){
+  switch(chan){ 
     case 0:    case 1:    case 2:    case 3:      ret = th9xSim->sliders[chan]->getValue(); break;
     case 4:    case 5:    case 6:    case 7:      ret = th9xSim->knobs[chan]->getValue();   break;
     case 0x1e:                                    ret = th9xSim->knobs[8]->getValue();      break;
     default:    assert(0);
   }
-  return ret + (rand()&0x3) - 1;
+  return ret + (rand()&0x7) - 3;
   //return 512 -  512*10*chan/100;
   //return (rand() & 0x1f) + 0x2f8;
 }
