@@ -1008,7 +1008,7 @@ ISR(ADC_vect, ISR_NOBLOCK)
 #endif
 
   Filt  *filt   = (Filt*)(s_filtBuf + (uint8_t)(s_chan*8));
-  uint16_t vn   = filt->workGw >> (2+g_eeGeneral.adcFilt) ;
+  uint16_t vn   = filt->workGw >> (1+g_eeGeneral.adcFilt) ;
   filt->resGw   = vn;
   filt->workGw += v - vn;
 #ifdef SIM

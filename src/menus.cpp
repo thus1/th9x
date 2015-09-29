@@ -1703,13 +1703,16 @@ void menuProcDiagAna()
         //lcd_outdez(17*FW, y, (v-g_eeGeneral.calibMid[i])*50/ max(1,g_eeGeneral.calibSpan[i]/2));
     }
     if(i==7){
+      // Uref = 1.22V
       lcd_outhex4( 0*FW, y,anaIn(8));
       putsV100mv(anaIn(8)*2/41,3*FW-3,y, 0); //50/1024 = 2/42
 
-      lcd_outhex4( 7*FW, y,anaIn(7));
-      putsV100mv(anaIn(7)*2/41,10*FW-3,y, 0); //50/1024 = 2/42
+      putsV100mv(12493/anaIn(8),6*FW-3,y, 0); //1024*1.22V*10/ana8
 
-      putsVBat(13*FW,y,sub==7 ? ATT_CSR_EDT : 0);
+      lcd_outhex4(10*FW, y,anaIn(7));
+      putsV100mv(anaIn(7)*2/41,13*FW-3,y, 0); //50/1024 = 2/42
+
+      putsVBat(17*FW,y,sub==7 ? ATT_CSR_EDT : 0);
     }
   }
   if(sub==7){

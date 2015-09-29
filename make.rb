@@ -29,7 +29,7 @@ TC_PAR1=%w(
   OBJCOPY=avr-objcopy
   CC=avr-gcc
 )+[
-  "AVRDUDEC=usbasp -B1"
+  "AVRDUDEC=usbasp -B3"
   ]
 
 
