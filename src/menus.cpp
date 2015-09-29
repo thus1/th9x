@@ -1622,15 +1622,23 @@ void menuProcDiagCalib()
   TITLE("CALIB");
   MSTATE_CHECK_V(8,menuTabDiag,4);
   int8_t  sub    = mstate2.m_posVert ;
-  static int16_t midVals[7];
-  static int16_t loVals[7];
-  static int16_t hiVals[7];
+  struct CalibVals{
+    int16_t mid;
+    int16_t lo;
+    int16_t hi;
+  };
+  static CalibVals calibVals[7];
+  #define cv(i) calibVals[i]
 
   for(uint8_t i=0; i<7; i++) { //get low and high vals for sticks and trims
     int16_t vt = anaIn(i);
-    loVals[i] = min(vt,loVals[i]);
-    hiVals[i] = max(vt,hiVals[i]);
-    if(i>=4) midVals[i] = (loVals[i] + hiVals[i])/2;
+    if(sub==1){ //scan mid
+      cv(i).lo = cv(i).hi = cv(i).mid = (i<4) ? vt : 0x200;
+    }else if(sub==2){ //scan lo,hi
+      if(vt < cv(i).lo) cv(i).lo  = vt;
+      if(vt > cv(i).hi) cv(i).hi  = vt;
+      if(i>=4)          cv(i).mid = (cv(i).lo + cv(i).hi)/2;
+    }
   }
 
   switch(g_event)
@@ -1641,27 +1649,18 @@ void menuProcDiagCalib()
       switch(sub)
       {
         case 2: //get mid
-          for(uint8_t i=0; i<4; i++)midVals[i] = anaIn(i);
-          for(uint8_t i=0; i<7; i++) {
-            loVals[i] = 15000;
-            hiVals[i] = 0;
-          }
-
           beepKey();
           break;
         case 3: 
           printf("do calib");
           for(uint8_t i=0; i<7; i++)
-            if(hiVals[i]-loVals[i]>50) {
-            g_eeGeneral.calibMid[i]  = midVals[i];
-              int16_t v = midVals[i] - loVals[i];
+            if(cv(i).hi-cv(i).lo>50) {
+            g_eeGeneral.calibMid[i]  = cv(i).mid;
+              int16_t v = cv(i).mid - cv(i).lo;
             g_eeGeneral.calibSpanNeg[i] = v - v/64;
-              v = hiVals[i] - midVals[i];
+              v = cv(i).hi - cv(i).mid;
             g_eeGeneral.calibSpanPos[i] = v - v/64;
           }
-          //int16_t sum=0;
-          //for(uint8_t i=0; i<12;i++) sum+=g_eeGeneral.calibMid[i];
-          //g_eeGeneral.chkSum = sum;
           eeDirty(EE_GENERAL); //eeWriteGeneral();
           beepKey();
           break;
@@ -1678,9 +1677,9 @@ void menuProcDiagCalib()
   {
     uint8_t y=i*FH+0;
     lcd_puts_P( 11*FW,  y+1*FH, PSTR("<    >"));  
-    lcd_outhex4( 8*FW-3,y+1*FH, sub==2 ? loVals[i]  :g_eeGeneral.calibSpanNeg[i]);
-    lcd_outhex4(12*FW,  y+1*FH, sub==1 ? anaIn(i) : (sub==2 ? midVals[i] :g_eeGeneral.calibMid[i]));
-    lcd_outhex4(17*FW,  y+1*FH, sub==2 ? hiVals[i]  :g_eeGeneral.calibSpanPos[i]);
+    lcd_outhex4( 8*FW-3,y+1*FH, sub!=0 ? cv(i).lo  :g_eeGeneral.calibSpanNeg[i]);
+    lcd_outhex4(12*FW,  y+1*FH, sub!=0 ? cv(i).mid :g_eeGeneral.calibMid[i]);
+    lcd_outhex4(17*FW,  y+1*FH, sub!=0 ? cv(i).hi  :g_eeGeneral.calibSpanPos[i]);
   }
 
 }
