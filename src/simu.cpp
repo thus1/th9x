@@ -488,7 +488,7 @@ uint16_t simADC(uint8_t chan)
     case 0x1e:                                    ret = th9xSim->knobs[8]->getValue();      break;
     default:    assert(0);
   }
-  return ret + (rand()&0x7) - 3;
+  return ret + (rand()&0x3) - 1;
   //return 512 -  512*10*chan/100;
   //return (rand() & 0x1f) + 0x2f8;
 }

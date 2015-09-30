@@ -15,7 +15,7 @@
 
 #include "th9x.h"
 #include "foldedlist.h"
-
+//#define OLD_TRIM
 
 uint8_t g_event; //global g_event
 
@@ -2295,32 +2295,6 @@ void menuProc0()
   }
   switch(g_event)
   {
-//     case  EVT_KEY_LONG(KEY_MENU):
-//       switch(sub){
-//         case 0: 
-//           pushMenu(menuProcSetup0);
-//           break;
-//         case 1:
-//           pushMenu(menuProcModelSelect);//menuProcModel);
-//           break;
-//       }
-//       killEvents();
-//       break;
-    case EVT_KEY_FIRST(KEY_RIGHT):
-      //if(getEventDbl(g_event)==2 && s_lastPopMenu[1]){
-//       if(sub<1) { //!! used in ENTRY_UP
-//         sub=sub+1;
-//         beepKey();
-//       }
-//       if(getEventDbl(g_event)==2){
-// 	sub=1;
-//         pushMenu(menuProcModelSelect);//menuProcExpoAll); 
-//         //pushMenu(s_lastPopMenu[1]);
-//         killEvents();
-//         return;
-//         break;
-//       }
-      break;
     case EVT_KEY_LONG(KEY_RIGHT):
       sub=1;
       if(s_lastPopMenu[1]){
@@ -2331,17 +2305,36 @@ void menuProc0()
       killEvents();
       return;
       break;
+#ifndef OLD_TRIM
+# define INST_OFF      0
+# define INST_STBY     1
+# define INST_SAMPLE   2
+# define INST_HOLD     3
+# define INST_FIX      4
+#else
+# define INST_OFF      0
+# define IST_CHECKKEY 1
+# define IST_WAITKEY  2
+# define IST_PREPARE  3
+# define IST_FIX      4
+#endif
+#ifndef OLD_TRIM
     case EVT_KEY_FIRST(KEY_LEFT):
-      // if(sub>0) { //!! used in ENTRY_UP
-//         sub=sub-1;
-//         beepKey();
-//       }
-      //if(getEventDbl(g_event)==2 && s_lastPopMenu[0]){
-      //  pushMenu(s_lastPopMenu[0]);
-      //  break;
-      //}
+      if(view==VIEW_TRIM) {
+	g_instTrimState=INST_SAMPLE;
+      }
       break;
+    case EVT_KEY_BREAK(KEY_LEFT):
+      if(view==VIEW_TRIM) {
+	g_instTrimState=INST_FIX;
+      }
+      break;
+#endif
     case EVT_KEY_LONG(KEY_LEFT):
+#ifndef OLD_TRIM
+      if(view==VIEW_TRIM) break;
+#endif
+
       sub=0;
       if(s_lastPopMenu[0]){
         pushMenu(s_lastPopMenu[0]);
@@ -2352,18 +2345,20 @@ void menuProc0()
       return;
       break;
       //states of instant trim
-#define IST_OFF      0
-#define IST_CHECKKEY 1
-#define IST_WAITKEY  2
-#define IST_PREPARE  3
-#define IST_FIX      4
     case EVT_KEY_BREAK(KEY_UP):
       view += 2;
     case EVT_KEY_BREAK(KEY_DOWN):
       view = (view+MAX_VIEWS-1) % MAX_VIEWS;
       if(view==VIEW_TRIM) {
+#ifndef OLD_TRIM
+	g_instTrimState=INST_STBY;
+#else
 	g_instTrimState=IST_CHECKKEY;
+#endif
       } else {
+#ifndef OLD_TRIM
+        g_instTrimState=INST_OFF;
+#endif
 	g_eeGeneral.view = view; //instant trim is not persistent
       }
       eeDirty(EE_GENERAL);
@@ -2399,7 +2394,7 @@ void menuProc0()
       killEventsRaw(KEY_DOWN);
     case EVT_EXIT:
       view=g_eeGeneral.view;
-      g_instTrimState=IST_OFF;
+      g_instTrimState=INST_OFF;
       return;
   }
 
@@ -2489,7 +2484,20 @@ void menuProc0()
       showSwitches(subSw);
       break;
     case VIEW_TRIM:
-      lcd_putsAtt(2*FW,5*FH,PSTR("Instant Trim"), 0);
+      lcd_putsAtt(2*FW,4*FH,PSTR("Instant Trim"), INVERS);
+
+#ifndef OLD_TRIM
+      switch(g_instTrimState){
+      case INST_STBY:
+	lcd_putsAtt(2*FW,5*FH,PSTR("1. adjust Sticks"), 0);
+	lcd_putsAtt(2*FW,6*FH,PSTR("2. press LEFT"), 0);
+	break;
+      case INST_HOLD:
+	lcd_putsAtt(2*FW,5*FH,PSTR("3. release Sticks"), 0);
+	lcd_putsAtt(2*FW,6*FH,PSTR("4. release LEFT"), 0);
+	break;
+      }
+#else
       switch(g_instTrimState){
       case IST_WAITKEY:
 	lcd_putsAtt(2*FW,6*FH,PSTR("press "), BLINK);
@@ -2503,6 +2511,7 @@ void menuProc0()
 	lcd_putsAtt(2*FW,6*FH,PSTR("release Sticks"), BLINK);
 	break;
       }
+#endif
       break;
 
     }
@@ -2716,7 +2725,36 @@ void perOut(int16_t *chanOut)
   // In anas2 stehen jetzt die Werte ohne Trimmung -512..511
 
   //Instant trim anas[log4] -> anas[log4]
-  if(g_instTrimState!=IST_OFF){
+  // ablauf:
+  // 1. INST_STBY  einstellen der sticks (adjust-sticks)
+  // 2. INST_SAMPLE,INST_HOLD  festhalten des inst-trim buttons (KEY_LEFT), anas-werte festhalten 
+  // 3. sticks auf mittelposition, keine Aenderung der anas wegen 2.
+  // 4. INST_FIX   loslassen des inst-trim buttons (KEY_LEFT), anas-werte in trim-werte umrechnen
+#ifndef OLD_TRIM
+  if(g_instTrimState!=INST_OFF){
+    static uint16_t s_istAnas[4];
+    switch(g_instTrimState){
+      case INST_SAMPLE:
+        memcpy(s_istAnas,anas,sizeof(s_istAnas));
+        g_instTrimState = INST_HOLD; //
+        break;
+      case INST_HOLD:
+        memcpy(anas,s_istAnas,sizeof(s_istAnas));
+        break;
+      case INST_FIX:
+        for(uint8_t i=0; i<4;i++){
+          if(!trimAssym[i]){
+            setTrimRaw(i,trimRevertM(s_istAnas[i]-anas2[i],getTrimRawMode(i)));
+          }
+        }
+        g_instTrimState = INST_STBY; //start new
+        break;
+    }
+  }
+
+#else
+  //Instant trim anas[log4] -> anas[log4]
+  if(g_instTrimState!=INST_OFF){
     static bool     s_istInitKey;
     static uint16_t s_istTmr;
     static uint16_t s_istAnas[4];
@@ -2755,7 +2793,7 @@ void perOut(int16_t *chanOut)
         break;
     }
   }
-
+#endif
   // virtual switches
 
   int8_t lastSw = -1;
