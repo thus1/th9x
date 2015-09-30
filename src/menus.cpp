@@ -2252,7 +2252,7 @@ extern volatile uint16_t captureRing[16];
 #define VIEW_GRAPH 1
 #define VIEW_SWTCH 2
 #define VIEW_TRIM  3
-uint8_t g_istTrimState;
+uint8_t g_instTrimState;
 void menuProc0()
 {
 #ifdef SIM
@@ -2362,7 +2362,7 @@ void menuProc0()
     case EVT_KEY_BREAK(KEY_DOWN):
       view = (view+MAX_VIEWS-1) % MAX_VIEWS;
       if(view==VIEW_TRIM) {
-	g_istTrimState=IST_CHECKKEY;
+	g_instTrimState=IST_CHECKKEY;
       } else {
 	g_eeGeneral.view = view; //instant trim is not persistent
       }
@@ -2399,7 +2399,7 @@ void menuProc0()
       killEventsRaw(KEY_DOWN);
     case EVT_EXIT:
       view=g_eeGeneral.view;
-      g_istTrimState=IST_OFF;
+      g_instTrimState=IST_OFF;
       return;
   }
 
@@ -2490,7 +2490,7 @@ void menuProc0()
       break;
     case VIEW_TRIM:
       lcd_putsAtt(2*FW,5*FH,PSTR("Instant Trim"), 0);
-      switch(g_istTrimState){
+      switch(g_instTrimState){
       case IST_WAITKEY:
 	lcd_putsAtt(2*FW,6*FH,PSTR("press "), BLINK);
 	putsDrSwitches(8*FW,6*FH,TrimSwitch,BLINK);
@@ -2628,7 +2628,7 @@ void perOut(int16_t *chanOut)
   memset(trimAssym,0,sizeof(trimAssym));
   g_sumAna=0;
   //Normierung  [0..1024] ->   [-512..512]
-  //  anaIn(hw7) ->    anas[hw7]   anaCalib[hw4]
+  //  anaIn(hw7) ->    anas[log10]   anaCalib[log4]
   for(uint8_t iHw=0;iHw<7;iHw++){        // calc Sticks
     int16_t v= anaIn(iHw);
     g_sumAna += (uint8_t)v;
@@ -2646,13 +2646,16 @@ void perOut(int16_t *chanOut)
     uint8_t iLog = convertMode(iHw);
     anas[iLog] = v; //10+1 Bit  
     if(iHw<4)anaCalib[iLog] =  v; //for show in expo 
-    else     anas[iLog+3]   = (v+512)/2; //p1-3
+    else     anas[iLog+3]   = (v+512)/2; //4,5,6(P1-3) -> 7,8,9(p1-3)
   }
 
   memcpy(anas2,anas,sizeof(anas2));//values before expo, to ensure same expo base when multiple expo lines are used
 
   memset(g_altTrim,0,sizeof(g_altTrim));//
-  //Expotab   anas[log4] -> anas[log4]
+  //Expotab   
+  // anas[log4] -> expo2,intpol,weight6 -> anas[log4]
+  // ->g_altTrim
+  // ->trimAssym
   for(uint8_t i=0;i<DIM(g_model.expoTab);i++){
     ExpoData_r171 &ed = g_model.expoTab[i];
     if(ed.mode3==0) break; //end of list
@@ -2676,9 +2679,9 @@ void perOut(int16_t *chanOut)
     }
   }
 
-  //Trainer,   anas[log4] -> anas[log4]
+  //Trainer,   anas[log4] -> anas[log4], anas2[log4]
   //Trace THR
-  //Trim
+  //Trim       anas[log4] -> anas[log4]
   for(uint8_t iLog=0;iLog<4;iLog++){        // calc Sticks
     int16_t v = anas[iLog];
 
@@ -2709,21 +2712,22 @@ void perOut(int16_t *chanOut)
     }
     anas[iLog] = v;
   }
-  // In anas stehen jetzt die Werte mit Trimmung -512..511
+  // In anas  stehen jetzt die Werte mit  Trimmung -512..511
+  // In anas2 stehen jetzt die Werte ohne Trimmung -512..511
 
   //Instant trim anas[log4] -> anas[log4]
-  if(g_istTrimState!=IST_OFF){
+  if(g_instTrimState!=IST_OFF){
     static bool     s_istInitKey;
     static uint16_t s_istTmr;
     static uint16_t s_istAnas[4];
-    switch(g_istTrimState){
+    switch(g_instTrimState){
       case IST_CHECKKEY:
         s_istInitKey = getSwitch(TrimSwitch,0);
-        g_istTrimState = IST_WAITKEY;
+        g_instTrimState = IST_WAITKEY;
         break;
       case IST_WAITKEY:
         if(s_istInitKey != getSwitch(TrimSwitch,0)){
-          g_istTrimState = IST_PREPARE;
+          g_instTrimState = IST_PREPARE;
           s_istTmr=pgm_read_byte(&s_istTmrVals1[g_eeGeneral.iTrimTme1])*10;
         }
         break;
@@ -2731,14 +2735,14 @@ void perOut(int16_t *chanOut)
         if(s_istTmr%50==0)beepTmr();
         if(s_istTmr-- == 0){
           memcpy(s_istAnas,anas,sizeof(s_istAnas));
-          g_istTrimState = IST_FIX;
+          g_instTrimState = IST_FIX;
           s_istTmr=pgm_read_byte(&s_istTmrVals2[g_eeGeneral.iTrimTme2])*10;
         }
         break;
       case IST_FIX:
         if(s_istTmr%5==0)beepTmr();
         if(s_istTmr-- == 0){
-          g_istTrimState = IST_CHECKKEY;
+          g_instTrimState = IST_CHECKKEY;
           s_istTmr=0;
           for(uint8_t i=0; i<4;i++){
             if(!trimAssym[i]){
