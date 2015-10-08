@@ -683,7 +683,7 @@ void menuProcSwitchesCom( bool nested)
   uint8_t x=TITLE("SWITCHES  ");  
   int8_t  sub;//    = mstate2.m_posVert;
   //int8_t  subOld  = mstate2.m_posVert;
-#define SW_COLS (4+2)
+#define SW_COLS (1+4+FL_EXTRA_COLS)
   MSTATE_TAB = {SW_COLS};
   if(nested){
     MSTATE_CHECK0_VxH(FL_INST.numWithHdr()-1);
@@ -698,7 +698,8 @@ void menuProcSwitchesCom( bool nested)
 
   FL_INST.init(g_model.switchTab,DIM(g_model.switchTab),sizeof(g_model.switchTab[0]),chProcSwitches,8);
 
-  if(FL_INST.listEditMode(subHor==(SW_COLS-1))) mstate2.m_valEdit=0;
+  //if(FL_INST.listEditMode(subHor==(SW_COLS-1))) mstate2.m_valEdit=0;
+  if(FL_INST.listEditMode(subHor,SW_COLS)) mstate2.m_valEdit=0;
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -745,7 +746,7 @@ void menuProcSwitchesCom( bool nested)
       )
   {
     if(line->showHeader){
-      lcd_puts_P( 5*FW+2, y,PSTR("val op val op2 "ARR_N_S));
+      lcd_puts_P( 5*FW+2, y,PSTR("val op val op2 "CHR_KEY));
     }  
     if(line->showCh){  
       lcd_putsAtt( 0, y,PSTR("SW"),FL_INST.isSelectedCh()?ATT_CSR_MV:0);
@@ -753,8 +754,8 @@ void menuProcSwitchesCom( bool nested)
     }
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
-      bool lineEdit = 0;
-      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
+      // bool lineEdit = 0;
+      // if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
       if(sel && !mstate2.m_valEdit)  sel=2;
 
       for(uint8_t j=0; j<4; j++){
@@ -762,17 +763,12 @@ void menuProcSwitchesCom( bool nested)
                        subHor==(j+1) ? sel : 0, 
                        pgm_read_byte(&colPos[j]),   y,line->idt);
       }
-      if(lineEdit) {
-        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
-        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
-      }
+      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+      // if(lineEdit) {
+      //   lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+      //   if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
+      // }
     }
-//     if(FL_INST.isSelectedCh()) {
-//       if(BLINK_ON_PHASE) {
-//         //lcd_hline(pgm_read_byte(&colPos[subHor])-FW*3,y+7,FW*3);//FW*4);
-//         lcd_hline(0,y+7,pgm_read_byte(&colPos[subHor]));
-//       }
-//     }
 
   }
 }
@@ -934,7 +930,7 @@ void menuProcMix()
   static MState2 mstate2;
   uint8_t x=TITLE("MIXER  ");  
   //int8_t subOld  = mstate2.m_posVert;
-#define MIX_COLS (6+2)
+#define MIX_COLS (1+6+FL_EXTRA_COLS)
   MSTATE_TAB = {MIX_COLS};
   MSTATE_CHECK_VxH(4,menuTabModel,FL_INST.numWithHdr());
   int8_t  sub    = mstate2.m_posVert;
@@ -945,7 +941,8 @@ void menuProcMix()
 
   MixData_r192  *md= g_model.mixData;
   FL_INST.init(g_model.mixData,DIM(g_model.mixData),sizeof(g_model.mixData[0]),chProcMixes,NUM_XCHNOUT);
-  if(FL_INST.listEditMode(subHor==(MIX_COLS-1))) mstate2.m_valEdit=0;
+  //if(FL_INST.listEditMode(subHor==(MIX_COLS-1))) mstate2.m_valEdit=0;
+  if(FL_INST.listEditMode(subHor,MIX_COLS)) mstate2.m_valEdit=0;
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -960,7 +957,7 @@ void menuProcMix()
       )
   {
     if(line->showHeader){
-      lcd_puts_P(     3*FW+2, y, PSTR("inp  % crv sw,mod"ARR_N_S));
+      lcd_puts_P(     3*FW+2, y, PSTR("inp  % crv sw,mod"CHR_KEY));
     }  
     if(line->showCh){  
       putsChn(0,y,line->chId,FL_INST.isSelectedCh()?ATT_CSR_MV:0); // show CHx
@@ -968,8 +965,8 @@ void menuProcMix()
     if(line->showDat){ //show data 
       MixData_r192 &md2=md[line->idt];
       uint8_t  sel = FL_INST.isSelectedDat(); 
-      bool lineEdit = 0;
-      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
+      // bool lineEdit = 0;
+      // if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
       if(sel && !mstate2.m_valEdit)     sel=2;
 
       if(sel) { //show diag values
@@ -994,10 +991,11 @@ void menuProcMix()
       }
       if(md2.speedDown || md2.speedUp)lcd_putsAtt(20*FW+1, y, PSTR(ARR_NE),0);
       //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
-      if(lineEdit) {
-        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
-        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
-      }
+      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+      // if(lineEdit) {
+      //   lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+      //   if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
+      // }
 
     }
   } //for 7
@@ -1244,7 +1242,7 @@ void menuProcExpoAll()
   static MState2 mstate2;
   uint8_t x=TITLE("EXPO/DR  ");  
   //int8_t subOld  = mstate2.m_posVert;
-#define EXP_COLS (5+2)
+#define EXP_COLS (1+5+FL_EXTRA_COLS)
   MSTATE_TAB = {EXP_COLS};
   MSTATE_CHECK_VxH(3,menuTabModel,FL_INST.numWithHdr());
   int8_t  sub    = mstate2.m_posVert;
@@ -1252,7 +1250,7 @@ void menuProcExpoAll()
   if(sub<1 || subHor==0)       mstate2.m_valEdit=0;
 
   FL_INST.init(g_model.expoTab,DIM(g_model.expoTab),sizeof(g_model.expoTab[0]),chProcExpos,4);
-  if(FL_INST.listEditMode(subHor==(EXP_COLS-1))) mstate2.m_valEdit=0;
+  if(FL_INST.listEditMode(subHor,EXP_COLS)) mstate2.m_valEdit=0;
 
   lcd_outdezAtt(  x, 0, FL_INST.fillLevel(),INVERS); //fill level
 
@@ -1269,15 +1267,15 @@ void menuProcExpoAll()
       )
   {
     if(line->showHeader){
-      lcd_puts_P( 2*FW+2, y, PSTR("mod exp  % sw crv "ARR_N_S));
+      lcd_puts_P( 2*FW+2, y, PSTR("mod exp  % sw crv "CHR_KEY));
     }  
     if(line->showCh){  
       putsChnRaw( 0, y,line->chId-1,FL_INST.isSelectedCh()?ATT_CSR_MV:0);
     }
     if(line->showDat){ //show data 
       uint8_t  sel = FL_INST.isSelectedDat()?1:0;  //selected line
-      bool lineEdit = 0;
-      if(sel && FL_INST.listEditMode()) {sel=0; lineEdit=true;}
+      // bool lineEdit = 0;
+      // if(sel && FL_INST.listEditMode()) {lineEdit=true;}
       if(sel && !mstate2.m_valEdit)     sel=2;
       for(uint8_t j=0; j<5; j++){
         editExpoVals(j,
@@ -1285,15 +1283,15 @@ void menuProcExpoAll()
                      pgm_read_byte(&colPos[j]),  y,line->idt);
       }
       //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
-      if(lineEdit) {
-        lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
-        if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
-      }
+      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+//       if(lineEdit) {
+//         lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
+//         if(BLINK_ON_PHASE)lcd_putsnAtt( 128-FW,y,PSTR(ARR_N_S CHR_DUP CHR_DEL)+FL_INST.listEditMode()-1,1,0);
+//       }
     }
   }
   uint8_t what;
-  switch(what=FL_INST.doEvent
-(sub,mstate2.m_posVertChg,subHor==0))
+  switch(what=FL_INST.doEvent(sub,mstate2.m_posVertChg,subHor==0))
   {
     case FoldedListNew:
     case FoldedListNewEdit:

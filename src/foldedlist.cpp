@@ -120,7 +120,7 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
   inst.m_chnNav     = chnNav;     //wir sind im chn navi bereich
 
   //handle line moves
-  if(inst.m_listEdit && subChanged 
+  if(inst.m_listEdit==1 && subChanged 
      && sub //jetz nicht im header
      && (sub-subChanged) //vorher nicht im header
      && (sub-subChanged)!=inst.m_prepCurrIFL //vorher nicht am ende
@@ -195,10 +195,17 @@ uint8_t FoldedList::doEvent(int8_t sub,int8_t subChanged,bool chnNav)
       break;
     case EVT_KEY_BREAK(KEY_MENU):
       if(inst.m_subIFL<1) break; //menu kopfzeile aktiv
-      if(inst.m_listEdit)
+      switch(inst.m_listEdit)
       {
-        ret = FoldedListDup;
-        goto ret_dup;
+        case 1: //move mode
+          break;
+        case 2: //duplicate
+          ret = FoldedListDup;
+          goto ret_dup;
+        case 3: //remove
+          rmCurrLine();
+          break;
+          
       }
       if(inst.m_chnNav){  //neue Zeile einfuegen
 

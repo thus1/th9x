@@ -26,9 +26,9 @@
 
 
 #define NO_INV        0x00
-#define INVERS        0x01
-#define BLINK         0x02
-#define BLINKF        (BLINK|INVERS)
+#define INVERS        0x01            //invers
+#define BLINK         0x02            //invers / nicht invers
+#define BLINKF        (BLINK|INVERS)  //blinkender rahmen
 #define ATT_CSR_MV    BLINKF //INVERS
 #define ATT_CSR_EDT   BLINK
 
@@ -49,7 +49,10 @@
 #define ARR_E         "\x7e"
 #define ARR_NE        "\x7d"
 #define ARR_SW        "\x7b"
-#define ARR_N_S       "\x24"
+#define CHR_DUP       "\x80"
+#define CHR_DEL       "\x81"
+#define CHR_KEY       "\x82"
+#define ARR_N_S       "\x85"
 
 #ifdef SIM
 extern uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8+DISPLAY_W];

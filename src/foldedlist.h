@@ -17,6 +17,7 @@
 
 #include "th9x.h"
 
+#define FL_EXTRA_COLS 3
 
 //ch  shwDat idt shwHdr
 //                 t
@@ -72,7 +73,7 @@ public:
   bool    m_isSelectedCh; // * user info after nextline
   bool    m_isSelectedDat;// *
 
-  bool    m_listEdit;     // * user info after doEvent
+  uint8_t m_listEdit;     // * user info after doEvent
   uint8_t m_currIDTOld;   // * user info for move ops
   uint8_t m_currIDT;      // * user index for move ops
   uint8_t m_editIDT;      // * user index for edit one dataset
@@ -85,8 +86,15 @@ private:
   static uint8_t  getCh(uint8_t idt);//{return inst.m_chProc(arrayElt(idt),0);}
   static void     setCh(uint8_t idt,uint8_t ch);//{inst.m_chProc(arrayElt(idt),ch);}
 public:  
-  static bool    listEditMode(bool val) {return inst.m_listEdit=val;}
-  static bool    listEditMode() {return inst.m_listEdit;}
+  static uint8_t listEditMode(uint8_t col, uint8_t cols) {
+    // col=        0 1        ..        cols-3 cols-2 cols-1
+    // m_listEdit= 0 0 0 0 0 0 ..     0    1      2      3
+    if(col>=(cols-FL_EXTRA_COLS)) inst.m_listEdit = col-cols+FL_EXTRA_COLS+1;
+    else              inst.m_listEdit = 0;
+    return inst.m_listEdit;
+  }
+  //static uint8_t listEditMode(uint8_t val) { return inst.m_listEdit=val;} //todo
+  static uint8_t listEditMode() {return inst.m_listEdit;}
   static uint8_t fillLevel()    {return inst.m_prepCurrIDT;}
   static uint8_t editIDT()      {return inst.m_editIDT;}
   //  static uint8_t currIDTOld()   {return inst.m_currIDTOld;}
@@ -116,6 +124,14 @@ public:
 #define FoldedListSwap     5
   static uint8_t doEvent(int8_t sub,int8_t subChanged,bool chnNav);
   static void    rmCurrLine();
+
+  static void drawEditMode(int8_t xBar,int8_t y, int8_t wBar){
+    if(inst.isSelectedDat() && inst.m_listEdit) {
+      lcd_barAtt( xBar,  y, wBar,INVERS);
+      if(BLINK_ON_PHASE)lcd_putsnAtt(xBar+wBar+1 ,y,PSTR(ARR_N_S CHR_DUP CHR_DEL)+inst.m_listEdit-1,1,0);
+    }
+    
+  }
 
 };
 
