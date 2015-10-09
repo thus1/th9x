@@ -28,6 +28,7 @@
 #define W2 W*2
 #define H2 H*2
 
+#define MSGID_SELF 0
 
 class FXStick : public FXImageFrame
 {
@@ -46,8 +47,8 @@ public:
     :FXImageFrame( p,img,opts,x+_dx0,y-_dy0,w,h,0,0,0,0)
   {
     flags|=FLAG_ENABLED;
-    setTarget(this);
-    setSelector(101);
+    // setTarget(this);
+    // setSelector(MSGID_STICKMOUSE);
     m_grabx = -1;       m_graby = -1;
     m_midx  = x;        m_midy  = y;
     m_minx  = x-elev;   m_miny  = y-elev;
@@ -96,10 +97,11 @@ public:
     return 0;
   }
 };
+
 FXDEFMAP(FXStick) FXStickMap[]={
-  FXMAPFUNC(SEL_LEFTBUTTONPRESS,101,FXStick::onLeftPress),
-  FXMAPFUNC(SEL_LEFTBUTTONRELEASE,101,FXStick::onLeftRelease),
-  FXMAPFUNC(SEL_MOTION,101,FXStick::onMotion),
+  FXMAPFUNC(SEL_LEFTBUTTONPRESS,   MSGID_SELF,FXStick::onLeftPress),
+  FXMAPFUNC(SEL_LEFTBUTTONRELEASE, MSGID_SELF,FXStick::onLeftRelease),
+  FXMAPFUNC(SEL_MOTION,            MSGID_SELF,FXStick::onMotion),
   };
 FXIMPLEMENT(FXStick,FXImageFrame,FXStickMap,ARRAYNUMBER(FXStickMap))
 
@@ -133,7 +135,6 @@ private:
   bool           m_firstTime;
 
 public:
-  //  FXSlider       *m_sliders[4];
   FXStick        *m_sticks[2];
   FXKnob         *m_knobs[ANA_CHANS];
   FXKnob         *m_knobsppm[8]; //sim trainer port
@@ -146,12 +147,14 @@ public:
   FXImageFrame   *m_img;
 };
 // Message Map
-FXDEFMAP(Th9xSim) Th9xSimMap[]={
+#define MSGID_TIMEOUT       1001
+#define MSGID_ARROWPRESS    1002
 
+FXDEFMAP(Th9xSim) Th9xSimMap[]={
   //________Message_Type_________ID_____________________Message_Handler_______
-  FXMAPFUNC(SEL_TIMEOUT,   2,    Th9xSim::onTimeout),
-  FXMAPFUNC(SEL_COMMAND,   1000,    Th9xSim::onArrowPress),
-  FXMAPFUNC(SEL_KEYPRESS,  0,    Th9xSim::onKeypress),
+  FXMAPFUNC(SEL_TIMEOUT,   MSGID_TIMEOUT,    Th9xSim::onTimeout),
+  FXMAPFUNC(SEL_COMMAND,   MSGID_ARROWPRESS, Th9xSim::onArrowPress),
+  FXMAPFUNC(SEL_KEYPRESS,  MSGID_SELF,       Th9xSim::onKeypress),
   };
 
 FXIMPLEMENT(Th9xSim,FXMainWindow,Th9xSimMap,ARRAYNUMBER(Th9xSimMap))
@@ -190,9 +193,9 @@ Th9xSim::Th9xSim(FXApp* a)
 
   new FXLabel(hf0,"Trainer");
   m_togButPpm = new FXToggleButton(hf0,"off", "on", NULL, NULL, NULL, 0, TOGGLEBUTTON_NORMAL);
-  m_arrow2[0]= new FXArrowButton(hf0,this,1000,ARROW_LEFT);
-  m_arrow2[1]= new FXArrowButton(hf0,this,1000,ARROW_UP);
-  m_arrow2[2]= new FXArrowButton(hf0,this,1000,ARROW_RIGHT);
+  m_arrow2[0]= new FXArrowButton(hf0,this,MSGID_ARROWPRESS,ARROW_LEFT);
+  m_arrow2[1]= new FXArrowButton(hf0,this,MSGID_ARROWPRESS,ARROW_UP);
+  m_arrow2[2]= new FXArrowButton(hf0,this,MSGID_ARROWPRESS,ARROW_RIGHT);
   for(int i=0; i<8; i++){
     m_knobsppm[i]= new FXKnob(hf0,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
     //    knobsppm[i]= new FXKnob(i<4?hf01:hf02,NULL,0,KNOB_TICKS|LAYOUT_LEFT);
@@ -263,27 +266,11 @@ Th9xSim::Th9xSim(FXApp* a)
   m_sticks[1] = new FXStick(this,icon_stick, FRAME_NONE|LAYOUT_FIX_X|LAYOUT_FIX_Y,
                             X0R-STICK_WH/2, Y0-STICK_WH/2,0,0,STICK_ELEV,0,0);
 
-// #define L LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT|LAYOUT_FIX_X|LAYOUT_FIX_Y
-//   for(int i=0; i<4; i++){
-//     switch(i)
-//     {
-//       case 3: m_sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_HORIZONTAL,X0L-50,Y0+50,100,20);  break;
-//       case 1: m_sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_VERTICAL,  X0L+50,Y0-50,20,100);  break;
-//       case 2: m_sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_VERTICAL,  X0R-70,Y0-50,20,100);  break;
-//       case 0: m_sliders[i]=new FXSlider(this,NULL,0,L|SLIDER_HORIZONTAL,X0R-50,Y0+50,100,20);  break;
-//       default:;
-//     }
-//     m_sliders[i]->setRange(20+i*30,1010-i*15);
-//     m_sliders[i]->setTickDelta(7);
-//     m_sliders[i]->setValue(i==1 ? 200 : 512+i*25);
-//     m_sliders[i]->setBackColor(fxcolorfromname("black"));
-//     //sliders[i]->setLineColor(fxcolorfromname("white"));
-//   }
 #define KNOB_OPT KNOB_NEEDLE|LAYOUT_FIX_X|LAYOUT_FIX_Y|LAYOUT_FIX_WIDTH|LAYOUT_FIX_HEIGHT
   new FXLabel(hf1,"Sticks/Potis/Vbat/Vref");
-  m_arrow[0]= new FXArrowButton(hf1,this,1000,ARROW_LEFT);
-  m_arrow[1]= new FXArrowButton(hf1,this,1000,ARROW_UP);
-  m_arrow[2]= new FXArrowButton(hf1,this,1000,ARROW_RIGHT);
+  m_arrow[0]= new FXArrowButton(hf1,this,MSGID_ARROWPRESS,ARROW_LEFT);
+  m_arrow[1]= new FXArrowButton(hf1,this,MSGID_ARROWPRESS,ARROW_UP);
+  m_arrow[2]= new FXArrowButton(hf1,this,MSGID_ARROWPRESS,ARROW_RIGHT);
   for(int i=4; i<ANA_CHANS; i++){
     switch(i){
       case 4: m_knobs[i]= new FXKnob(this,NULL,0,KNOB_OPT,585-20,208-20,40,40,0,0,0,0); break;
@@ -304,7 +291,7 @@ Th9xSim::Th9xSim(FXApp* a)
   m_bmf->setOnColor(FXRGB(0,0,0));
 
   //getApp()->addChore(this,1);
-  getApp()->addTimeout(this,2,100);
+  getApp()->addTimeout(this,MSGID_TIMEOUT,100);
 }
 void Th9xSim::makeSnapshot(const FXDrawable* drawable)
 {
@@ -393,7 +380,7 @@ long Th9xSim::onTimeout(FXObject*,FXSelector,void*)
 
   per10ms();
   refreshDisplay();
-  getApp()->addTimeout(this,2,10);
+  getApp()->addTimeout(this,MSGID_TIMEOUT,10);
   return 0;
 }
 void Th9xSim::refreshDisplay()
