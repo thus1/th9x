@@ -2,6 +2,15 @@
 Changes:
 ------------
 
+- simu with body-shape
+- new symbols in font-file
+- foldedlist with 3 columns move/dup/rm
+- redesign calibration
+- new instant trim
+- ana filter with hysteresis
+- u-bat based on internal 1.2V ref-voltage
+- blink pattern more agressive
+- trouble with prog_char
 
 --rm in expo
 --crv in expo
