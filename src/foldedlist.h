@@ -125,13 +125,14 @@ public:
   static uint8_t doEvent(int8_t sub,int8_t subChanged,bool chnNav);
   static void    rmCurrLine();
 
-  static void drawEditMode(int8_t xBar,int8_t y, int8_t wBar){
-    if(inst.isSelectedDat() && inst.m_listEdit) {
-      lcd_barAtt( xBar,  y, wBar,INVERS);
-      if(BLINK_ON_PHASE)lcd_putsnAtt(xBar+wBar+1 ,y,PSTR(ARR_N_S CHR_DUP CHR_DEL)+inst.m_listEdit-1,1,0);
-    }
-    
-  }
+  static void drawEditMode(int8_t xBar,int8_t y, int8_t wBar);
+// {
+//     if(inst.isSelectedDat() && inst.m_listEdit) {
+//       lcd_barAtt( xBar,  y, wBar,INVERS);
+//       if(BLINK_ON_PHASE)lcd_putsnAtt(xBar+wBar+1 ,y,PSTR(ARR_N_S CHR_DUP CHR_DEL)+inst.m_listEdit-1,1,0);
+//     }
+//     
+//   }
 
 };
 
