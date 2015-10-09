@@ -763,7 +763,7 @@ void menuProcSwitchesCom( bool nested)
                        subHor==(j+1) ? sel : 0, 
                        pgm_read_byte(&colPos[j]),   y,line->idt);
       }
-      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+      FL_INST.drawEditMode(3*FW,  y,128-4*FW-1);
       // if(lineEdit) {
       //   lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
       //   if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
@@ -991,7 +991,7 @@ void menuProcMix()
       }
       if(md2.speedDown || md2.speedUp)lcd_putsAtt(20*FW+1, y, PSTR(ARR_NE),0);
       //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
-      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+      FL_INST.drawEditMode(3*FW,  y,128-4*FW-1);
       // if(lineEdit) {
       //   lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
       //   if(BLINK_ON_PHASE)lcd_putsAtt( 128-FW,y,PSTR(ARR_N_S),0);
@@ -1283,7 +1283,7 @@ void menuProcExpoAll()
                      pgm_read_byte(&colPos[j]),  y,line->idt);
       }
       //if(lineEdit) lcd_barAtt( 4*FW,y,16*FW,BLINK);
-      FL_INST.drawEditMode(4*FW,  y,128-5*FW-1);
+      FL_INST.drawEditMode(3*FW,  y,128-4*FW-1);
 //       if(lineEdit) {
 //         lcd_barAtt( 4*FW,  y,128-5*FW-1,INVERS);
 //         if(BLINK_ON_PHASE)lcd_putsnAtt( 128-FW,y,PSTR(ARR_N_S CHR_DUP CHR_DEL)+FL_INST.listEditMode()-1,1,0);
