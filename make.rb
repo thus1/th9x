@@ -17,7 +17,7 @@ PARDEF[:TC]       = "TC_PAR1"
 
 #TGT=%w(drehzahl.cpp  MCU=attiny26 CFLAGS=)
 #TGT=%w(servo.c  MCU=attiny22     CFLAGS=-xc++)
-TGT=%w( DIR=src th9x.cpp sticks_4x1.xbm font_6x1.xbm menus.cpp foldedlist.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
+TGT=%w( DIR=src th9x.cpp sticks_18x8.xbm font_5x8.xbm menus.cpp foldedlist.cpp pulses.cpp pers.cpp file.cpp  lcd.cpp drivers.cpp  MCU=atmega64)
 
 
 
@@ -77,9 +77,9 @@ class Builder
       case src
       when /(.*)(_\d+x\d+\.xbm)$/
         bse   = $1
-        fobj  = bse+".lbm"
+        fobj  = src.sub /\.xbm/,".lbm"
         checkDep(fobj,src) {
-          sys "xbm2lbm.rb #{src}","util/xbm2lbm.rb #{src}"
+          sys "xbm2lbm.rb #{src}","util/xbm2lbm.rb #{src} #{fobj}"
         }
       end
     }
