@@ -26,7 +26,7 @@ uint8_t displayBuf[DISPLAY_W*DISPLAY_H/8];
 #endif
 #define DISPLAY_SIZE (DISPLAY_W*DISPLAY_H/8)
 #define DISPLAY_END  (displayBuf+DISPLAY_SIZE)
-#include "font.lbm"
+#include "font_5x8.lbm"
 #define font_5x8_x20_x7f (font+3)
 
 #define BITMASK(bit) (1<<(bit))

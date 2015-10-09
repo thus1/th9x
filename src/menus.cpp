@@ -37,7 +37,7 @@ uint8_t g_sumAna;
 uint8_t g_virtSw[8];
 
 //sticks
-#include "sticks.lbm"
+#include "sticks_18x8.lbm"
 
 void menuProcSwitches();
 
